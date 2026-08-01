@@ -18,6 +18,7 @@
 ---
 
 ## 構成
+```
 orange/
 ├ index.html                      父母向けマニュアル（トップページ）
 ├ images/                         マニュアル用の画像
@@ -36,6 +37,7 @@ orange/
     ├ orange_movie.html           変遷映像
     ├ presentation.html           表彰スライド
     └ README.md                   必要な素材フォルダの説明
+```
 ---
 
 ## 仕組み
