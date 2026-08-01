@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オレンジライン 記録システム</title>
+<style>
+  :root{
+    --ink:#1a2238;--orange:#f06a1e;--orange-soft:#ffe9dc;--line:#e3e6ee;
+    --bg:#f7f8fb;--green:#1f9d63;--red:#d64545;--blue:#378add;--muted:#6b7280;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6;padding-bottom:40px;}
+  header{background:var(--orange);color:#fff;padding:18px 16px;position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+  header h1{margin:0;font-size:1.15rem;letter-spacing:.02em;}
+  header p{margin:2px 0 0;font-size:.78rem;opacity:.92;}
+  .tabbar{display:flex;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:62px;z-index:9;}
+  .tab{flex:1;padding:13px 4px;text-align:center;font-size:.82rem;font-weight:700;color:var(--muted);
+    border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;}
+  .tab.active{color:var(--orange);border-bottom-color:var(--orange);}
+  .wrap{max-width:680px;margin:0 auto;padding:16px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 16px;margin-bottom:16px;}
+  .card h2{margin:0 0 14px;font-size:.95rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;}
+  label{display:block;font-size:.82rem;font-weight:700;margin:0 0 6px;}
+  select,input[type=text],input[type=number],input[type=date]{width:100%;padding:14px 12px;font-size:1.05rem;border:2px solid var(--line);
+    border-radius:10px;background:#fff;color:var(--ink);appearance:none;}
+  select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;}
+  /* 役割ブロック */
+  .role{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;}
+  .role-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .role-name{font-size:.95rem;font-weight:800;}
+  .role-count{font-size:.78rem;color:var(--muted);}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{font-size:.92rem;padding:9px 14px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;transition:.1s;}
+  .chip.on{background:var(--orange-soft);border-color:var(--orange);color:var(--orange);font-weight:700;}
+  .kinds{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
+  .kind-btn{padding:16px 8px;font-size:1.02rem;font-weight:700;border:2px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);cursor:pointer;}
+  .kind-btn.active{background:var(--orange-soft);border-color:var(--orange);color:var(--orange);}
+  .row2{display:flex;gap:10px;}
+  .row2>div{flex:1;}
+  .result-prev{text-align:center;padding:12px;border-radius:10px;background:var(--bg);font-size:1.05rem;font-weight:800;margin-top:14px;}
+  .submit{width:100%;margin-top:8px;padding:18px;font-size:1.12rem;font-weight:800;border:none;border-radius:12px;background:var(--orange);color:#fff;cursor:pointer;}
+  .submit:disabled{opacity:.45;}
+  .submit:active{transform:translateY(1px);}
+  .selsum{font-size:.82rem;color:var(--muted);text-align:center;margin:10px 0 4px;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--green);color:#fff;
+    padding:14px 22px;border-radius:999px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;z-index:30;box-shadow:0 4px 16px rgba(0,0,0,.2);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.err{background:var(--red);}
+  .summary-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+  .summary-head h2{margin:0;}
+  .year-sel{width:auto;min-width:120px;padding:8px 30px 8px 12px;font-size:.9rem;}
+  .refresh{background:none;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:.82rem;color:var(--muted);cursor:pointer;white-space:nowrap;}
+  .loading{text-align:center;color:var(--muted);padding:20px;font-size:.88rem;}
+  .note{font-size:.74rem;color:var(--muted);margin-top:10px;}
+  /* 集計バー一覧 */
+  .rankrow{margin-bottom:12px;}
+  .rankrow .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;}
+  .rankrow .nm{font-size:.95rem;font-weight:700;}
+  .rankrow .det{font-size:.78rem;color:var(--muted);}
+  .badge{font-size:.68rem;padding:1px 8px;border-radius:999px;margin-left:6px;}
+  .badge.max{color:#993C1D;background:#FAECE7;}
+  .badge.min{color:#0C447C;background:#E6F1FB;}
+  .track{height:11px;background:var(--bg);border-radius:999px;overflow:hidden;}
+  .fill{height:100%;border-radius:999px;}
+  /* 集計テーブル */
+  table{width:100%;border-collapse:collapse;font-size:.88rem;margin-top:16px;}
+  th,td{padding:9px 5px;text-align:center;border-bottom:1px solid var(--line);}
+  th{font-size:.72rem;color:var(--muted);}
+  th:first-child,td:first-child{text-align:left;font-weight:700;}
+  td.total{font-weight:800;color:var(--orange);}
+  tfoot td{font-weight:800;border-top:2px solid var(--ink);border-bottom:none;}
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .stat{background:var(--bg);border-radius:10px;padding:14px;}
+  .stat .lbl{font-size:.74rem;color:var(--muted);}
+  .stat .val{font-size:1.5rem;font-weight:800;}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:8px;font-size:.75rem;color:var(--muted);}
+  .legend span{display:flex;align-items:center;gap:4px;}
+  .dot{width:10px;height:10px;border-radius:2px;display:inline-block;}
+  .chart-box{position:relative;width:100%;margin-bottom:18px;}
+  /* 修正・削除ボタン */
+  .rowbtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 9px;font-size:.74rem;font-weight:700;cursor:pointer;margin:0 2px;}
+  .rowbtn.edit{color:var(--blue);border-color:#bcd9f4;}
+  .rowbtn.del{color:var(--red);border-color:#f4c4c4;}
+  .editing-note{background:#fff7e6;border:1px solid #ffe0a3;border-radius:10px;padding:8px 12px;font-size:.8rem;color:#8a5a00;margin-bottom:10px;display:none;}
+  .clog-row{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid var(--line);font-size:.84rem;}
+  .clog-row .cl-main{flex:1;}
+  .clog-row .cl-date{color:var(--muted);font-size:.74rem;}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚾ オレンジライン 記録システム</h1>
+  <p>試合ごとにまとめて記録 / 集計は自動更新</p>
+</header>
+
+<div class="tabbar">
+  <button class="tab active" data-panel="coop">協力ログ</button>
+  <button class="tab" data-panel="game">試合記録</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== 協力ログ（一括入力） ===== -->
+  <div class="panel active" id="panel-coop">
+    <div class="card">
+      <h2>試合日の協力をまとめて記録</h2>
+      <label for="coopDate">試合日</label>
+      <select id="coopDate"><option>読み込み中…</option></select>
+      <p class="note" style="margin:6px 0 14px;">試合記録タブで登録した試合日が選べます。各役割の担当者をタップで複数選択してください。</p>
+      <div id="roles"></div>
+      <div class="selsum" id="selSum">選択 0 名</div>
+      <button class="submit" id="coopSubmit" disabled>＋ まとめて記録</button>
+    </div>
+    <div class="card">
+      <div class="summary-head">
+        <h2>協力 集計</h2>
+        <select class="year-sel" id="coopYear"></select>
+        <button class="refresh" id="coopRefresh">↻</button>
+      </div>
+      <div id="coopRank"><div class="loading">読み込み中…</div></div>
+      <div id="coopTable"></div>
+      <p class="note">名簿順で固定表示。バーの長さ・「最多/最少」バッジで多寡が分かります。</p>
+    </div>
+    <div class="card">
+      <h2>協力ログ 明細（削除）</h2>
+      <div id="coopLogList"><div class="loading">読み込み中…</div></div>
+      <p class="note">入力を間違えた協力記録はここで削除できます（削除すると集計から外れます）。修正は削除して入れ直してください。</p>
+    </div>
+  </div>
+
+  <!-- ===== 試合記録 ===== -->
+  <div class="panel" id="panel-game">
+    <div class="card">
+      <h2>試合を記録</h2>
+      <label for="gameDate">試合日</label>
+      <input id="gameDate" type="date" />
+      <label for="opp" style="margin-top:14px;">相手チーム</label>
+      <input id="opp" type="text" placeholder="〇〇ジュニア" />
+      <div class="row2" style="margin-top:14px;">
+        <div><label for="us">自チーム得点</label><input id="us" type="number" inputmode="numeric" value="0" /></div>
+        <div><label for="them">相手得点</label><input id="them" type="number" inputmode="numeric" value="0" /></div>
+      </div>
+      <label style="margin-top:14px;">区分</label>
+      <div class="kinds" id="kindKinds">
+        <button class="kind-btn active" data-kind="大会">大会</button>
+        <button class="kind-btn" data-kind="練習試合">練習試合</button>
+      </div>
+      <label style="margin-top:14px;">試合種別</label>
+      <div class="kinds" id="pitchKinds">
+        <button class="kind-btn" data-pitch="ティー試合">ティー試合</button>
+        <button class="kind-btn" data-pitch="投げ試合">投げ試合</button>
+      </div>
+      <div class="result-prev" id="resultPrev">判定：引分 △</div>
+      <div class="editing-note" id="gameEditNote"></div>
+      <button class="submit" id="gameSubmit">＋ この試合を記録</button>
+      <button class="rowbtn" id="gameEditCancel" style="display:none;width:100%;margin-top:8px;padding:12px;">修正をやめる</button>
+    </div>
+    <div class="card">
+      <div class="summary-head">
+        <h2>試合 一覧</h2>
+        <select class="year-sel" id="gameYear"></select>
+        <button class="refresh" id="gameRefresh">↻</button>
+      </div>
+      <div id="gameList"><div class="loading">読み込み中…</div></div>
+    </div>
+  </div>
+
+
+</div>
+
+<div class="toast" id="toast">記録しました</div>
+
+<script>
+/* ===== 設定：GASデプロイ後のURLをここに貼る ===== */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwuFKWO06Awsft9SuP_Oj5Jc6gssisUxGFpinvAGE6BYVJKavIyKC4eD4vmX10w7sSW/exec";
+
+/* 協力項目（役割）。増減可。 */
+const TASKS = ["スコア","配車","給水","塁審"];
+
+let CHILDREN=[], YEARS=[], CUR_YEAR=null, GAME_DATES=[];
+let selectedKind="大会", selectedPitch="";
+let editingGameTs=null, GAMES_CACHE=[], COOPLOG_CACHE=[];
+/* 一括入力の選択状態： selection[役割] = Set(児童名) */
+let selection={};
+TASKS.forEach(t=>selection[t]=new Set());
+
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById("panel-"+t.dataset.panel).classList.add("active");
+    if(t.dataset.panel==="game")loadGameList();
+    if(t.dataset.panel==="coop")loadCoopSummary();
+  };
+});
+function toast(msg,isErr){const t=document.getElementById("toast");t.textContent=msg;t.className="toast show"+(isErr?" err":"");setTimeout(()=>t.className="toast",1800);}
+
+/* ===== フロント メモリキャッシュ（同一URLは一定時間 再取得しない。書き込みで全クリア、↻でfresh） ===== */
+const _mem={}; const MEM_TTL=60000;
+async function cachedGet(url,fresh){
+  const now=Date.now();
+  if(!fresh){const c=_mem[url];if(c&&now-c.t<MEM_TTL)return JSON.parse(c.s);}
+  const u=fresh?(url+(url.indexOf('?')>=0?'&':'?')+'fresh=1'):url;
+  const s=await (await fetch(u)).text();
+  _mem[url]={t:now,s:s};
+  return JSON.parse(s);
+}
+function clearMem(){for(const k in _mem)delete _mem[k];}
+
+/* ---- 一括入力フォーム生成 ---- */
+function buildRoles(){
+  const wrap=document.getElementById("roles");wrap.innerHTML="";
+  TASKS.forEach(role=>{
+    const block=document.createElement("div");block.className="role";
+    const head=document.createElement("div");head.className="role-head";
+    head.innerHTML=`<span class="role-name">${role}</span><span class="role-count" id="cnt-${role}">選択 0</span>`;
+    block.appendChild(head);
+    const chips=document.createElement("div");chips.className="chips";
+    CHILDREN.forEach(name=>{
+      const c=document.createElement("button");c.className="chip";c.type="button";c.textContent=name;
+      c.onclick=()=>{
+        if(selection[role].has(name)){selection[role].delete(name);c.classList.remove("on");}
+        else{selection[role].add(name);c.classList.add("on");}
+        document.getElementById("cnt-"+role).textContent="選択 "+selection[role].size;
+        updateSelSum();
+      };
+      chips.appendChild(c);
+    });
+    block.appendChild(chips);wrap.appendChild(block);
+  });
+}
+function totalSelected(){let n=0;TASKS.forEach(t=>n+=selection[t].size);return n;}
+function updateSelSum(){
+  const n=totalSelected();
+  document.getElementById("selSum").textContent="選択 "+n+" 名";
+  document.getElementById("coopSubmit").disabled=!(n>0 && document.getElementById("coopDate").value);
+}
+function clearSelection(){
+  TASKS.forEach(t=>selection[t].clear());
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));
+  TASKS.forEach(t=>document.getElementById("cnt-"+t).textContent="選択 0");
+  updateSelSum();
+}
+
+document.getElementById("coopSubmit").onclick=async()=>{
+  const date=document.getElementById("coopDate").value;
+  if(!date||totalSelected()===0)return;
+  const entries=[];
+  TASKS.forEach(role=>selection[role].forEach(name=>entries.push({child:name,task:role})));
+  const btn=document.getElementById("coopSubmit");btn.disabled=true;btn.textContent="送信中…";
+  try{
+    await fetch(GAS_URL,{method:"POST",body:JSON.stringify({type:"coopBatch",date:date,entries:entries})});
+    toast(entries.length+"件を記録しました ✓");clearSelection();
+    clearMem();loadCoopSummary();
+  }catch(e){toast("送信に失敗しました",true);}
+  btn.textContent="＋ まとめて記録";updateSelSum();
+};
+
+/* ---- 試合記録 ---- */
+function bindKindGroup(containerId,attr,setter){
+  const c=document.getElementById(containerId);
+  c.querySelectorAll(".kind-btn").forEach(b=>{b.onclick=()=>{
+    c.querySelectorAll(".kind-btn").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");setter(b.dataset[attr]);
+  };});
+}
+bindKindGroup("kindKinds","kind",v=>selectedKind=v);
+bindKindGroup("pitchKinds","pitch",v=>selectedPitch=v);
+function judge(){const u=+document.getElementById("us").value,t=+document.getElementById("them").value,el=document.getElementById("resultPrev");
+  if(u>t){el.innerHTML='判定：<span style="color:var(--green)">勝ち 〇</span>';return;}
+  if(u<t){el.innerHTML='判定：<span style="color:var(--red)">負け ●</span>';return;}
+  el.innerHTML='判定：<span style="color:var(--muted)">引分 △</span>';}
+document.getElementById("us").oninput=judge;document.getElementById("them").oninput=judge;
+document.getElementById("gameSubmit").onclick=async()=>{
+  const date=document.getElementById("gameDate").value;
+  const opp=document.getElementById("opp").value.trim();
+  if(!date){toast("試合日を入力してください",true);return;}
+  if(!opp){toast("相手チームを入力してください",true);return;}
+  if(!selectedPitch){toast("試合種別（ティー/投げ）を選んでください",true);return;}
+  const btn=document.getElementById("gameSubmit");btn.disabled=true;btn.textContent="送信中…";
+  const payload={type:"game",date:date,opp:opp,us:+document.getElementById("us").value,them:+document.getElementById("them").value,kind:selectedKind,pitch:selectedPitch};
+  if(editingGameTs)payload.editTs=editingGameTs;
+  try{await fetch(GAS_URL,{method:"POST",body:JSON.stringify(payload)});
+    toast(editingGameTs?"試合を修正しました ✓":"試合を記録しました ✓");
+    document.getElementById("opp").value="";document.getElementById("us").value=0;document.getElementById("them").value=0;judge();
+    document.querySelectorAll("#pitchKinds .kind-btn").forEach(x=>x.classList.remove("active"));selectedPitch="";
+    cancelGameEdit();
+    clearMem();loadGameList();refreshDates();}catch(e){toast("送信に失敗しました",true);}
+  btn.textContent=editingGameTs?"✓ この内容で修正保存":"＋ この試合を記録";btn.disabled=false;
+};
+/* 試合の修正モード解除 */
+function cancelGameEdit(){
+  editingGameTs=null;
+  document.getElementById("gameEditNote").style.display="none";
+  document.getElementById("gameEditCancel").style.display="none";
+  document.getElementById("gameSubmit").textContent="＋ この試合を記録";
+}
+document.getElementById("gameEditCancel").onclick=()=>{cancelGameEdit();
+  document.getElementById("opp").value="";document.getElementById("us").value=0;document.getElementById("them").value=0;judge();
+  document.querySelectorAll("#pitchKinds .kind-btn").forEach(x=>x.classList.remove("active"));selectedPitch="";
+};
+/* 一覧から「修正」：フォームに読み込む */
+function editGame(ts){
+  const g=GAMES_CACHE.find(x=>String(x.ts)===String(ts));if(!g)return;
+  editingGameTs=g.ts;
+  document.getElementById("gameDate").value=(g.date||"").replace(/\//g,"-");
+  document.getElementById("opp").value=g.opp||"";
+  document.getElementById("us").value=g.us||0;document.getElementById("them").value=g.them||0;judge();
+  selectedKind=g.kind||"大会";
+  document.querySelectorAll("#kindKinds .kind-btn").forEach(b=>b.classList.toggle("active",b.dataset.kind===selectedKind));
+  selectedPitch=g.pitch||"";
+  document.querySelectorAll("#pitchKinds .kind-btn").forEach(b=>b.classList.toggle("active",b.dataset.pitch===selectedPitch));
+  document.getElementById("gameSubmit").textContent="✓ この内容で修正保存";
+  const note=document.getElementById("gameEditNote");note.style.display="block";note.textContent="✏️ "+(g.date||"")+" vs "+(g.opp||"")+" を修正中。直して「修正保存」を押してください。";
+  document.getElementById("gameEditCancel").style.display="block";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+/* 一覧から「削除」 */
+async function delGame(ts){
+  const g=GAMES_CACHE.find(x=>String(x.ts)===String(ts));if(!g)return;
+  if(!confirm((g.date||"")+" vs "+(g.opp||"")+" の試合記録を削除します。よろしいですか？"))return;
+  try{await fetch(GAS_URL,{method:"POST",body:JSON.stringify({type:"deleteRecord",sheet:"game",ts:ts})});
+    toast("削除しました");clearMem();loadGameList();refreshDates();
+  }catch(e){toast("削除に失敗しました",true);}
+}
+
+/* ---- データ取得 ---- */
+async function init(){
+  try{
+    const d=await cachedGet(GAS_URL+"?view=init");
+    CHILDREN=d.roster||[];YEARS=d.years||[];CUR_YEAR=d.currentYear||YEARS[0];GAME_DATES=d.gameDates||[];
+    buildRoles();fillDateSelect();
+    [document.getElementById("coopYear"),document.getElementById("gameYear")].forEach(sel=>{
+      sel.innerHTML="";YEARS.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;sel.appendChild(o);});if(CUR_YEAR)sel.value=CUR_YEAR;});
+    renderCoop(d.coopSummary||{});renderCoopLog(d.coopLog||[]);updateSelSum();
+  }catch(e){document.getElementById("coopRank").innerHTML='<div class="loading">データを取得できませんでした。GAS_URLの設定を確認してください。</div>';}
+}
+function fillDateSelect(){
+  const sel=document.getElementById("coopDate");sel.innerHTML="";
+  if(!GAME_DATES.length){const o=document.createElement("option");o.value="";o.textContent="（先に試合記録タブで試合日を登録）";sel.appendChild(o);return;}
+  GAME_DATES.forEach(g=>{const o=document.createElement("option");o.value=g.date;o.textContent=g.date+"　vs "+g.opp;sel.appendChild(o);});
+  sel.onchange=updateSelSum;
+}
+async function refreshDates(fresh){
+  try{const d=await cachedGet(GAS_URL+"?view=dates",fresh);GAME_DATES=d.gameDates||[];fillDateSelect();updateSelSum();}catch(e){}
+}
+async function loadCoopSummary(fresh){const el=document.getElementById("coopRank");el.innerHTML='<div class="loading">読み込み中…</div>';
+  try{const d=await cachedGet(GAS_URL+"?view=coop&year="+encodeURIComponent(document.getElementById("coopYear").value),fresh);renderCoop(d.coopSummary||{});renderCoopLog(d.coopLog||[]);}
+  catch(e){el.innerHTML='<div class="loading">取得できませんでした。</div>';}}
+/* 協力ログ明細（削除用） */
+function renderCoopLog(list){
+  COOPLOG_CACHE=list||[];
+  const el=document.getElementById("coopLogList");
+  if(!list.length){el.innerHTML='<div class="loading">この年度の協力記録はまだありません。</div>';return;}
+  el.innerHTML=list.map((r,i)=>'<div class="clog-row"><span class="cl-main">'+r.child+'　<b>'+r.task+'</b><br><span class="cl-date">'+r.date+'</span></span>'
+    +'<button class="rowbtn del" onclick="delCoop('+i+')">削除</button></div>').join("");
+}
+async function delCoop(i){
+  const r=COOPLOG_CACHE[i];if(!r)return;
+  if(!confirm(r.date+"　"+r.child+"（"+r.task+"）の協力記録を削除します。よろしいですか？"))return;
+  try{await fetch(GAS_URL,{method:"POST",body:JSON.stringify({type:"deleteRecord",sheet:"log",ts:r.ts,child:r.child,task:r.task})});
+    toast("削除しました");clearMem();loadCoopSummary();
+  }catch(e){toast("削除に失敗しました",true);}
+}
+async function loadGameList(fresh){const el=document.getElementById("gameList");el.innerHTML='<div class="loading">読み込み中…</div>';
+  try{const d=await cachedGet(GAS_URL+"?view=game&year="+encodeURIComponent(document.getElementById("gameYear").value),fresh);renderGameList(d.games||[]);}
+  catch(e){el.innerHTML='<div class="loading">取得できませんでした。</div>';}}
+
+document.getElementById("coopRefresh").onclick=()=>loadCoopSummary(true);
+document.getElementById("coopYear").onchange=()=>loadCoopSummary();
+document.getElementById("gameRefresh").onclick=()=>loadGameList(true);
+document.getElementById("gameYear").onchange=()=>loadGameList();
+
+/* ---- 描画：協力集計（名簿順固定＋バー＋表） ---- */
+function renderCoop(data){
+  const rows=CHILDREN.map(name=>{
+    const r=data[name]||{};let total=0;const cells={};
+    TASKS.forEach(t=>{cells[t]=r[t]||0;total+=cells[t];});
+    return {name:name,cells:cells,total:total};
+  });
+  const totals=rows.map(r=>r.total);
+  const max=Math.max(1,...totals);
+  const nonzero=totals.filter(v=>v>0);
+  const min=nonzero.length?Math.min(...nonzero):0;
+  /* バー一覧（名簿順） */
+  let h="";
+  rows.forEach(r=>{
+    const pct=Math.round(r.total/max*100);
+    const isMax=r.total===max&&r.total>0;
+    const isMin=r.total===min&&r.total>0&&max!==min;
+    const col=isMax?"#D85A30":isMin?"#85B7EB":"#9FE1CB";
+    const det=TASKS.map(t=>t.charAt(0)+r.cells[t]).join("・");
+    let badge="";if(isMax)badge='<span class="badge max">最多</span>';else if(isMin)badge='<span class="badge min">最少</span>';
+    h+=`<div class="rankrow"><div class="top"><span class="nm">${r.name}${badge}</span>`+
+       `<span class="det">計 ${r.total}　<span style="font-size:.72rem">${det}</span></span></div>`+
+       `<div class="track"><div class="fill" style="width:${pct}%;background:${col}"></div></div></div>`;
+  });
+  document.getElementById("coopRank").innerHTML=h;
+  /* 詳細テーブル */
+  let t='<table><thead><tr><th>児童</th>';TASKS.forEach(c=>t+=`<th>${c}</th>`);t+='<th>計</th></tr></thead><tbody>';
+  const colT={};TASKS.forEach(c=>colT[c]=0);let grand=0;
+  rows.forEach(r=>{t+=`<tr><td>${r.name}</td>`;TASKS.forEach(c=>{t+=`<td>${r.cells[c]||""}</td>`;colT[c]+=r.cells[c];});grand+=r.total;t+=`<td class="total">${r.total||""}</td></tr>`;});
+  t+='</tbody><tfoot><tr><td>合計</td>';TASKS.forEach(c=>t+=`<td>${colT[c]}</td>`);t+=`<td class="total">${grand}</td></tr></tfoot></table>`;
+  document.getElementById("coopTable").innerHTML=t;
+}
+/* 表示専用：yyyy/MM/dd → M/D（内部の年・年度処理は変更しない） */
+function mmdd(dateStr){const p=String(dateStr||"").split("/");if(p.length<3)return dateStr||"";return parseInt(p[1],10)+"/"+parseInt(p[2],10);}
+function renderGameList(games){
+  GAMES_CACHE=games||[];
+  if(!games.length){document.getElementById("gameList").innerHTML='<div class="loading">この年度の試合記録はまだありません。</div>';return;}
+  let html='<table><thead><tr><th>日付</th><th>区分</th><th>種別</th><th>相手</th><th>スコア</th><th>結果</th><th>操作</th></tr></thead><tbody>';
+  games.forEach(g=>{const col=g.result==="〇"?"var(--green)":g.result==="●"?"var(--red)":"var(--muted)";
+    const pitch=g.pitch?(g.pitch==="ティー試合"?"ティー":g.pitch==="投げ試合"?"投げ":g.pitch):"-";
+    html+=`<tr><td style="white-space:nowrap">${mmdd(g.date)}</td><td>${g.kind}</td><td style="font-size:.78rem">${pitch}</td><td>${g.opp}</td><td style="white-space:nowrap;font-weight:700">${g.us}-${g.them}</td><td style="font-weight:800;color:${col}">${g.result}</td>`+
+      `<td><div style="display:flex;flex-direction:column;gap:5px;align-items:stretch"><button class="rowbtn edit" style="margin:0" onclick="editGame('${g.ts}')">修正</button><button class="rowbtn del" style="margin:0" onclick="delGame('${g.ts}')">削除</button></div></td></tr>`;});
+  html+='</tbody></table>';document.getElementById("gameList").innerHTML=html;
+}
+
+judge();init();
+</script>
+</body>
+</html>

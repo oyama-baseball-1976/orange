@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オレンジライン 幹事用 集金チェック</title>
+<style>
+  :root{
+    --ink:#1a2238;--orange:#f06a1e;--orange-soft:#ffe9dc;--line:#e3e6ee;
+    --bg:#f7f8fb;--green:#1f9d63;--red:#d64545;--blue:#378add;--muted:#6b7280;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6;padding-bottom:40px;}
+  header{background:#2a3550;color:#fff;padding:18px 16px;position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+  header h1{margin:0;font-size:1.12rem;letter-spacing:.02em;}
+  header p{margin:2px 0 0;font-size:.76rem;opacity:.9;}
+  .wrap{max-width:680px;margin:0 auto;padding:16px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 16px;margin-bottom:16px;}
+  .card h2{margin:0 0 14px;font-size:.95rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;}
+  .summary-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+  .summary-head h2{margin:0;}
+  .refresh{background:none;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:.82rem;color:var(--muted);cursor:pointer;}
+  .warn{background:#fff7e6;border:1px solid #ffe0a3;border-radius:10px;padding:10px 12px;font-size:.78rem;color:#8a5a00;margin-bottom:14px;}
+  .k-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;}
+  .k-stat{background:var(--bg);border-radius:10px;padding:12px;}
+  .k-stat .lbl{font-size:.72rem;color:var(--muted);}
+  .k-stat .val{font-size:1.25rem;font-weight:800;}
+  .paid-yes{color:var(--green);font-weight:800;}
+  .paid-no{color:var(--red);font-weight:800;}
+  .unpaid-box{background:#fff0f0;border-radius:10px;padding:10px 12px;font-size:.82rem;color:#9a2a2a;margin-top:10px;}
+  .fcard{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#fff;}
+  .fc-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
+  .fc-name{font-weight:800;font-size:1.05rem;}
+  .fc-people{font-size:.76rem;color:var(--muted);margin-bottom:6px;}
+  .fc-menu{background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:8px;}
+  .fc-menu .fm-item{font-size:.92rem;font-weight:600;padding:2px 0;}
+  .fc-menu .fm-pres{font-size:.82rem;color:#a03060;padding-top:3px;border-top:1px dashed #e3c9d6;margin-top:4px;}
+  .fc-amt{font-size:.9rem;}
+  .fc-amt b{font-size:1.3rem;color:var(--orange);}
+  .fc-brk{font-size:.68rem;color:var(--muted);margin-left:6px;white-space:nowrap;}
+  .pay-btn{min-width:64px;padding:9px 12px;border-radius:999px;font-weight:800;font-size:.86rem;cursor:pointer;border:2px solid;}
+  .pay-btn.yes{background:#e9f8f0;border-color:var(--green);color:var(--green);}
+  .pay-btn.no{background:#fff0f0;border-color:var(--red);color:var(--red);}
+  .pay-btn:disabled{opacity:.5;}
+  .loading{text-align:center;color:var(--muted);padding:20px;font-size:.88rem;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--green);color:#fff;
+    padding:14px 22px;border-radius:999px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;z-index:30;box-shadow:0 4px 16px rgba(0,0,0,.2);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.err{background:var(--red);}
+</style>
+</head>
+<body>
+<header>
+  <h1>🔑 幹事用 集金チェック</h1>
+  <p>支払い済みを付ける操作（幹事専用ページ）</p>
+</header>
+
+<div class="wrap">
+  <div class="warn">このページは幹事専用です。URLを父母に共有しないでください。支払い状況は全員向けの会計画面にも反映されます（閲覧は全員可・操作は幹事のみ）。</div>
+
+  <div class="card">
+    <div class="summary-head">
+      <h2 id="kEvent">集金サマリー</h2>
+      <button class="refresh" id="kRefresh">↻</button>
+    </div>
+    <div id="kSummary"><div class="loading">読み込み中…</div></div>
+  </div>
+
+  <div class="card">
+    <h2>家庭別 集金チェック</h2>
+    <div id="kFamilies"><div class="loading">読み込み中…</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">更新しました</div>
+
+<script>
+/* ===== 設定：GASのウェブアプリURL（全員向けと同じGAS） ===== */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwuFKWO06Awsft9SuP_Oj5Jc6gssisUxGFpinvAGE6BYVJKavIyKC4eD4vmX10w7sSW/exec";
+
+let EVENT="";
+
+function esc(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function toast(msg,isErr){const t=document.getElementById("toast");t.textContent=msg;t.className="toast show"+(isErr?" err":"");setTimeout(()=>t.className="toast",1800);}
+
+/* ===== フロント メモリキャッシュ（同一URLは一定時間 再取得しない。書き込みで全クリア、↻でfresh） ===== */
+const _mem={}; const MEM_TTL=60000;
+async function cachedGet(url,fresh){
+  const now=Date.now();
+  if(!fresh){const c=_mem[url];if(c&&now-c.t<MEM_TTL)return JSON.parse(c.s);}
+  const u=fresh?(url+(url.indexOf('?')>=0?'&':'?')+'fresh=1'):url;
+  const s=await (await fetch(u)).text();
+  _mem[url]={t:now,s:s};
+  return JSON.parse(s);
+}
+function clearMem(){for(const k in _mem)delete _mem[k];}
+
+async function load(fresh){
+  document.getElementById("kFamilies").innerHTML='<div class="loading">読み込み中…</div>';
+  try{
+    const d=await cachedGet(GAS_URL+"?view=kaikei",fresh);
+    render(d.kaikei||{families:[],summary:{}});
+  }catch(e){document.getElementById("kFamilies").innerHTML='<div class="loading">取得できませんでした。GAS_URLを確認してください。</div>';}
+}
+
+function render(k){
+  EVENT=k.event||"";
+  document.getElementById("kEvent").textContent=(EVENT?EVENT+"　":"")+"集金サマリー";
+  const s=k.summary||{};
+  document.getElementById("kSummary").innerHTML=
+    '<div class="k-summary">'
+    +'<div class="k-stat"><div class="lbl">総額</div><div class="val">'+(s.grand||0).toLocaleString()+' 円</div></div>'
+    +'<div class="k-stat"><div class="lbl">家庭数</div><div class="val">'+(s.families||0)+'</div></div>'
+    +'<div class="k-stat"><div class="lbl">集金済み</div><div class="val paid-yes">'+(s.paid||0).toLocaleString()+' 円</div></div>'
+    +'<div class="k-stat"><div class="lbl">未集金</div><div class="val paid-no">'+(s.unpaid||0).toLocaleString()+' 円</div></div>'
+    +'</div>'
+    +((s.unpaidNames&&s.unpaidNames.length)?'<div class="unpaid-box">未払い：'+s.unpaidNames.map(esc).join("、")+'</div>':'<div class="unpaid-box" style="background:#eafff3;color:#0f7a47">全員集金済みです 🎉</div>');
+
+  const fam=k.families||[];
+  if(!fam.length){document.getElementById("kFamilies").innerHTML='<div class="loading">まだ注文がありません。</div>';return;}
+  const box=document.getElementById("kFamilies");box.innerHTML="";
+  fam.forEach(f=>{
+    // メニューを名前ごとに個数集計（見やすく・集金ミス防止）
+    const agg={},order=[];
+    (f.items||[]).forEach(it=>{const m=esc(it.menu);if(!agg[m]){agg[m]=0;order.push(m);}agg[m]++;});
+    let menuHtml=order.length?order.map(m=>'<div class="fm-item">'+m+' ×'+agg[m]+'</div>').join(""):'<div class="fm-item" style="color:var(--muted)">（メニューなし）</div>';
+    if((f.present||0)>0)menuHtml+='<div class="fm-pres">🎁 プレゼント代 '+(f.present||0).toLocaleString()+'円（子ども'+f.child+'人）</div>';
+    const brk=(f.present||0)>0?'<span class="fc-brk">(ﾒﾆｭｰ'+(f.menuTotal||0).toLocaleString()+'＋ﾌﾟﾚ'+(f.present||0).toLocaleString()+')</span>':'';
+    const card=document.createElement("div");card.className="fcard";
+    card.innerHTML='<div class="fc-top"><span class="fc-name">'+esc(f.name)+'</span>'
+      +'<button class="pay-btn '+(f.paid?'yes':'no')+'">'+(f.paid?'済':'未')+'</button></div>'
+      +'<div class="fc-people">子ども '+f.child+'人・大人 '+f.adult+'人</div>'
+      +'<div class="fc-menu">'+menuHtml+'</div>'
+      +'<div class="fc-amt">合計 <b>'+(f.total||0).toLocaleString()+'円</b>'+brk+'</div>';
+    const btn=card.querySelector(".pay-btn");
+    btn.onclick=()=>togglePaid(f.name,f.paid,btn);
+    box.appendChild(card);
+  });
+}
+
+async function togglePaid(name,current,btn){
+  const next=!current;
+  btn.disabled=true;btn.textContent="…";
+  try{
+    await fetch(GAS_URL,{method:"POST",body:JSON.stringify({type:"setPaid",event:EVENT,name:name,paid:next})});
+    toast(name+" を「"+(next?"済":"未")+"」にしました");
+    clearMem();load();
+  }catch(e){toast("更新に失敗しました",true);btn.disabled=false;btn.textContent=current?"済":"未";}
+}
+
+document.getElementById("kRefresh").onclick=()=>load(true);
+load();
+</script>
+</body>
+</html>
