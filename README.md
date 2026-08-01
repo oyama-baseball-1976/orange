@@ -18,25 +18,24 @@
 ---
 
 ## 構成
-
 orange/
-├ index.html 父母向けマニュアル（トップページ）
-├ images/ マニュアル用の画像
+├ index.html                      父母向けマニュアル（トップページ）
+├ images/                         マニュアル用の画像
 │
-├ orange_Award_Production.html 成績入力・表彰・スタンプ
-├ index_Production.html 協力ログ・試合記録
-├ accounting_Production.html 懇親会 注文・会計
-├ organizer_Production.html 集金チェック（URL非公開）
+├ orange_Award_Production.html    成績入力・表彰・スタンプ
+├ index_Production.html           協力ログ・試合記録
+├ accounting_Production.html      懇親会 注文・会計
+├ organizer_Production.html       集金チェック（URL非公開）
 │
-├ docs/ 幹事向けドキュメント
-│ ├ 本番運用手順書.md
-│ ├ 年度替わり作業手順書.md
-│ └ GASコード.txt
+├ docs/                           幹事向けドキュメント
+│   ├ 本番運用手順書.md
+│   ├ 年度替わり作業手順書.md
+│   └ GASコード.txt
 │
-└ archive/ 過去の制作物（コードのみ）
-├ orange_movie.html 変遷映像
-├ presentation.html 表彰スライド
-└ README.md 必要な素材フォルダの説明
+└ archive/                        過去の制作物（コードのみ）
+    ├ orange_movie.html           変遷映像
+    ├ presentation.html           表彰スライド
+    └ README.md                   必要な素材フォルダの説明
 ---
 
 ## 仕組み
