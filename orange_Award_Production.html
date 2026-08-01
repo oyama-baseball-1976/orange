@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小山少年野球団オレンジ成績</title>
+<style>
+  :root{
+    --ink:#1a2238;--orange:#f06a1e;--orange-soft:#ffe9dc;--line:#e3e6ee;
+    --bg:#f7f8fb;--green:#1f9d63;--red:#d64545;--blue:#378add;--muted:#6b7280;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6;padding-bottom:40px;}
+  header{background:var(--orange);color:#fff;padding:18px 16px;position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+  header h1{margin:0;font-size:1.15rem;letter-spacing:.02em;}
+  header p{margin:2px 0 0;font-size:.78rem;opacity:.92;}
+  /* ver020：マニュアル（使い方）へのリンク。ヘッダーは sticky なので常に画面上部に見える。
+     タイトルの右の空きスペースに置くので、タブ・フィルタ・入力欄・記録ボタンには重ならない。 */
+  .manual-link{position:absolute;top:50%;right:12px;transform:translateY(-50%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    min-width:60px;min-height:44px;padding:4px 8px;background:#fff;color:var(--orange);
+    border-radius:12px;font-size:.66rem;font-weight:800;line-height:1.2;text-decoration:none;
+    box-shadow:0 2px 6px rgba(0,0,0,.18);}
+  .manual-link .ml-ic{font-size:1.05rem;line-height:1;}
+  .manual-link:active{transform:translateY(-50%) scale(.96);}
+  /* 画面のせまい端末では、タイトルを少し小さく＋ボタンも小さくして重ならないようにする
+     （ヘッダーの高さは変えないので、タブバーの位置には影響しない） */
+  @media(max-width:359px){
+    header h1{font-size:1.02rem;}
+    .manual-link{min-width:44px;padding:4px 5px;font-size:.6rem;}
+    .manual-link .ml-ic{font-size:.95rem;}
+  }
+  .tabbar{display:flex;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:62px;z-index:9;}
+  .tab{flex:1;padding:10px 2px;text-align:center;font-size:.8rem;font-weight:700;color:var(--muted);
+    border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;
+    display:flex;align-items:center;justify-content:center;line-height:1.18;min-height:48px;}
+  .tab.active{color:var(--orange);border-bottom-color:var(--orange);}
+  .wrap{max-width:680px;margin:0 auto;padding:16px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 16px;margin-bottom:16px;}
+  .card h2{margin:0 0 14px;font-size:.95rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;}
+  label{display:block;font-size:.82rem;font-weight:700;margin:0 0 6px;}
+  select,input[type=text],input[type=number],input[type=date]{width:100%;padding:13px 12px;font-size:1.05rem;border:2px solid var(--line);
+    border-radius:10px;background:#fff;color:var(--ink);appearance:none;}
+  select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;}
+  .field{margin-bottom:14px;}
+  .num-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .num-grid .field{margin-bottom:0;}
+  .pos-chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{font-size:.9rem;padding:9px 13px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;}
+  .chip.on{background:var(--orange-soft);border-color:var(--orange);color:var(--orange);font-weight:700;}
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .seg-btn{padding:10px 6px;font-size:.98rem;font-weight:700;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2;min-height:56px;}
+  .seg-btn .sg-mark{font-size:1.3rem;line-height:1;}
+  .seg-btn .sg-word{font-size:.78rem;}
+  .seg-btn.on{background:var(--orange-soft);border-color:var(--orange);color:var(--orange);}
+  .seg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .submit{width:100%;margin-top:8px;padding:18px;font-size:1.12rem;font-weight:800;border:none;border-radius:12px;background:var(--orange);color:#fff;cursor:pointer;}
+  .submit:disabled{opacity:.45;}
+  .submit:active{transform:translateY(1px);}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--green);color:#fff;
+    padding:14px 22px;border-radius:999px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;z-index:30;box-shadow:0 4px 16px rgba(0,0,0,.2);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.err{background:var(--red);}
+  .summary-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+  .summary-head h2{margin:0;}
+  .year-sel{width:auto;min-width:110px;padding:8px 30px 8px 12px;font-size:.9rem;}
+  .refresh{background:none;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:.82rem;color:var(--muted);cursor:pointer;white-space:nowrap;}
+  .loading{text-align:center;color:var(--muted);padding:20px;font-size:.88rem;}
+  .note{font-size:.74rem;color:var(--muted);margin-top:10px;}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;}
+  th,td{padding:8px 5px;text-align:center;border-bottom:1px solid var(--line);}
+  th{font-size:.7rem;color:var(--muted);}
+  th:first-child,td:first-child{text-align:left;font-weight:700;white-space:nowrap;}
+  tfoot td{font-weight:800;border-top:2px solid var(--ink);border-bottom:none;color:var(--orange);}
+  .help{background:var(--orange-soft);border-radius:10px;padding:10px 12px;font-size:.78rem;color:#9a4a1a;margin-bottom:14px;}
+
+  /* ===== ver019：全タブ共通フィルタのバー（タブバーの下に固定） ===== */
+  /* 初期表示は成績入力タブなので既定は非表示。タブ切替時にJSで出し入れする */
+  .gfilter{background:#fff;border-bottom:1px solid var(--line);padding:8px 12px;display:none;flex-wrap:wrap;gap:6px 16px;
+    position:sticky;top:104px;z-index:8;}
+  .gf-row{display:flex;align-items:center;gap:8px;}
+  .gf-lbl{font-size:.72rem;font-weight:800;color:var(--muted);}
+  .gfilter .kind-filter button{padding:5px 11px;font-size:.74rem;}
+
+  /* ===== ver019：入力確認＝スマホはカード／PCは表（表示だけの切り替え。動作は同じ） ===== */
+  .check-sp{display:none;}
+  .chk-card{border:2px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px;background:#fff;}
+  .chk-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:2px solid var(--orange-soft);padding-bottom:8px;margin-bottom:10px;}
+  .chk-date{font-weight:800;color:var(--orange);font-size:.95rem;white-space:nowrap;}
+  .chk-name{font-weight:800;font-size:1.02rem;}
+  .chk-items{display:flex;flex-wrap:wrap;gap:6px;}
+  .chk-item{background:#faf7f4;border-radius:9px;padding:5px 9px;font-size:.82rem;white-space:nowrap;}
+  .chk-item b{font-size:.95rem;margin-left:3px;}
+  .chk-item.wide{width:100%;white-space:normal;}
+  .chk-ops{display:flex;gap:10px;margin-top:12px;}
+  .chk-ops button{flex:1;padding:12px 0;font-size:.92rem;font-weight:800;border-radius:10px;border:2px solid var(--line);background:#fff;cursor:pointer;}
+  .chk-ops .edit{border-color:var(--orange);color:var(--orange);}
+  .chk-ops .del{border-color:#e08585;color:#c94a4a;}
+  @media(max-width:640px){
+    .check-sp{display:block;}
+    .check-pc{display:none;}
+  }
+
+  /* ===== カラフルポップ表彰画面 ===== */
+  .cer-bar{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;}
+  .kind-filter{display:flex;gap:6px;}
+  .kind-filter button{font-size:.78rem;font-weight:800;padding:7px 13px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;}
+  .kind-filter button.on{background:var(--orange-soft);border-color:var(--orange);color:var(--orange);}
+  .filter-wrap{margin:0 0 12px;}
+  .cer-banner{position:relative;text-align:center;color:#fff;border-radius:20px;padding:22px 16px 20px;margin-bottom:18px;overflow:hidden;
+    background:linear-gradient(135deg,#ff9a3c 0%,#ff5e62 50%,#f06a1e 100%);box-shadow:0 8px 24px rgba(240,106,30,.28);}
+  .cer-banner::before{content:"";position:absolute;inset:0;background:
+    radial-gradient(circle at 15% 20%,rgba(255,255,255,.35) 0 6px,transparent 7px),
+    radial-gradient(circle at 80% 30%,rgba(255,255,255,.25) 0 5px,transparent 6px),
+    radial-gradient(circle at 65% 80%,rgba(255,255,255,.3) 0 5px,transparent 6px),
+    radial-gradient(circle at 30% 75%,rgba(255,255,255,.2) 0 4px,transparent 5px);pointer-events:none;}
+  .cer-emoji{font-size:2.6rem;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.2));}
+  .cer-title{margin:6px 0 4px;font-size:1.32rem;font-weight:900;letter-spacing:.02em;text-shadow:0 2px 6px rgba(0,0,0,.18);}
+  .cer-sub{font-size:.8rem;opacity:.96;font-weight:700;}
+  .cer-section{margin:22px 0 10px;display:flex;align-items:center;gap:8px;font-size:1.02rem;font-weight:900;color:var(--ink);}
+  .cer-section .bar{flex:1;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--orange),transparent);}
+  .award-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .award-card{position:relative;border-radius:18px;padding:16px 12px 14px;color:#fff;text-align:center;overflow:hidden;
+    box-shadow:0 6px 16px rgba(0,0,0,.14);min-height:128px;display:flex;flex-direction:column;justify-content:center;}
+  .award-card::after{content:"";position:absolute;top:-30px;right:-30px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.18);}
+  .award-card .a-emoji{font-size:2rem;line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.18));}
+  .award-card .a-name{font-size:.82rem;font-weight:900;margin:5px 0 7px;text-shadow:0 1px 3px rgba(0,0,0,.22);}
+  .award-card .a-winner{font-size:1.12rem;font-weight:900;line-height:1.25;text-shadow:0 1px 4px rgba(0,0,0,.25);word-break:break-word;}
+  .award-card .a-multi{font-size:.92rem;}
+  .award-card .a-value{display:inline-block;margin-top:7px;font-size:.74rem;font-weight:800;background:rgba(255,255,255,.28);
+    padding:3px 10px;border-radius:999px;backdrop-filter:blur(2px);}
+  .award-card .a-note{margin-top:7px;font-size:.72rem;font-weight:700;line-height:1.45;opacity:.96;text-shadow:0 1px 2px rgba(0,0,0,.22);}
+  .pos-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .pos-card{background:#fff;border:2px solid var(--line);border-radius:14px;padding:11px 12px;display:flex;align-items:center;gap:10px;}
+  .pos-card .p-ico{font-size:1.4rem;}
+  .pos-card .p-pos{font-size:.72rem;color:var(--muted);font-weight:800;}
+  .pos-card .p-win{font-size:.98rem;font-weight:900;line-height:1.2;}
+  .pos-card .p-val{font-size:.7rem;color:var(--orange);font-weight:800;}
+  .first-line{display:flex;align-items:flex-start;gap:10px;background:#fff;border:2px solid var(--line);border-left:5px solid var(--green);
+    border-radius:12px;padding:11px 13px;margin-bottom:9px;}
+  .first-line .f-child{font-weight:900;font-size:.98rem;min-width:84px;}
+  .first-tags{display:flex;flex-wrap:wrap;gap:6px;}
+  .first-tags .ft{font-size:.72rem;font-weight:800;background:#eafff3;color:#0f7a47;border-radius:999px;padding:3px 9px;white-space:nowrap;}
+  .cer-empty{text-align:center;color:var(--muted);font-size:.86rem;padding:20px;background:#fff;border-radius:12px;border:1px dashed var(--line);}
+  .manual-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+  .manual-card{background:linear-gradient(135deg,#fffaf5,#fff1e6);border:2px solid #ffd2b3;border-radius:14px;padding:12px 14px;}
+  .manual-card .m-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+  .manual-card .m-award{font-weight:900;color:#e0531a;font-size:.96rem;}
+  .manual-card .m-child{font-weight:900;font-size:1rem;}
+  .manual-card .m-comment{margin-top:6px;font-size:.84rem;color:#7a5a48;line-height:1.5;}
+  .manual-form{background:#fff;border:2px dashed var(--orange);border-radius:14px;padding:16px;margin-top:6px;}
+  .manual-form .mf-title{font-weight:900;color:var(--orange);margin-bottom:6px;}
+  .manual-form label{margin-top:12px;}
+  /* 年度成績 */
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .stat{background:var(--bg);border-radius:10px;padding:14px;}
+  .stat .lbl{font-size:.74rem;color:var(--muted);}
+  .stat .val{font-size:1.5rem;font-weight:800;}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:8px;font-size:.75rem;color:var(--muted);}
+  .legend span{display:flex;align-items:center;gap:4px;}
+  .dot{width:10px;height:10px;border-radius:2px;display:inline-block;}
+  .chart-box{position:relative;width:100%;margin-bottom:18px;}
+  /* チーム全体カード */
+  .team-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:16px;}
+  .team-card{border-radius:16px;padding:14px 8px;color:#fff;text-align:center;box-shadow:0 6px 16px rgba(0,0,0,.14);}
+  .team-card .t-emoji{font-size:1.7rem;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.2));}
+  .team-card .t-label{font-size:.68rem;font-weight:800;opacity:.96;margin-top:3px;line-height:1.25;}
+  .team-card .t-value{font-size:1.4rem;font-weight:900;line-height:1.15;margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,.22);}
+  .team-card .t-sub{font-size:.64rem;opacity:.95;margin-top:2px;}
+  .stat-filters{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+  .sf-row{display:flex;align-items:center;gap:10px;}
+  .sf-lbl{font-size:.74rem;font-weight:800;color:var(--muted);min-width:56px;}
+  /* スタンプ */
+  .stamp-head{text-align:center;background:linear-gradient(135deg,#ffb347,#f06a1e);color:#fff;border-radius:16px;padding:14px;margin-bottom:16px;box-shadow:0 6px 16px rgba(240,106,30,.25);}
+  .stamp-head .sh-name{font-size:1.25rem;font-weight:900;}
+  .stamp-head .sh-sub{font-size:.82rem;opacity:.96;margin-top:3px;font-weight:700;}
+  .stamp-head .sh-got{display:inline-block;margin-top:7px;background:rgba(255,255,255,.28);border-radius:999px;padding:3px 14px;font-size:.82rem;font-weight:800;}
+  .stamp-gtitle{display:flex;align-items:center;gap:8px;font-size:.95rem;font-weight:900;margin:18px 0 10px;}
+  .stamp-gtitle .bar{flex:1;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--orange),transparent);}
+  /* ver020：カテゴリごとの獲得数バッジ（上限なしなので「○こ」だけ出す） */
+  .stamp-gtitle .g-count{flex:none;background:var(--orange-soft);color:var(--orange);border-radius:999px;
+    padding:2px 9px;font-size:.72rem;font-weight:800;}
+  .stamp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .stamp{border-radius:16px;padding:14px 8px 12px;text-align:center;border:2px solid var(--line);position:relative;overflow:hidden;}
+  .stamp.on{border-color:transparent;color:#fff;box-shadow:0 5px 14px rgba(0,0,0,.14);}
+  .stamp.off{background:#f1f2f6;color:#a3a9b4;}
+  .stamp .s-emoji{font-size:2.1rem;line-height:1;}
+  .stamp.off .s-emoji{filter:grayscale(1);opacity:.55;}
+  .stamp .s-name{font-size:.86rem;font-weight:900;margin-top:5px;line-height:1.2;}
+  .stamp .s-cond{font-size:.68rem;margin-top:2px;opacity:.9;}
+  .stamp .s-status{margin-top:7px;font-size:.72rem;font-weight:800;}
+  .stamp.on .s-status{background:rgba(255,255,255,.3);border-radius:999px;display:inline-block;padding:2px 10px;}
+  .stamp.off .s-status{color:#e0531a;}
+  .stat-line{background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:.9rem;color:var(--muted);margin-bottom:4px;}
+  .stat-line b{color:var(--ink);font-size:1.05rem;}
+  .rowbtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 9px;font-size:.74rem;font-weight:700;cursor:pointer;margin:0 2px;}
+  .rowbtn.edit{color:var(--blue);border-color:#bcd9f4;}
+  .rowbtn.del{color:var(--red);border-color:#f4c4c4;}
+  .editing-note{background:#fff7e6;border:1px solid #ffe0a3;border-radius:10px;padding:8px 12px;font-size:.8rem;color:#8a5a00;margin-bottom:10px;display:none;}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚾ 小山少年野球団オレンジ成績</h1>
+  <p>試合ごとに個人成績を記録 / みんなの成長記録！</p>
+  <!-- ver020：入力のしかたが分からなくなったとき用。別タブで開く（入力中の数字が消えないように） -->
+  <a class="manual-link" href="https://123yooooou-art.github.io/oyama_orange_manual/" target="_blank" rel="noopener">
+    <span class="ml-ic">📖</span>使い方
+  </a>
+</header>
+
+<div class="tabbar">
+  <button class="tab active" data-panel="input">成績<br>入力</button>
+  <button class="tab" data-panel="check">入力<br>確認</button>
+  <button class="tab" data-panel="awards">賞の<br>確認</button>
+  <button class="tab" data-panel="ceremony">表彰</button>
+  <button class="tab" data-panel="stats">年度<br>成績</button>
+  <button class="tab" data-panel="stamp">スタ<br>ンプ</button>
+</div>
+
+<!-- ver019：全タブ共通のフィルタ（区分／試合種別）。タブを切り替えても条件は維持される -->
+<div class="gfilter" id="gFilterBar">
+  <div class="gf-row"><span class="gf-lbl">区分</span>
+    <div class="kind-filter" id="gBunruiFilter">
+      <button data-kind="all" class="on">全部</button>
+      <button data-kind="taikai">大会</button>
+      <button data-kind="renshu">練習</button>
+    </div>
+  </div>
+  <div class="gf-row"><span class="gf-lbl">試合種別</span>
+    <div class="kind-filter" id="gKindFilter">
+      <button data-kind="all" class="on">全部</button>
+      <button data-kind="tee">ティー</button>
+      <button data-kind="throw">投げ</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== 成績入力 ===== -->
+  <div class="panel active" id="panel-input">
+    <div class="card">
+      <h2>試合を選ぶ</h2>
+      <div class="field">
+        <label for="gameDate">試合日</label>
+        <select id="gameDate"><option>読み込み中…</option></select>
+      </div>
+      <div class="help">試合記録（勝敗）で登録済みの試合日が選べます。先に試合を登録してください。</div>
+    </div>
+
+    <div class="card">
+      <h2>選手の成績</h2>
+      <div class="field">
+        <label for="child">児童氏名</label>
+        <select id="child"><option>読み込み中…</option></select>
+      </div>
+
+      <div class="num-grid" style="margin-bottom:14px;">
+        <div class="field"><label for="daseki">打席</label><input id="daseki" type="number" inputmode="numeric" value="0" min="0"></div>
+        <div class="field"><label for="anda">安打</label><input id="anda" type="number" inputmode="numeric" value="0" min="0"></div>
+        <div class="field"><label for="daten">打点</label><input id="daten" type="number" inputmode="numeric" value="0" min="0"></div>
+        <div class="field"><label for="tokuten">得点</label><input id="tokuten" type="number" inputmode="numeric" value="0" min="0"></div>
+        <div class="field"><label for="shutsurui">出塁</label><input id="shutsurui" type="number" inputmode="numeric" value="0" min="0"></div>
+        <div class="field"><label for="daida">代打</label><input id="daida" type="number" inputmode="numeric" value="0" min="0"></div>
+        <div class="field"><label for="tourui">盗塁</label><input id="tourui" type="number" inputmode="numeric" value="0" min="0"></div>
+        <!-- ver019：四球・死球・振り逃げ（出塁の内訳。出塁欄には今までどおり「塁に出た回数すべて」を入れる） -->
+        <div class="field"><label for="bb">四球</label><input id="bb" type="number" inputmode="numeric" value="0" min="0"></div>
+        <div class="field"><label for="hbp">死球</label><input id="hbp" type="number" inputmode="numeric" value="0" min="0"></div>
+        <div class="field"><label for="furinige">振り逃げ</label><input id="furinige" type="number" inputmode="numeric" value="0" min="0"></div>
+        <!-- ver020：ホームラン（安打の内訳。安打欄には今までどおりホームランも含めて入れる） -->
+        <div class="field"><label for="hr">ホームラン</label><input id="hr" type="number" inputmode="numeric" value="0" min="0"></div>
+      </div>
+      <p class="note" style="margin:-8px 0 14px;">「出塁」は今までどおり<b>塁に出た回数すべて</b>（四球・死球・振り逃げ・エラーなども含む）を入れてください。四球・死球・振り逃げは<b>その内訳</b>の記録です（出塁に足す必要はありません）。</p>
+
+      <div class="field">
+        <label>守備位置（複数選択可）</label>
+        <div class="pos-chips" id="posChips"></div>
+      </div>
+
+      <div class="field">
+        <label>出場区分</label>
+        <div class="seg" id="segStart">
+          <button class="seg-btn on" data-v="スタメン" type="button">スタメン</button>
+          <button class="seg-btn" data-v="途中出場" type="button">途中出場</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>守備好プレー評価（任意）</label>
+        <div class="seg3" id="segPlay">
+          <button class="seg-btn on" data-v="" type="button"><span class="sg-word">なし</span></button>
+          <button class="seg-btn" data-v="○" type="button"><span class="sg-mark">○</span><span class="sg-word">good</span></button>
+          <button class="seg-btn" data-v="◎" type="button"><span class="sg-mark">◎</span><span class="sg-word">大活躍</span></button>
+        </div>
+      </div>
+
+      <div class="editing-note" id="tbEditNote"></div>
+      <button class="submit" id="submit" disabled>＋ この選手の成績を記録</button>
+      <button class="rowbtn" id="tbEditCancel" style="display:none;width:100%;margin-top:8px;padding:12px;">修正をやめる</button>
+      <p class="note">入力データ確認タブから、記録の「修正」「削除」ができます。</p>
+    </div>
+  </div>
+
+  <!-- ===== 入力データ確認 ===== -->
+  <div class="panel" id="panel-check">
+    <div class="card">
+      <div class="summary-head">
+        <h2>入力済みデータ</h2>
+        <select class="year-sel" id="checkYear"></select>
+        <button class="refresh" id="checkRefresh">↻</button>
+      </div>
+      <div id="checkList"><div class="loading">読み込み中…</div></div>
+      <p class="note">入力確認用。正しく入力できているか確認してください</p>
+    </div>
+  </div>
+
+  <!-- ===== 賞の確認（第2段階） ===== -->
+  <div class="panel" id="panel-awards">
+    <div class="card">
+      <div class="summary-head">
+        <h2>各賞の自動算出（確認用）</h2>
+        <select class="year-sel" id="awYear"></select>
+        <button class="refresh" id="awRefresh">↻</button>
+      </div>
+      <!-- ver019：区分・試合種別のフィルタは画面上部の共通バーへ移動 -->
+      <div id="awInfo" class="note" style="margin-bottom:12px;"></div>
+      <div id="awList"><div class="loading">読み込み中…</div></div>
+    </div>
+  </div>
+
+  <!-- ===== 表彰（第3段階・カラフルポップ） ===== -->
+  <div class="panel" id="panel-ceremony">
+    <!-- ver019：区分・試合種別のフィルタは画面上部の共通バーへ移動 -->
+    <div class="cer-bar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <select class="year-sel" id="cerYear"></select>
+        <button class="refresh" id="cerRefresh">↻</button>
+      </div>
+    </div>
+    <div class="cer-banner">
+      <div class="cer-emoji">🏆</div>
+      <div class="cer-title">小山少年野球団オレンジ<br>成績表彰</div>
+      <div class="cer-sub" id="cerSub">読み込み中…</div>
+    </div>
+    <div id="cerBody"><div class="loading">読み込み中…</div></div>
+  </div>
+
+  <!-- ===== 年度成績 ===== -->
+  <div class="panel" id="panel-stats">
+    <div class="card">
+      <div class="summary-head">
+        <h2>年度成績</h2>
+        <select class="year-sel" id="statsYear"></select>
+        <button class="refresh" id="statsRefresh">↻</button>
+      </div>
+      <!-- ver019：区分・試合種別のフィルタは画面上部の共通バーへ移動 -->
+      <div id="teamTop"></div>
+      <div class="stats-grid" id="statsCards"></div>
+      <div class="legend">
+        <span><span class="dot" style="background:#1D9E75;"></span>勝 <b id="lgW">0</b></span>
+        <span><span class="dot" style="background:#E24B4A;"></span>敗 <b id="lgL">0</b></span>
+        <span><span class="dot" style="background:#888780;"></span>分 <b id="lgD">0</b></span>
+      </div>
+      <div class="chart-box" style="height:180px;"><canvas id="pie" role="img" aria-label="年度の勝敗内訳"></canvas></div>
+      <div class="note" style="margin-bottom:6px;">試合ごとの得点・失点（横軸＝対戦相手）</div>
+      <div class="chart-box" style="height:220px;"><canvas id="line" role="img" aria-label="試合ごとの得点と失点"></canvas></div>
+
+      <div class="cer-section" style="font-size:.95rem">📈 チーム成長<span class="bar"></span></div>
+      <div class="filter-wrap">
+        <div class="kind-filter" id="growthToggle">
+          <button data-kind="avg" class="on">1試合平均得点</button>
+          <button data-kind="cum">通算得点</button>
+        </div>
+      </div>
+      <div class="chart-box" style="height:200px;"><canvas id="growth" role="img" aria-label="チーム成長グラフ"></canvas></div>
+
+      <div class="cer-section" style="font-size:.95rem">🔎 試合ごとの打撃<span class="bar"></span></div>
+      <div class="field" style="margin-bottom:12px;">
+        <label for="gameReviewSel">試合を選ぶ</label>
+        <select id="gameReviewSel"></select>
+      </div>
+      <div id="gameReviewBody"></div>
+    </div>
+  </div>
+
+  <!-- ===== 個人スタンプ ===== -->
+  <div class="panel" id="panel-stamp">
+    <div class="card">
+      <div class="summary-head">
+        <h2>スタンプ</h2>
+        <select class="year-sel" id="stampYear"></select>
+        <button class="refresh" id="stampRefresh">↻</button>
+      </div>
+      <div class="field">
+        <label for="stampChild">児童を選ぶ</label>
+        <select id="stampChild"></select>
+      </div>
+      <div id="stampBody"><div class="loading">読み込み中…</div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">記録しました</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+/* ===== 設定：GASのウェブアプリURLを貼る（既存システムと同じスプレッドシートのGAS） ===== */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwuFKWO06Awsft9SuP_Oj5Jc6gssisUxGFpinvAGE6BYVJKavIyKC4eD4vmX10w7sSW/exec";
+
+/* 守備位置の選択肢（必要に応じて編集） */
+const POSITIONS = ["ピッチャー","キャッチャー","ファースト","セカンド","サード","ショート","レフト","センター","ライト"];
+
+/* ===== スタンプの閾値（ここの数字だけ変えれば調整できます） ===== */
+/* ===== スタンプの設定（ここの数字・名前・絵文字を変えれば調整できます） =====
+   ver020：スタンプは「上限なし」。名前付きは各カテゴリ4つまでで、
+   5つ目以降は step の間隔で自動生成される（名前は autoFmt の {n} に数字が入る）。
+     tiers   … 名前付きスタンプ（4つまで。n＝達成に必要な数）
+     step    … 5つ目以降を作る間隔（0 または未指定＝自動生成なし＝ここで打ち止め）
+     autoFmt … 自動生成分の名前。{n} が数字に置きかわる（例："安打{n}本"）
+     autoEmoji … 自動生成分の絵文字
+   画面には「達成済みのスタンプ＋次の2個」だけが出る（未達成を全部並べない）。 */
+const STAMPS = {
+  batting: { label:"打撃スタンプ（通算安打）", metric:"anda", unit:"本",
+    grad:"linear-gradient(135deg,#ff8a00,#ff5e62)",
+    step:10, autoFmt:"安打{n}本", autoEmoji:"🏏",
+    tiers:[
+      {name:"初ヒット記念", emoji:"🎉", n:1},
+      {name:"ヒットマスター", emoji:"⭐", n:5},
+      {name:"ヒットの達人", emoji:"🔥", n:10},
+      {name:"ヒットキング", emoji:"👑", n:20}
+    ]},
+  /* ===== ver020：ホームラン ===== */
+  homerun: { label:"ホームランスタンプ（通算本塁打）", metric:"hr", unit:"本",
+    grad:"linear-gradient(135deg,#f83600,#f9d423)",
+    step:2, autoFmt:"ホームラン{n}本", autoEmoji:"💫",
+    tiers:[
+      {name:"初ホームラン", emoji:"🚀", n:1},
+      {name:"ホームラン2本", emoji:"✨", n:2},
+      {name:"ホームラン3本", emoji:"🌟", n:3},
+      {name:"ホームランバッター", emoji:"💥", n:5}
+    ]},
+  onbase: { label:"出塁スタンプ（通算出塁）", metric:"shutsurui", unit:"回",
+    grad:"linear-gradient(135deg,#11998e,#38ef7d)",
+    step:10, autoFmt:"出塁{n}回", autoEmoji:"👟",
+    tiers:[
+      {name:"初出塁", emoji:"👟", n:1},
+      {name:"チャンスメーカー", emoji:"🚀", n:10},
+      {name:"塁の主", emoji:"🏰", n:20},
+      {name:"出塁マスター", emoji:"🎓", n:30}
+    ]},
+  /* ===== ver016：追加スタンプ（打点・盗塁・代打・得点・打席） ===== */
+  rbi: { label:"打点スタンプ（通算打点）", metric:"daten", unit:"点",
+    grad:"linear-gradient(135deg,#fc6076,#ff9a44)",
+    step:10, autoFmt:"打点{n}点", autoEmoji:"💣",
+    tiers:[
+      {name:"初打点", emoji:"💥", n:1},
+      {name:"ポイントゲッター", emoji:"🎯", n:5},
+      {name:"打点マシン", emoji:"💣", n:10},
+      {name:"打点キング", emoji:"👑", n:20}
+    ]},
+  run: { label:"得点スタンプ（通算得点）", metric:"tokuten", unit:"点",
+    grad:"linear-gradient(135deg,#f7971e,#ffd200)",
+    step:10, autoFmt:"得点{n}点", autoEmoji:"🏠",
+    tiers:[
+      {name:"初得点", emoji:"🏃", n:1},
+      {name:"ホームの常連", emoji:"🏠", n:5},
+      {name:"得点王への道", emoji:"🥇", n:10},
+      {name:"得点王", emoji:"👑", n:20}
+    ]},
+  steal: { label:"盗塁スタンプ（通算盗塁）", metric:"tourui", unit:"個",
+    grad:"linear-gradient(135deg,#36d1dc,#5b86e5)",
+    step:5, autoFmt:"盗塁{n}個", autoEmoji:"💨",
+    tiers:[
+      {name:"初盗塁", emoji:"💨", n:1},
+      {name:"スピードスター", emoji:"⚡", n:5},
+      {name:"韋駄天", emoji:"🌪️", n:10},
+      {name:"盗塁王", emoji:"👑", n:20}
+    ]},
+  atbat: { label:"打席スタンプ（通算打席）", metric:"daseki", unit:"打席",
+    grad:"linear-gradient(135deg,#a18cd1,#fbc2eb)",
+    step:10, autoFmt:"{n}打席", autoEmoji:"🌳",
+    tiers:[
+      {name:"デビュー", emoji:"🌱", n:1},
+      {name:"経験を積んだ", emoji:"🌿", n:10},
+      {name:"打席のベテラン", emoji:"🌳", n:20},
+      {name:"レジェンド", emoji:"🏆", n:30}
+    ]},
+  pinch: { label:"代打スタンプ（通算代打）", metric:"daida", unit:"回",
+    grad:"linear-gradient(135deg,#ee0979,#ff6a00)",
+    step:5, autoFmt:"代打{n}回", autoEmoji:"🃏",
+    tiers:[
+      {name:"初代打", emoji:"🦸", n:1},
+      {name:"たのめる代打", emoji:"🤜", n:3},
+      {name:"代打の切り札", emoji:"🃏", n:5},
+      {name:"代打の神様", emoji:"😇", n:10}
+    ]},
+  /* ===== ver019：四球・振り逃げ・出場・守備・連続 ===== */
+  walk: { label:"四球スタンプ（通算四球）", metric:"bb", unit:"回",
+    grad:"linear-gradient(135deg,#43cea2,#185a9d)",
+    step:5, autoFmt:"四球{n}回", autoEmoji:"🎫",
+    tiers:[
+      {name:"初四球", emoji:"🎫", n:1},
+      {name:"選球眼", emoji:"👀", n:3},
+      {name:"ボールは振らない", emoji:"🧘", n:5},
+      {name:"四球マスター", emoji:"🎓", n:10}
+    ]},
+  /* ===== ver020：死球（痛くてもがんばったことを称える） ===== */
+  hbp: { label:"死球スタンプ（通算死球）", metric:"hbp", unit:"回",
+    grad:"linear-gradient(135deg,#c94b4b,#4b134f)",
+    step:2, autoFmt:"死球{n}回", autoEmoji:"🛡️",
+    tiers:[
+      {name:"痛くても平気", emoji:"🩹", n:1},
+      {name:"ガッツあるぞ", emoji:"💪", n:2},
+      {name:"鉄の心", emoji:"🛡️", n:3},
+      {name:"不屈のバッター", emoji:"🦾", n:5}
+    ]},
+  furinige: { label:"振り逃げスタンプ（通算振り逃げ）", metric:"furinige", unit:"回",
+    grad:"linear-gradient(135deg,#f7b733,#fc4a1a)",
+    step:5, autoFmt:"振り逃げ{n}回", autoEmoji:"🥷",
+    tiers:[
+      {name:"初振り逃げ", emoji:"🏃‍♂️", n:1},
+      {name:"あきらめない走塁", emoji:"🔥", n:3},
+      {name:"振り逃げの達人", emoji:"🥷", n:5},
+      {name:"振り逃げの神様", emoji:"😇", n:10}
+    ]},
+  attend: { label:"出場スタンプ（通算出場試合数）", metric:"gameCount", unit:"試合",
+    grad:"linear-gradient(135deg,#4facfe,#00f2fe)",
+    step:5, autoFmt:"出場{n}試合", autoEmoji:"🎖️",
+    tiers:[
+      {name:"はじめての試合", emoji:"🎽", n:1},
+      {name:"3試合出場", emoji:"👍", n:3},
+      {name:"5試合出場", emoji:"💪", n:5},
+      {name:"10試合出場", emoji:"🎖️", n:10}
+    ]},
+  /* 守備だけは上限あり（全ポジション制覇で完結。step なし＝自動生成しない） */
+  glove: { label:"守備スタンプ（守ったポジションの数）", metric:"posKinds", unit:"種類",
+    grad:"linear-gradient(135deg,#a8e063,#56ab2f)",
+    tiers:[
+      {name:"2ポジション", emoji:"🧤", n:2},
+      {name:"3ポジション", emoji:"🛡️", n:3},
+      {name:"5ポジション", emoji:"🌈", n:5},
+      {name:"全ポジション制覇", emoji:"👑", n:7}
+    ]},
+  hitrun: { label:"連続ヒットスタンプ（出場した試合で連続）", metric:"hitStreak", unit:"試合",
+    grad:"linear-gradient(135deg,#ff8a00,#ff5e62)",
+    step:1, autoFmt:"{n}試合連続ヒット", autoEmoji:"🔥",
+    tiers:[
+      {name:"2試合連続ヒット", emoji:"⚾", n:2},
+      {name:"3試合連続ヒット", emoji:"🌟", n:3},
+      {name:"止まらない打棒", emoji:"🔥", n:4},
+      {name:"ヒットの鬼", emoji:"👹", n:5}
+    ]},
+  reachrun: { label:"連続出塁スタンプ（出場した試合で連続）", metric:"reachStreak", unit:"試合",
+    grad:"linear-gradient(135deg,#11998e,#38ef7d)",
+    step:1, autoFmt:"{n}試合連続出塁", autoEmoji:"✨",
+    tiers:[
+      {name:"2試合連続出塁", emoji:"👟", n:2},
+      {name:"3試合連続出塁", emoji:"✨", n:3},
+      {name:"塁に出続ける", emoji:"🧱", n:4},
+      {name:"出塁の鉄人", emoji:"🦿", n:5}
+    ]}
+};
+
+/* ver020：あるカテゴリで「画面に出すスタンプ」を作る
+   ＝達成済みぶん（名前付き＋自動生成）＋まだ達成していない次の2個 */
+function stampTiers(g, val){
+  const list = (g.tiers || []).slice();
+  const step = g.step || 0;
+  if(step > 0){
+    const base = list.length ? list[list.length - 1].n : 0;   // 最後の名前付きの数
+    const limit = Math.max(val, base) + step * 2;             // 達成ぶん＋次の2個まで作る
+    for(let n = base + step; n <= limit; n += step){
+      list.push({ name:String(g.autoFmt || "{n}").replace("{n}", n), emoji:g.autoEmoji || "🏅", n:n, auto:true });
+    }
+  }
+  const done = list.filter(x => val >= x.n);
+  const next = list.filter(x => val < x.n).slice(0, 2);
+  return { show:done.concat(next), doneCount:done.length };
+}
+
+let CHILDREN=[], GAME_DATES=[], YEARS=[], CUR_YEAR=null;
+/* ver019：区分・試合種別は全タブ共通の1組で持つ（タブを切り替えても維持される）
+   gBunrui: all/taikai/renshu   gKind: all/tee/throw */
+let gBunrui="all", gKind="all";
+let GAME_META={};   // ver019：試合日 → {kind:区分, pitch:試合種別}。入力確認・スタンプの絞り込みに使う
+const KIND_LABEL={all:"全部",tee:"ティー試合",throw:"投げ試合"};
+const BUNRUI_LABEL={all:"全部",taikai:"大会",renshu:"練習"};
+let selPositions=new Set(), selStart="スタメン", selPlay="";
+let editingTeeballTs=null, CHECK_CACHE=[], editingAwardTs=null, MANUAL_CACHE=[];
+
+const childSel=document.getElementById("child");
+const dateSel=document.getElementById("gameDate");
+
+/* 守備位置チップ生成 */
+const posChips=document.getElementById("posChips");
+POSITIONS.forEach(p=>{
+  const b=document.createElement("button");b.className="chip";b.type="button";b.textContent=p;
+  b.onclick=()=>{if(selPositions.has(p)){selPositions.delete(p);b.classList.remove("on");}else{selPositions.add(p);b.classList.add("on");}};
+  posChips.appendChild(b);
+});
+
+/* 出場区分・好プレー評価のセグメント */
+document.querySelectorAll("#segStart .seg-btn").forEach(b=>{b.onclick=()=>{document.querySelectorAll("#segStart .seg-btn").forEach(x=>x.classList.remove("on"));b.classList.add("on");selStart=b.dataset.v;};});
+document.querySelectorAll("#segPlay .seg-btn").forEach(b=>{b.onclick=()=>{document.querySelectorAll("#segPlay .seg-btn").forEach(x=>x.classList.remove("on"));b.classList.add("on");selPlay=b.dataset.v;};});
+
+function updateSubmit(){document.getElementById("submit").disabled=!(dateSel.value&&childSel.value);}
+dateSel.onchange=updateSubmit;childSel.onchange=updateSubmit;
+
+function toast(msg,isErr){const t=document.getElementById("toast");t.textContent=msg;t.className="toast show"+(isErr?" err":"");setTimeout(()=>t.className="toast",1800);}
+
+/* ===== フロント メモリキャッシュ（同一URLは一定時間 再取得しない。書き込みで全クリア、↻でfresh） ===== */
+const _mem={}; const MEM_TTL=60000;
+async function cachedGet(url,fresh){
+  const now=Date.now();
+  if(!fresh){const c=_mem[url];if(c&&now-c.t<MEM_TTL)return JSON.parse(c.s);}
+  const u=fresh?(url+(url.indexOf('?')>=0?'&':'?')+'fresh=1'):url;
+  const s=await (await fetch(u)).text();
+  _mem[url]={t:now,s:s};
+  return JSON.parse(s);
+}
+function clearMem(){for(const k in _mem)delete _mem[k];}
+
+/* タブ切り替え */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");document.getElementById("panel-"+t.dataset.panel).classList.add("active");
+    /* ver019：共通フィルタバーは成績入力タブでは隠す（入力画面には効かないため） */
+    document.getElementById("gFilterBar").style.display=(t.dataset.panel==="input")?"none":"flex";
+    if(t.dataset.panel==="check")loadCheck();
+    if(t.dataset.panel==="awards")loadAwards();
+    if(t.dataset.panel==="ceremony")loadCeremony();
+    if(t.dataset.panel==="stats")loadStats();
+    if(t.dataset.panel==="stamp")loadStamp();
+  };
+});
+
+/* 送信 */
+document.getElementById("submit").onclick=async()=>{
+  if(!dateSel.value||!childSel.value)return;
+  const btn=document.getElementById("submit");btn.disabled=true;btn.textContent="送信中…";
+  const payload={
+    type:"teeball",
+    date:dateSel.value,
+    child:childSel.value,
+    daseki:+document.getElementById("daseki").value,
+    anda:+document.getElementById("anda").value,
+    daten:+document.getElementById("daten").value,
+    tokuten:+document.getElementById("tokuten").value,
+    shutsurui:+document.getElementById("shutsurui").value,
+    daida:+document.getElementById("daida").value,
+    tourui:+document.getElementById("tourui").value,   // ver016：盗塁
+    bb:+document.getElementById("bb").value,            // ver019：四球
+    hbp:+document.getElementById("hbp").value,          // ver019：死球
+    furinige:+document.getElementById("furinige").value,// ver019：振り逃げ
+    hr:+document.getElementById("hr").value,            // ver020：ホームラン
+    positions:Array.from(selPositions).join("・"),
+    start:selStart,
+    play:selPlay
+  };
+  if(editingTeeballTs)payload.editTs=editingTeeballTs;
+  try{
+    await fetch(GAS_URL,{method:"POST",body:JSON.stringify(payload)});
+    clearMem();
+    toast(editingTeeballTs?"成績を修正しました ✓":"記録しました ✓");
+    // 入力欄リセット
+    ["daseki","anda","daten","tokuten","shutsurui","daida","tourui","bb","hbp","furinige","hr"].forEach(id=>document.getElementById(id).value=0);
+    selPositions.clear();document.querySelectorAll("#posChips .chip").forEach(c=>c.classList.remove("on"));
+    document.querySelectorAll("#segPlay .seg-btn").forEach((x,i)=>x.classList.toggle("on",i===0));selPlay="";
+    cancelTeeballEdit();
+  }catch(e){toast("送信に失敗しました",true);}
+  btn.textContent="＋ この選手の成績を記録";updateSubmit();
+};
+/* 成績の修正モード解除 */
+function cancelTeeballEdit(){
+  editingTeeballTs=null;
+  document.getElementById("tbEditNote").style.display="none";
+  document.getElementById("tbEditCancel").style.display="none";
+  document.getElementById("submit").textContent="＋ この選手の成績を記録";
+}
+document.getElementById("tbEditCancel").onclick=()=>{
+  ["daseki","anda","daten","tokuten","shutsurui","daida","tourui","bb","hbp","furinige","hr"].forEach(id=>document.getElementById(id).value=0);
+  selPositions.clear();document.querySelectorAll("#posChips .chip").forEach(c=>c.classList.remove("on"));
+  document.querySelectorAll("#segStart .seg-btn").forEach((x,i)=>x.classList.toggle("on",i===0));selStart="スタメン";
+  document.querySelectorAll("#segPlay .seg-btn").forEach((x,i)=>x.classList.toggle("on",i===0));selPlay="";
+  cancelTeeballEdit();updateSubmit();
+};
+/* 確認タブから「修正」：成績入力フォームに読み込む */
+function editTeeball(ts){
+  const r=CHECK_CACHE.find(x=>String(x.ts)===String(ts));if(!r)return;
+  editingTeeballTs=r.ts;
+  document.querySelector('[data-panel="input"]').click();
+  dateSel.value=r.date; childSel.value=r.child;
+  document.getElementById("daseki").value=r.daseki||0;document.getElementById("anda").value=r.anda||0;
+  document.getElementById("daten").value=r.daten||0;document.getElementById("tokuten").value=r.tokuten||0;
+  document.getElementById("shutsurui").value=r.shutsurui||0;document.getElementById("daida").value=r.daida||0;
+  document.getElementById("tourui").value=r.tourui||0;   // ver016：盗塁
+  document.getElementById("bb").value=r.bb||0;document.getElementById("hbp").value=r.hbp||0;
+  document.getElementById("furinige").value=r.furinige||0;   // ver019：四球・死球・振り逃げ
+  document.getElementById("hr").value=r.hr||0;   // ver020：ホームラン
+  selPositions.clear();
+  const ps=String(r.positions||"").split("・").filter(x=>x);
+  document.querySelectorAll("#posChips .chip").forEach(c=>{const on=ps.indexOf(c.textContent)>=0;c.classList.toggle("on",on);if(on)selPositions.add(c.textContent);});
+  selStart=r.start||"スタメン";
+  document.querySelectorAll("#segStart .seg-btn").forEach(b=>b.classList.toggle("on",b.dataset.v===selStart));
+  selPlay=r.play||"";
+  document.querySelectorAll("#segPlay .seg-btn").forEach(b=>b.classList.toggle("on",b.dataset.v===selPlay));
+  document.getElementById("submit").textContent="✓ この内容で修正保存";
+  const note=document.getElementById("tbEditNote");note.style.display="block";note.textContent="✏️ "+r.date+"　"+r.child+" の成績を修正中。直して「修正保存」を押してください。";
+  document.getElementById("tbEditCancel").style.display="block";
+  updateSubmit();window.scrollTo({top:0,behavior:"smooth"});
+}
+/* 確認タブから「削除」 */
+async function delTeeball(ts){
+  const r=CHECK_CACHE.find(x=>String(x.ts)===String(ts));if(!r)return;
+  if(!confirm(r.date+"　"+r.child+" の成績を削除します。よろしいですか？"))return;
+  try{await fetch(GAS_URL,{method:"POST",body:JSON.stringify({type:"deleteRecord",sheet:"teeball",ts:ts})});
+    toast("削除しました");clearMem();loadCheck();
+  }catch(e){toast("削除に失敗しました",true);}
+}
+
+/* 初期化 */
+async function init(){
+  try{
+    const d=await cachedGet(GAS_URL+"?view=init");
+    CHILDREN=d.roster||[];GAME_DATES=d.gameDates||[];YEARS=d.years||[];CUR_YEAR=d.currentYear||YEARS[0];
+    childSel.innerHTML="";CHILDREN.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;childSel.appendChild(o);});
+    fillDates();
+    const cy=document.getElementById("checkYear");cy.innerHTML="";YEARS.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;cy.appendChild(o);});if(CUR_YEAR)cy.value=CUR_YEAR;
+    const ay=document.getElementById("awYear");ay.innerHTML="";YEARS.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;ay.appendChild(o);});if(CUR_YEAR)ay.value=CUR_YEAR;
+    const cyr=document.getElementById("cerYear");cyr.innerHTML="";YEARS.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;cyr.appendChild(o);});if(CUR_YEAR)cyr.value=CUR_YEAR;
+    const sy=document.getElementById("statsYear");sy.innerHTML="";YEARS.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;sy.appendChild(o);});if(CUR_YEAR)sy.value=CUR_YEAR;
+    const spy=document.getElementById("stampYear");spy.innerHTML="";YEARS.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;spy.appendChild(o);});if(CUR_YEAR)spy.value=CUR_YEAR;
+    const spc=document.getElementById("stampChild");spc.innerHTML="";CHILDREN.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;spc.appendChild(o);});
+    updateSubmit();
+  }catch(e){toast("データ取得に失敗。GAS_URLを確認してください。",true);}
+}
+function fillDates(){
+  dateSel.innerHTML="";
+  if(!GAME_DATES.length){const o=document.createElement("option");o.value="";o.textContent="（先に試合を登録してください）";dateSel.appendChild(o);return;}
+  GAME_DATES.forEach(g=>{const o=document.createElement("option");o.value=g.date;o.textContent=g.date+"　vs "+g.opp;dateSel.appendChild(o);});
+}
+
+/* ===== ver019：共通フィルタ（区分・試合種別）を成績データに適用する仕組み =====
+   GASの賞の算出と同じ判定：試合日→gameシートの区分・試合種別で絞る（同じ日は後勝ち）。 */
+async function loadGameMeta(year,fresh){
+  const d=await cachedGet(GAS_URL+"?view=stats&year="+encodeURIComponent(year),fresh);
+  const m={};
+  (d.games||[]).forEach(g=>{if(g.date)m[g.date]={kind:g.kind||"",pitch:g.pitch||""};});
+  GAME_META=m;return m;
+}
+/* 試合日がいまのフィルタ条件に合うか（全部＝素通し） */
+function passGlobalFilter(date){
+  const meta=GAME_META[date]||{};
+  if(gBunrui==="taikai" && meta.kind!=="大会")return false;
+  if(gBunrui==="renshu" && meta.kind!=="練習試合")return false;
+  if(gKind==="tee" && meta.pitch!=="ティー試合")return false;
+  if(gKind==="throw" && meta.pitch!=="投げ試合")return false;
+  return true;
+}
+function filterRecords(rows){
+  if(gBunrui==="all" && gKind==="all")return rows;
+  return (rows||[]).filter(r=>passGlobalFilter(r.date));
+}
+/* いまの絞り込み条件の見出し（各タブの注記に出す） */
+function filterLabel(){
+  return (gBunrui==="all"&&gKind==="all")?"すべての試合"
+    :"［"+BUNRUI_LABEL[gBunrui]+"／"+KIND_LABEL[gKind]+"］で絞り込み中";
+}
+
+/* 確認タブ：入力済みデータ一覧 */
+async function loadCheck(fresh){
+  const el=document.getElementById("checkList");el.innerHTML='<div class="loading">読み込み中…</div>';
+  try{
+    const y=document.getElementById("checkYear").value;
+    const [d]=await Promise.all([
+      cachedGet(GAS_URL+"?view=teeball&year="+encodeURIComponent(y),fresh),
+      loadGameMeta(y,fresh)   // ver019：共通フィルタ用の対応表
+    ]);
+    renderCheck(filterRecords(d.teeball||[]));
+  }catch(e){el.innerHTML='<div class="loading">取得できませんでした。</div>';}
+}
+/* 表示専用：yyyy/MM/dd → M/D（内部の年・年度処理は変更しない） */
+function mmdd(dateStr){const p=String(dateStr||"").split("/");if(p.length<3)return dateStr||"";return parseInt(p[1],10)+"/"+parseInt(p[2],10);}
+function renderCheck(rows){
+  CHECK_CACHE=rows||[];
+  if(!rows.length){document.getElementById("checkList").innerHTML='<div class="loading">'
+    +((gBunrui==="all"&&gKind==="all")?'この年度の入力データはまだありません。'
+      :'この絞り込み（'+BUNRUI_LABEL[gBunrui]+'／'+KIND_LABEL[gKind]+'）に当てはまる入力データはありません。')+'</div>';return;}
+  /* PC用：表（従来どおり。ver019で四球・死球・振り逃げの列を追加） */
+  let h='<div class="check-pc"><table><thead><tr><th>試合日</th><th>児童</th><th>打席</th><th>安打</th><th>打点</th><th>得点</th><th>出塁</th><th>代打</th><th>盗塁</th><th>四球</th><th>死球</th><th>振逃</th><th>本塁打</th><th>守備</th><th>出場</th><th>評価</th><th>操作</th></tr></thead><tbody>';
+  rows.forEach(r=>{
+    h+=`<tr><td style="white-space:nowrap">${mmdd(r.date)}</td><td>${r.child}</td><td>${r.daseki}</td><td>${r.anda}</td><td>${r.daten}</td><td>${r.tokuten}</td><td>${r.shutsurui}</td><td>${r.daida}</td><td>${r.tourui||0}</td><td>${r.bb||0}</td><td>${r.hbp||0}</td><td>${r.furinige||0}</td><td>${r.hr||0}</td><td style="font-size:.72rem">${r.positions||""}</td><td style="font-size:.72rem">${r.start||""}</td><td>${r.play||""}</td>`+
+      `<td><div style="display:flex;flex-direction:column;gap:5px;align-items:stretch"><button class="rowbtn edit" style="margin:0" onclick="editTeeball('${r.ts}')">修正</button><button class="rowbtn del" style="margin:0" onclick="delTeeball('${r.ts}')">削除</button></div></td></tr>`;
+  });
+  h+='</tbody></table></div>';
+  /* ver019 スマホ用：1件＝1カード（見出し＝試合日・児童名／項目名＋値／操作ボタン横並び） */
+  h+='<div class="check-sp">';
+  rows.forEach(r=>{
+    const it=(lbl,v)=>'<span class="chk-item">'+lbl+'<b>'+v+'</b></span>';
+    h+='<div class="chk-card">'
+      +'<div class="chk-head"><span class="chk-date">'+mmdd(r.date)+'</span><span class="chk-name">'+esc(r.child)+'</span></div>'
+      +'<div class="chk-items">'
+      +it("打席",r.daseki||0)+it("安打",r.anda||0)+it("打点",r.daten||0)+it("得点",r.tokuten||0)
+      +it("出塁",r.shutsurui||0)+it("代打",r.daida||0)+it("盗塁",r.tourui||0)
+      +it("四球",r.bb||0)+it("死球",r.hbp||0)+it("振り逃げ",r.furinige||0)+it("本塁打",r.hr||0)
+      +'<span class="chk-item wide">守備<b>'+esc(r.positions||"—")+'</b></span>'
+      +'<span class="chk-item">出場<b>'+esc(r.start||"—")+'</b></span>'
+      +'<span class="chk-item">評価<b>'+esc(r.play||"—")+'</b></span>'
+      +'</div>'
+      +'<div class="chk-ops"><button class="edit" onclick="editTeeball(\''+r.ts+'\')">✏️ 修正</button>'
+      +'<button class="del" onclick="delTeeball(\''+r.ts+'\')">🗑 削除</button></div>'
+      +'</div>';
+  });
+  h+='</div>';
+  document.getElementById("checkList").innerHTML=h;
+}
+document.getElementById("checkRefresh").onclick=()=>loadCheck(true);
+document.getElementById("checkYear").onchange=()=>loadCheck();
+
+
+/* 賞の確認（第2段階） */
+async function loadAwards(fresh){
+  const el=document.getElementById("awList");el.innerHTML='<div class="loading">読み込み中…</div>';
+  try{
+    const d=await cachedGet(GAS_URL+"?view=awards&year="+encodeURIComponent(document.getElementById("awYear").value)+"&kind="+gKind+"&bunrui="+gBunrui,fresh);
+    renderAwards(d.awards||{});
+  }catch(e){el.innerHTML='<div class="loading">取得できませんでした。</div>';}
+}
+function renderAwards(a){
+  const info=document.getElementById("awInfo");
+  info.textContent="［"+BUNRUI_LABEL[gBunrui]+"／"+KIND_LABEL[gKind]+"］対象試合数: "+(a.totalGames||0)+" / 規定打席: "+(a.minDaseki||0)+"打席（configで変更可）";
+  let h="";
+  // データ賞
+  h+='<div style="font-weight:800;margin:6px 0 8px;color:#f06a1e;">■ データ賞</div>';
+  if(a.awards&&a.awards.length){
+    h+='<table><thead><tr><th>賞</th><th>受賞者</th><th>記録</th></tr></thead><tbody>';
+    a.awards.forEach(x=>{h+=`<tr><td>${x.name}</td><td>${x.winners.join("、")}</td><td>${x.value}</td></tr>`;});
+    h+='</tbody></table>';
+  }else{h+='<div class="note">まだ受賞者がいません（データが必要です）。</div>';}
+  // ポジション別MVP
+  h+='<div style="font-weight:800;margin:18px 0 8px;color:#378add;">■ ポジション別MVP</div>';
+  if(a.posAwards&&a.posAwards.length){
+    h+='<table><thead><tr><th>ポジション</th><th>MVP</th><th>出場</th></tr></thead><tbody>';
+    a.posAwards.forEach(x=>{h+=`<tr><td>${x.position}</td><td>${x.winners.join("、")}</td><td>${x.value}</td></tr>`;});
+    h+='</tbody></table>';
+  }else{h+='<div class="note">守備位置のデータがまだありません。</div>';}
+  // 初めて記録
+  h+='<div style="font-weight:800;margin:18px 0 8px;color:#1f9d63;">■ 初めて記録</div>';
+  if(a.firsts&&a.firsts.length){
+    const md=s=>{const p=String(s||"").split("/");return p.length<3?(s?s:"-"):(parseInt(p[1],10)+"/"+parseInt(p[2],10));};
+    h+='<div style="overflow-x:auto"><table><thead><tr><th>児童</th><th>安打</th><th>打点</th><th>出塁</th><th>得点</th></tr></thead><tbody>';
+    a.firsts.forEach(x=>{h+=`<tr><td>${x.child}</td><td style="font-size:.74rem;white-space:nowrap">${md(x.firstHit)}</td><td style="font-size:.74rem;white-space:nowrap">${md(x.firstRbi)}</td><td style="font-size:.74rem;white-space:nowrap">${md(x.firstReach)}</td><td style="font-size:.74rem;white-space:nowrap">${md(x.firstRun)}</td></tr>`;});
+    h+='</tbody></table></div><p class="note" style="margin-top:4px">日付は月/日表示。「初安打／初打点／初出塁／初得点」の達成日です。</p>';
+  }else{h+='<div class="note">データがまだありません。</div>';}
+  // まだ賞のない子（手動賞で拾う対象）
+  h+='<div style="font-weight:800;margin:18px 0 8px;color:#d64545;">■ まだデータ賞のない子（手動の一人一賞で拾う対象）</div>';
+  if(a.noAward&&a.noAward.length){
+    h+='<div style="background:#fff0f0;border-radius:10px;padding:12px;font-size:.9rem;">'+a.noAward.join("、")+'</div>';
+  }else{h+='<div class="note">全員が何かのデータ賞を受賞しています。</div>';}
+  document.getElementById("awList").innerHTML=h;
+}
+document.getElementById("awRefresh").onclick=()=>loadAwards(true);
+document.getElementById("awYear").onchange=()=>loadAwards();
+
+
+/* ===== 表彰画面（第3段階・カラフルポップ） ===== */
+/* 各賞の絵文字とカード色（カラフルポップ） */
+const AWARD_META={
+  "打率賞":   {emoji:"👑",grad:"linear-gradient(135deg,#ff8a00,#ff5e62)"},
+  "安打賞":   {emoji:"🏏",grad:"linear-gradient(135deg,#f7971e,#ffd200)"},
+  "打点賞":   {emoji:"💥",grad:"linear-gradient(135deg,#fc6076,#ff9a44)"},
+  "得点賞":   {emoji:"🏃",grad:"linear-gradient(135deg,#36d1dc,#5b86e5)"},
+  "出塁賞":   {emoji:"🚀",grad:"linear-gradient(135deg,#11998e,#38ef7d)"},
+  "オールラウンダー賞":{emoji:"🌈",grad:"linear-gradient(135deg,#a18cd1,#fbc2eb)"},
+  "守備好プレー賞":{emoji:"🧤",grad:"linear-gradient(135deg,#4facfe,#00f2fe)"},
+  "カバーありがとう賞":{emoji:"🤝",grad:"linear-gradient(135deg,#fa709a,#fee140)"},
+  "最多途中出場賞":{emoji:"🔥",grad:"linear-gradient(135deg,#f83600,#fe8c00)"},
+  "最多代打賞":   {emoji:"⚡",grad:"linear-gradient(135deg,#ee0979,#ff6a00)"},
+  "皆勤賞":       {emoji:"🎖️",grad:"linear-gradient(135deg,#56ab2f,#a8e063)"}
+};
+const AWARD_FALLBACK={emoji:"🏅",grad:"linear-gradient(135deg,#f06a1e,#ffb347)"};
+/* 1人1賞の割り当て：この優先順で、まだ賞のない子の中で最上位の子へ割り当てる */
+const AWARD_DEFS=[
+  {name:"打率賞", cond:function(t,md){return t.daseki>=md;}, metric:function(t){return t.avg;}, fmt:function(v){return v.toFixed(3).replace(/^0/,'');}},
+  {name:"安打賞", metric:function(t){return t.anda;}, fmt:function(v){return v+"本";}},
+  {name:"打点賞", metric:function(t){return t.daten;}, fmt:function(v){return v+"点";}},
+  {name:"得点賞", metric:function(t){return t.tokuten;}, fmt:function(v){return v+"点";}},
+  {name:"出塁賞", metric:function(t){return t.shutsurui;}, fmt:function(v){return v+"回";}},
+  {name:"オールラウンダー賞", metric:function(t){return t.posKinds;}, fmt:function(v){return v+"ポジション";}},
+  {name:"守備好プレー賞", metric:function(t){return t.play;}, fmt:function(v){return v+"pt";}},
+  {name:"カバーありがとう賞", metric:function(t){return t.sub;}, fmt:function(v){return v+"回";}},
+  {name:"最多途中出場賞", metric:function(t){return t.sub;}, fmt:function(v){return v+"回";}},
+  {name:"最多代打賞", metric:function(t){return t.daida;}, fmt:function(v){return v+"回";}},
+  {name:"皆勤賞", metric:function(t,md,tg){return (tg>0 && t.games===tg)?1:0;}, fmt:function(v,tg){return tg+"試合";}}
+];
+/* 手動賞カードの色（順に使い回す） */
+const MANUAL_GRADS=["linear-gradient(135deg,#ff6a88,#ff99ac)","linear-gradient(135deg,#a18cd1,#fbc2eb)",
+  "linear-gradient(135deg,#43cea2,#185a9d)","linear-gradient(135deg,#f7971e,#ffd200)",
+  "linear-gradient(135deg,#fa709a,#fee140)","linear-gradient(135deg,#4facfe,#00f2fe)"];
+const POS_ICON={"ピッチャー":"⚾","キャッチャー":"🧢","ファースト":"🥎","セカンド":"🧤",
+  "サード":"🛡️","ショート":"⚡","レフト":"🍃","センター":"🎯","ライト":"🌟"};
+
+function esc(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+
+async function loadCeremony(fresh){
+  editingAwardTs=null;
+  const body=document.getElementById("cerBody");
+  body.innerHTML='<div class="loading">読み込み中…</div>';
+  document.getElementById("cerSub").textContent="集計中…";
+  try{
+    const d=await cachedGet(GAS_URL+"?view=awards&year="+encodeURIComponent(document.getElementById("cerYear").value)+"&kind="+gKind+"&bunrui="+gBunrui,fresh);
+    renderCeremony(d.awards||{});
+  }catch(e){body.innerHTML='<div class="cer-empty">取得できませんでした。GAS_URLを確認してください。</div>';document.getElementById("cerSub").textContent="";}
+}
+function winnerHtml(winners){
+  const ws=(winners||[]).map(esc);
+  const cls=ws.length>1?"a-winner a-multi":"a-winner";
+  return '<div class="'+cls+'">'+(ws.length?ws.join("・"):"—")+'</div>';
+}
+function renderCeremony(a){
+  document.getElementById("cerSub").textContent=
+    "🎉 ["+BUNRUI_LABEL[gBunrui]+"／"+KIND_LABEL[gKind]+"] 対象試合数 "+(a.totalGames||0)+"試合 ・ 規定打席 "+(a.minDaseki||0)+"打席";
+  let h="";
+
+  /* 手動賞のデータ */
+  const manual=a.manual||[];
+  MANUAL_CACHE=manual;
+  const manualSet={};manual.forEach(m=>{if(m.child)manualSet[m.child]=true;});
+
+  /* === 1人1賞の割り当て（totalsから・再割り当てでなるべく多くの子へ） === */
+  const MIN_DASEKI=a.minDaseki||0, TOTAL_GAMES=a.totalGames||0;
+  const totals=a.totals||[];
+  const assignedChildren={};
+  const assignList=[];
+  AWARD_DEFS.forEach(function(def){
+    let best=null,bestVal=0;
+    totals.forEach(function(t){
+      if(assignedChildren[t.child])return;
+      if(def.cond && !def.cond(t,MIN_DASEKI,TOTAL_GAMES))return;
+      const v=def.metric(t,MIN_DASEKI,TOTAL_GAMES);
+      if(v>bestVal){bestVal=v;best=t;}
+    });
+    if(best){assignedChildren[best.child]=true;assignList.push({child:best.child,name:def.name,value:def.fmt?def.fmt(bestVal,TOTAL_GAMES):bestVal});}
+  });
+
+  h+='<div class="cer-section">🏅 みんなの表彰 🏅 みんなすごい！ <span class="bar"></span></div>';
+  if(assignList.length||manual.length){
+    h+='<div class="award-grid">';
+    assignList.forEach(function(x){
+      const m=AWARD_META[x.name]||AWARD_FALLBACK;
+      h+='<div class="award-card" style="background:'+m.grad+'">'
+        +'<div class="a-emoji">'+m.emoji+'</div>'
+        +'<div class="a-name">'+esc(x.name)+'</div>'
+        +'<div class="a-winner">'+esc(x.child)+'</div>'
+        +((x.value!==""&&x.value!=null)?'<div class="a-value">'+esc(x.value)+'</div>':'')
+        +'</div>';
+    });
+    manual.forEach(function(m,i){
+      h+='<div class="award-card" style="background:'+MANUAL_GRADS[i%MANUAL_GRADS.length]+'">'
+        +'<div class="a-emoji">🎀</div>'
+        +'<div class="a-name">'+esc(m.award||"手動賞")+'</div>'
+        +'<div class="a-winner">'+esc(m.child)+'</div>'
+        +(m.comment?'<div class="a-note">'+esc(m.comment)+'</div>':"")
+        +'<div style="margin-top:8px"><button class="rowbtn edit" onclick="editManualAward(\''+m.ts+'\')">修正</button><button class="rowbtn del" onclick="delManualAward(\''+m.ts+'\')">削除</button></div>'
+        +'</div>';
+    });
+    h+='</div>';
+  }else{
+    h+='<div class="cer-empty">まだ受賞者がいません。成績を入力すると自動で賞が決まります。</div>';
+  }
+
+  /* ポジション別MVP（別枠・1人1賞の対象外） */
+  h+='<div class="cer-section">🛡️ ポジション別MVP<span class="bar"></span></div>';
+  if(a.posAwards&&a.posAwards.length){
+    h+='<div class="pos-grid">';
+    a.posAwards.forEach(x=>{
+      const ico=POS_ICON[x.position]||"🧤";
+      h+='<div class="pos-card"><div class="p-ico">'+ico+'</div><div>'
+        +'<div class="p-pos">'+esc(x.position)+'</div>'
+        +'<div class="p-win">'+esc((x.winners||[]).join("・")||"—")+'</div>'
+        +'<div class="p-val">'+esc(x.value||"")+'</div></div></div>';
+    });
+    h+='</div>';
+  }else{
+    h+='<div class="cer-empty">守備位置のデータがまだありません。</div>';
+  }
+
+  /* 手動の一人一賞：データ賞が当たらなかった子に付ける（1人1賞） */
+  const noAward=(typeof CHILDREN!=="undefined"?CHILDREN:[]).filter(function(c){return !assignedChildren[c];});
+  const stillNone=noAward.filter(function(c){return !manualSet[c];});
+  h+='<div class="cer-section">🎁 手動の1人1賞を追加<span class="bar"></span></div>';
+  h+='<p class="note" style="margin:0 0 8px">表彰は1人1つ。賞がない子は、手動賞で表彰。みんな特別！</p>';
+  if(stillNone.length){
+    h+='<div class="cer-empty" style="border-style:solid;border-color:#ffd2b3;background:#fff7f0;color:#9a4a1a;text-align:left">'
+      +'<b>まだ賞のない子</b>（手動賞を設定しましょう）：<br>'+esc(stillNone.join("、"))+'</div>';
+  }else if(noAward.length){
+    h+='<div class="cer-empty" style="background:#eafff3;color:#0f7a47;border-color:#bff0d4">データ賞のない子にも全員、手動賞が行き渡りました 🎊</div>';
+  }else{
+    h+='<div class="cer-empty">全員がデータ賞を受賞しています 🎊</div>';
+  }
+
+  // 入力フォーム（対象児童はデータ賞のない子に限定）
+  h+='<div class="manual-form">'
+    +'<div class="mf-title">＋ 手動賞を追加</div>'
+    +'<p class="note" style="margin:0 0 4px">データ賞のない子に、賞名とコメントを付けられます。</p>'
+    +'<label>賞名</label><input id="maAward" type="text" placeholder="例：声出しNo.1賞">'
+    +'<label>対象児童（データ賞のない子）</label><select id="maChild"></select>'
+    +'<label>コメント（任意）</label><input id="maComment" type="text" placeholder="例：いつも元気にチームを盛り上げてくれました">'
+    +'<button class="submit" id="maSave" style="margin-top:14px">この賞を保存</button>'
+    +'</div>';
+
+  document.getElementById("cerBody").innerHTML=h;
+
+  // フォームの児童プルダウンを noAward で埋める＋保存ボタンを配線
+  const sel=document.getElementById("maChild");
+  if(sel){
+    if(noAward.length){
+      sel.innerHTML=noAward.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("");
+      document.getElementById("maSave").disabled=false;
+    }else{
+      sel.innerHTML='<option value="">（対象の子がいません）</option>';
+      document.getElementById("maSave").disabled=true;
+    }
+    document.getElementById("maSave").onclick=saveManualAward;
+  }
+}
+
+/* 手動賞の保存 */
+async function saveManualAward(){
+  const award=document.getElementById("maAward").value.trim();
+  const child=document.getElementById("maChild").value;
+  const comment=document.getElementById("maComment").value.trim();
+  if(!child){toast("対象の子がいません",true);return;}
+  if(!award){toast("賞名を入力してください",true);return;}
+  const btn=document.getElementById("maSave");btn.disabled=true;btn.textContent="保存中…";
+  const payload={type:"teeballAward",award:award,child:child,comment:comment,year:document.getElementById("cerYear").value};
+  if(editingAwardTs)payload.editTs=editingAwardTs;
+  try{
+    await fetch(GAS_URL,{method:"POST",body:JSON.stringify(payload)});
+    toast(editingAwardTs?"手動賞を修正しました ✓":"手動賞を保存しました ✓");
+    editingAwardTs=null;
+    clearMem();loadCeremony();
+  }catch(e){
+    toast("保存に失敗しました",true);
+    btn.disabled=false;btn.textContent="この賞を保存";
+  }
+}
+/* 手動賞：修正（フォームに読み込み） */
+function editManualAward(ts){
+  const m=MANUAL_CACHE.find(x=>String(x.ts)===String(ts));if(!m)return;
+  editingAwardTs=m.ts;
+  document.getElementById("maAward").value=m.award||"";
+  document.getElementById("maComment").value=m.comment||"";
+  const sel=document.getElementById("maChild");
+  if(sel){
+    if(![...sel.options].some(o=>o.value===m.child)){const o=document.createElement("option");o.value=m.child;o.textContent=m.child+"（受賞済み）";sel.appendChild(o);}
+    sel.value=m.child;sel.disabled=false;
+  }
+  const sv=document.getElementById("maSave");sv.disabled=false;sv.textContent="✓ この内容で修正保存";
+  document.querySelector(".manual-form").scrollIntoView({behavior:"smooth",block:"center"});
+  toast("内容を読み込みました。直して修正保存を押してください。");
+}
+/* 手動賞：削除 */
+async function delManualAward(ts){
+  const m=MANUAL_CACHE.find(x=>String(x.ts)===String(ts));if(!m)return;
+  if(!confirm("手動賞「"+(m.award||"")+"（"+m.child+"）」を削除します。よろしいですか？"))return;
+  try{await fetch(GAS_URL,{method:"POST",body:JSON.stringify({type:"deleteRecord",sheet:"tbaward",ts:ts})});
+    toast("削除しました");clearMem();loadCeremony();
+  }catch(e){toast("削除に失敗しました",true);}
+}
+document.getElementById("cerRefresh").onclick=()=>loadCeremony(true);
+document.getElementById("cerYear").onchange=()=>loadCeremony();
+
+/* 試合種別フィルタ（全部/ティー/投げ）の配線 */
+function bindKindFilter(id,onpick){
+  document.querySelectorAll("#"+id+" button").forEach(b=>{b.onclick=()=>{
+    document.querySelectorAll("#"+id+" button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");onpick(b.dataset.kind);
+  };});
+}
+/* ver019：全タブ共通フィルタ。変更したら「いま開いているタブ」を再表示する
+   （他のタブはタブを開いたときに読み直されるので、条件はそのまま効く） */
+function reloadActiveTab(){
+  const t=document.querySelector(".tab.active");
+  const p=t?t.dataset.panel:"";
+  if(p==="check")loadCheck();
+  else if(p==="awards")loadAwards();
+  else if(p==="ceremony")loadCeremony();
+  else if(p==="stats")applyStatsFilter();
+  else if(p==="stamp")loadStamp();
+}
+bindKindFilter("gBunruiFilter",k=>{gBunrui=k;reloadActiveTab();});
+bindKindFilter("gKindFilter",k=>{gKind=k;reloadActiveTab();});
+
+/* ===== 年度成績（index.htmlから移植・横軸＝対戦相手） ===== */
+let pieChart=null,lineChart=null,growthChart=null;
+let STATS_GAMES=[], RAW_GAMES=[], RAW_TB=[];   // ver019：区分・試合種別は共通の gBunrui/gKind を使う
+function sortByDate(a,b){return a.date<b.date?-1:a.date>b.date?1:0;}
+async function loadStats(fresh){
+  const y=document.getElementById("statsYear").value;
+  try{
+    const [rs,rt]=await Promise.all([
+      cachedGet(GAS_URL+"?view=stats&year="+encodeURIComponent(y),fresh),
+      cachedGet(GAS_URL+"?view=teeball&year="+encodeURIComponent(y),fresh)
+    ]);
+    RAW_GAMES=rs.games||[]; RAW_TB=rt.teeball||[];
+    applyStatsFilter();
+    fillGameReview();
+  }catch(e){document.getElementById("statsCards").innerHTML='<div class="loading">取得できませんでした。</div>';}
+}
+
+/* 試合ごとの打撃振り返り */
+function fillGameReview(){
+  const sel=document.getElementById("gameReviewSel");
+  const games=RAW_GAMES.slice().sort(sortByDate).reverse(); // 新しい順
+  if(!games.length){sel.innerHTML='<option value="">（試合がありません）</option>';document.getElementById("gameReviewBody").innerHTML="";return;}
+  sel.innerHTML=games.map(g=>'<option value="'+esc(g.date)+'">'+esc(g.date)+'　vs '+esc(g.opp)+'</option>').join("");
+  renderGameReview();
+}
+function renderGameReview(){
+  const date=document.getElementById("gameReviewSel").value;
+  const recs=RAW_TB.filter(r=>r.date===date);
+  const el=document.getElementById("gameReviewBody");
+  if(!recs.length){el.innerHTML='<div class="loading">この試合の打撃データはまだありません。</div>';return;}
+  const td={daseki:0,anda:0,daten:0,tokuten:0,shutsurui:0};
+  let h='<table><thead><tr><th>児童</th><th>打席</th><th>安打</th><th>打点</th><th>得点</th><th>出塁</th><th>守備/出場</th></tr></thead><tbody>';
+  recs.forEach(r=>{
+    td.daseki+=Number(r.daseki)||0;td.anda+=Number(r.anda)||0;td.daten+=Number(r.daten)||0;td.tokuten+=Number(r.tokuten)||0;td.shutsurui+=Number(r.shutsurui)||0;
+    const firstPos=String(r.positions||"").split("・").filter(x=>x)[0]||"-";  // 最初に記録された守備位置のみ
+    h+='<tr><td>'+esc(r.child)+'</td><td>'+(r.daseki||0)+'</td><td>'+(r.anda||0)+'</td><td>'+(r.daten||0)+'</td><td>'+(r.tokuten||0)+'</td><td>'+(r.shutsurui||0)+'</td>'
+      +'<td style="font-size:.7rem;line-height:1.3;white-space:nowrap">'+esc(firstPos)+'<br>'+esc(r.start||"")+'</td></tr>';
+  });
+  h+='</tbody><tfoot><tr><td>チーム合計</td><td>'+td.daseki+'</td><td>'+td.anda+'</td><td>'+td.daten+'</td><td>'+td.tokuten+'</td><td>'+td.shutsurui+'</td><td></td></tr></tfoot></table>';
+  el.innerHTML=h;
+}
+document.getElementById("gameReviewSel").onchange=renderGameReview;
+/* 区分×試合種別で絞り込み、すべて再計算 */
+function applyStatsFilter(){
+  const kv={all:null,taikai:"大会",renshu:"練習試合"}[gBunrui];
+  const pv={all:null,tee:"ティー試合",throw:"投げ試合"}[gKind];
+  const games=RAW_GAMES.filter(g=>(!kv||g.kind===kv)&&(!pv||g.pitch===pv));
+  let w=0,l=0,dr=0,gf=0,ga=0;
+  games.forEach(g=>{const us=Number(g.us)||0,them=Number(g.them)||0;gf+=us;ga+=them;
+    if(g.result==='〇')w++;else if(g.result==='●')l++;else dr++;});
+  const statsObj={win:w,lose:l,draw:dr,gf:gf,ga:ga,games:games};
+  const allowed={};games.forEach(g=>{allowed[g.date]=true;});
+  const recs=RAW_TB.filter(r=>allowed[r.date]);
+  renderStats(statsObj);
+  renderTeam(statsObj, recs);
+}
+
+/* チーム全体（通算ヒット・いまの勢い・通算得点＋成長グラフ） */
+function teamCard(grad,emoji,label,value,sub){
+  return '<div class="team-card" style="background:linear-gradient(135deg,'+grad+')">'
+    +'<div class="t-emoji">'+emoji+'</div><div class="t-label">'+label+'</div>'
+    +'<div class="t-value">'+value+'</div>'+(sub?'<div class="t-sub">'+sub+'</div>':'')+'</div>';
+}
+function renderTeam(stats,records){
+  const games=(stats.games||[]).slice().sort(sortByDate);
+  STATS_GAMES=games;
+  const gf=stats.gf||0;
+  const teamHits=records.reduce((s,r)=>s+(Number(r.anda)||0),0);
+  let streak=0;
+  for(let i=games.length-1;i>=0;i--){if(games[i].result==='〇')streak++;else break;}
+  const recent=games.slice(-5).map(g=>g.result).join("");
+  document.getElementById("teamTop").innerHTML=
+    '<div class="team-grid">'
+    +teamCard("#ff8a00,#ff5e62","🏏","みんなの<br>通算ヒット",teamHits+'<span style="font-size:.8rem"> 本</span>',"")
+    +teamCard("#36d1dc,#5b86e5","⚾","チーム<br>通算得点",gf+'<span style="font-size:.8rem"> 点</span>',"")
+    +teamCard("#f83600,#fe8c00","🔥","いまの<br>勢い",(streak>0?streak+'<span style="font-size:.8rem">連勝</span>':"—"),(recent?"直近 "+recent:""))
+    +'</div>';
+  renderGrowth(games);
+}
+let growthMode="avg";
+function renderGrowth(games){
+  if(typeof Chart==="undefined")return;
+  const labels=games.map((g,i)=>"第"+(i+1)+"戦");
+  let data,label,color;
+  if(growthMode==="cum"){
+    let acc=0;data=games.map(g=>{acc+=(Number(g.us)||0);return acc;});label="チーム通算得点";color="#f06a1e";
+  }else{
+    let acc=0;data=games.map((g,i)=>{acc+=(Number(g.us)||0);return +(acc/(i+1)).toFixed(2);});label="1試合平均得点";color="#1f9d63";
+  }
+  if(growthChart)growthChart.destroy();
+  growthChart=new Chart(document.getElementById("growth"),{type:"line",
+    data:{labels:labels,datasets:[{label:label,data:data,borderColor:color,backgroundColor:color,tension:.3,fill:false,pointStyle:"circle"}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{usePointStyle:true,boxWidth:12,font:{size:11}}},
+        tooltip:{callbacks:{title:function(items){const g=games[items[0].dataIndex];return g?(g.date+" vs "+g.opp):"";}}}},
+      scales:{y:{beginAtZero:true}}}});
+}
+function renderStats(d){
+  const w=d.win||0,l=d.lose||0,dr=d.draw||0,gf=d.gf||0,ga=d.ga||0;
+  const rate=(w+l)>0?(w/(w+l)):0;const diff=gf-ga;const diffStr=(diff>0?"+":"")+diff;
+  const diffCol=diff>0?"var(--green)":diff<0?"var(--red)":"var(--ink)";
+  document.getElementById("statsCards").innerHTML=
+    '<div class="stat"><div class="lbl">成績</div><div class="val">'+w+'勝'+l+'敗'+dr+'分</div></div>'
+    +'<div class="stat"><div class="lbl">勝率</div><div class="val">'+rate.toFixed(3).replace(/^0/,"")+'</div></div>'
+    +'<div class="stat"><div class="lbl">総得点 / 総失点</div><div class="val">'+gf+' / '+ga+'</div></div>'
+    +'<div class="stat"><div class="lbl">得失点差</div><div class="val" style="color:'+diffCol+'">'+diffStr+'</div></div>';
+  document.getElementById("lgW").textContent=w;document.getElementById("lgL").textContent=l;document.getElementById("lgD").textContent=dr;
+  if(typeof Chart==="undefined")return;
+  if(pieChart)pieChart.destroy();
+  pieChart=new Chart(document.getElementById("pie"),{type:"doughnut",
+    data:{labels:["勝","敗","分"],datasets:[{data:[w,l,dr],backgroundColor:["#1D9E75","#E24B4A","#888780"],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+  const games=d.games||[];
+  const labels=games.map(g=>g.opp||"");   // 横軸＝対戦相手
+  if(lineChart)lineChart.destroy();
+  lineChart=new Chart(document.getElementById("line"),{type:"line",
+    data:{labels:labels,datasets:[
+      {label:"得点",data:games.map(g=>g.us),borderColor:"#D85A30",backgroundColor:"#D85A30",tension:.3,pointStyle:"circle"},
+      {label:"失点",data:games.map(g=>g.them),borderColor:"#378ADD",backgroundColor:"#378ADD",borderDash:[5,4],tension:.3,pointStyle:"rect"}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{usePointStyle:true,pointStyle:"rect",boxWidth:12,font:{size:11}}},
+        tooltip:{callbacks:{title:function(items){const g=games[items[0].dataIndex];return g?(g.date+" vs "+g.opp):"";}}}},
+      scales:{y:{beginAtZero:true},x:{ticks:{maxRotation:60,minRotation:0,autoSkip:false,font:{size:10}}}}}});
+}
+document.getElementById("statsRefresh").onclick=()=>loadStats(true);
+document.getElementById("statsYear").onchange=()=>loadStats();
+bindKindFilter("growthToggle",g=>{growthMode=g;renderGrowth(STATS_GAMES);});
+/* ver019：年度成績の区分・試合種別フィルタは共通バー（gBunruiFilter/gKindFilter）へ移動 */
+
+/* ===== 個人スタンプ ===== */
+let STAMP_TOTALS={}, STAMP_FIRSTS={};
+/* ===== ver017：個人の累積成長グラフ =====
+   項目と色はここで調整できる（key=データ項目名） */
+const P_GROWTH_METRICS=[
+  {key:"anda",      label:"安打", unit:"本",   color:"#f06a1e"},
+  {key:"daten",     label:"打点", unit:"点",   color:"#e9505f"},
+  {key:"tokuten",   label:"得点", unit:"点",   color:"#e89a00"},
+  {key:"shutsurui", label:"出塁", unit:"回",   color:"#1f9d63"},
+  {key:"tourui",    label:"盗塁", unit:"個",   color:"#378add"},
+  {key:"daseki",    label:"打席", unit:"打席", color:"#9b6bd3"}
+];
+let STAMP_GAMES={}, selGrowMetric="anda", pGrowthChart=null;
+async function loadStamp(fresh){
+  const el=document.getElementById("stampBody");el.innerHTML='<div class="loading">読み込み中…</div>';
+  try{
+    const y=document.getElementById("stampYear").value;
+    const [d]=await Promise.all([
+      cachedGet(GAS_URL+"?view=teeball&year="+encodeURIComponent(y),fresh),
+      loadGameMeta(y,fresh)   // ver019：共通フィルタ用の対応表
+    ]);
+    STAMP_TOTALS={};STAMP_FIRSTS={};STAMP_GAMES={};
+    const byChild={}, posSet={};
+    filterRecords(d.teeball||[]).forEach(r=>{   // ver019：共通フィルタを適用
+      const c=r.child;if(!c)return;
+      if(!STAMP_TOTALS[c])STAMP_TOTALS[c]={daseki:0,anda:0,daten:0,tokuten:0,shutsurui:0,daida:0,tourui:0,
+        bb:0,hbp:0,furinige:0,hr:0,gameCount:0,posKinds:0,hitStreak:0,reachStreak:0};   // ver019/020：追加分＋派生値
+      STAMP_TOTALS[c].daseki+=Number(r.daseki)||0;STAMP_TOTALS[c].anda+=Number(r.anda)||0;
+      STAMP_TOTALS[c].daten+=Number(r.daten)||0;STAMP_TOTALS[c].tokuten+=Number(r.tokuten)||0;
+      STAMP_TOTALS[c].shutsurui+=Number(r.shutsurui)||0;STAMP_TOTALS[c].daida+=Number(r.daida)||0;
+      STAMP_TOTALS[c].tourui+=Number(r.tourui)||0;   // ver016：盗塁（旧データは0）
+      STAMP_TOTALS[c].bb+=Number(r.bb)||0;STAMP_TOTALS[c].hbp+=Number(r.hbp)||0;
+      STAMP_TOTALS[c].furinige+=Number(r.furinige)||0;   // ver019：四球・死球・振り逃げ（旧データは0）
+      STAMP_TOTALS[c].hr+=Number(r.hr)||0;   // ver020：ホームラン（旧データは0）
+      /* ver019：守備位置の種類（「・」区切りを分解して重複なしで数える） */
+      if(!posSet[c])posSet[c]=new Set();
+      String(r.positions||"").split("・").forEach(p=>{if(p)posSet[c].add(p);});
+      (byChild[c]=byChild[c]||[]).push(r);
+    });
+    // 初めて記録（各成績が初めて1以上になった試合日）
+    Object.keys(byChild).forEach(c=>{
+      const recs=byChild[c].slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+      const f={firstHit:"",firstRbi:"",firstReach:"",firstRun:""};
+      recs.forEach(r=>{
+        if(!f.firstHit && (Number(r.anda)||0)>0)f.firstHit=r.date;
+        if(!f.firstRbi && (Number(r.daten)||0)>0)f.firstRbi=r.date;
+        if(!f.firstReach && (Number(r.shutsurui)||0)>0)f.firstReach=r.date;
+        if(!f.firstRun && (Number(r.tokuten)||0)>0)f.firstRun=r.date;
+      });
+      STAMP_FIRSTS[c]=f;
+      /* ver017：成長グラフ用＝試合日ごとの合算（日付昇順。同じ日は1試合として合算） */
+      const games=[];let cur=null;
+      recs.forEach(r=>{
+        if(!cur||cur.date!==r.date){cur={date:r.date,daseki:0,anda:0,daten:0,tokuten:0,shutsurui:0,daida:0,tourui:0,bb:0,hbp:0,furinige:0,hr:0};games.push(cur);}
+        ["daseki","anda","daten","tokuten","shutsurui","daida","tourui","bb","hbp","furinige","hr"].forEach(k=>cur[k]+=Number(r[k])||0);
+      });
+      STAMP_GAMES[c]=games;
+      /* ver019：出場試合数／守備位置の種類／連続記録（出場した試合だけを日付順に見るので、欠席で連続は途切れない） */
+      const T=STAMP_TOTALS[c];
+      T.gameCount=games.length;
+      T.posKinds=posSet[c]?posSet[c].size:0;
+      let hs=0,rs=0,hbest=0,rbest=0;
+      games.forEach(g=>{
+        hs=(g.anda>0)?hs+1:0; if(hs>hbest)hbest=hs;
+        rs=(g.shutsurui>0)?rs+1:0; if(rs>rbest)rbest=rs;
+      });
+      T.hitStreak=hbest;T.reachStreak=rbest;
+    });
+    renderStamps();
+  }catch(e){el.innerHTML='<div class="loading">取得できませんでした。</div>';}
+}
+function renderStamps(){
+  const child=document.getElementById("stampChild").value;
+  const t=STAMP_TOTALS[child]||{daseki:0,anda:0,daten:0,tokuten:0,shutsurui:0,daida:0,tourui:0,
+    bb:0,hbp:0,furinige:0,hr:0,gameCount:0,posKinds:0,hitStreak:0,reachStreak:0};   // ver019/020
+  const f=STAMP_FIRSTS[child]||{};
+  // 獲得数カウント（ver020：上限なしなので「集めた数」だけを数える）
+  let got=0;
+  Object.keys(STAMPS).forEach(g=>{got+=stampTiers(STAMPS[g],t[STAMPS[g].metric]||0).doneCount;});
+  let h='<div class="stamp-head"><div class="sh-name">'+esc(child||"—")+'</div>'
+    +'<div class="sh-sub">通算安打 '+t.anda+'本 ・ 通算出塁 '+t.shutsurui+'回 ・ '+filterLabel()+'</div>'   // ver019：絞り込み状態を表示
+    +'<div class="sh-got">🏅 集めたスタンプ '+got+'こ</div></div>';   // ver020：上限なしなので分母は出さない
+  // 通算成績
+  h+='<div class="stamp-gtitle">📊 通算成績<span class="bar"></span></div>';
+  h+='<div class="stat-line">打席 <b>'+t.daseki+'</b>　安打 <b>'+t.anda+'</b>　打点 <b>'+t.daten+'</b>　得点 <b>'+t.tokuten+'</b>　出塁 <b>'+t.shutsurui+'</b>　代打 <b>'+t.daida+'</b>　盗塁 <b>'+(t.tourui||0)+'</b>'
+    +'　四球 <b>'+(t.bb||0)+'</b>　死球 <b>'+(t.hbp||0)+'</b>　振り逃げ <b>'+(t.furinige||0)+'</b>　本塁打 <b>'+(t.hr||0)+'</b>　出場 <b>'+(t.gameCount||0)+'</b>試合</div>';   // ver019/020
+  // ver017：せいちょうグラフ（累積の線グラフ・項目切り替え）
+  h+='<div class="stamp-gtitle">📈 せいちょうグラフ<span class="bar"></span></div>';
+  const games=STAMP_GAMES[child]||[];
+  if(games.length){
+    h+='<div class="kind-filter" id="pGrowSel">'
+      +P_GROWTH_METRICS.map(m=>'<button data-kind="'+m.key+'"'+(m.key===selGrowMetric?' class="on"':'')+'>'+m.label+'</button>').join('')
+      +'</div>';
+    h+='<div class="chart-box" style="height:230px;"><canvas id="pGrowth" role="img" aria-label="累積の成長グラフ"></canvas></div>';
+    h+='<p class="note" style="margin-top:2px">しあいを かさねるごとに、どんどん つみあがっていくよ！</p>';
+  }else{
+    h+='<div class="cer-empty">まだ しあいの きろくが ないよ。これから いっぱい ふやそう！</div>';
+  }
+  // 初めて記録
+  h+='<div class="stamp-gtitle">🌱 初めて記録<span class="bar"></span></div>';
+  const tags=[];
+  if(f.firstHit)tags.push('<span class="ft">⚾ 初ヒット '+mmdd(f.firstHit)+'</span>');
+  if(f.firstRbi)tags.push('<span class="ft">💥 初打点 '+mmdd(f.firstRbi)+'</span>');
+  if(f.firstReach)tags.push('<span class="ft">🏃 初出塁 '+mmdd(f.firstReach)+'</span>');
+  if(f.firstRun)tags.push('<span class="ft">🎉 初得点 '+mmdd(f.firstRun)+'</span>');
+  h+=tags.length?'<div class="first-tags" style="margin-bottom:6px">'+tags.join("")+'</div>':'<div class="cer-empty">まだ記録がありません。</div>';
+  // スタンプ
+  Object.keys(STAMPS).forEach(gkey=>{
+    const g=STAMPS[gkey];const val=t[g.metric]||0;
+    /* ver020：達成済み＋次の2個だけを出す（上限なしなので未達成を全部並べない） */
+    const st=stampTiers(g,val);
+    h+='<div class="stamp-gtitle">'+g.label
+      +(st.doneCount?'<span class="g-count">'+st.doneCount+'こ</span>':'')
+      +'<span class="bar"></span></div><div class="stamp-grid">';
+    st.show.forEach(ti=>{
+      const on=val>=ti.n;
+      const rest=ti.n-val;
+      h+='<div class="stamp '+(on?'on':'off')+'"'+(on?' style="background:'+g.grad+'"':'')+'>'
+        +'<div class="s-emoji">'+ti.emoji+'</div>'
+        +'<div class="s-name">'+esc(ti.name)+'</div>'
+        +'<div class="s-cond">'+ti.n+g.unit+'</div>'
+        +'<div class="s-status">'+(on?'✓ 達成':'あと'+rest+g.unit)+'</div>'
+        +'</div>';
+    });
+    h+='</div>';
+  });
+  document.getElementById("stampBody").innerHTML=h;
+  /* ver017：グラフの描画とボタン配線（innerHTML反映後） */
+  if(games.length){
+    bindKindFilter("pGrowSel",k=>{selGrowMetric=k;renderStamps();});
+    renderPersonalGrowth(games);
+  }
+}
+/* ver017：累積の成長グラフを描く（Chart.jsは年度成績タブと共用） */
+function renderPersonalGrowth(games){
+  if(typeof Chart==="undefined")return;
+  const m=P_GROWTH_METRICS.find(x=>x.key===selGrowMetric)||P_GROWTH_METRICS[0];
+  const labels=games.map((g,i)=>"第"+(i+1)+"戦");
+  let acc=0;const data=games.map(g=>{acc+=(Number(g[m.key])||0);return acc;});
+  if(pGrowthChart)pGrowthChart.destroy();
+  pGrowthChart=new Chart(document.getElementById("pGrowth"),{type:"line",
+    data:{labels:labels,datasets:[{label:"つみあげ "+m.label+"（"+m.unit+"）",data:data,
+      borderColor:m.color,backgroundColor:m.color+"33",fill:true,tension:.25,
+      pointStyle:"circle",pointRadius:5,pointHoverRadius:7,borderWidth:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{usePointStyle:true,boxWidth:12,font:{size:12,weight:"bold"}}},
+        tooltip:{callbacks:{title:function(items){const g=games[items[0].dataIndex];return "第"+(items[0].dataIndex+1)+"戦（"+mmdd(g.date)+"）";}}}},
+      scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{ticks:{font:{size:11}}}}}});
+}
+document.getElementById("stampRefresh").onclick=()=>loadStamp(true);
+document.getElementById("stampYear").onchange=()=>loadStamp();
+document.getElementById("stampChild").onchange=renderStamps;
+
+init();
+</script>
+</body>
+</html>

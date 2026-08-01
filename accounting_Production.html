@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オレンジライン 注文・会計</title>
+<style>
+  :root{
+    --ink:#1a2238;--orange:#f06a1e;--orange-soft:#ffe9dc;--line:#e3e6ee;
+    --bg:#f7f8fb;--green:#1f9d63;--red:#d64545;--blue:#378add;--muted:#6b7280;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6;padding-bottom:40px;}
+  header{background:var(--orange);color:#fff;padding:18px 16px;position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+  header h1{margin:0;font-size:1.15rem;letter-spacing:.02em;}
+  header p{margin:2px 0 0;font-size:.78rem;opacity:.92;}
+  .tabbar{display:flex;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:62px;z-index:9;}
+  .tab{flex:1;padding:13px 4px;text-align:center;font-size:.86rem;font-weight:700;color:var(--muted);
+    border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;}
+  .tab.active{color:var(--orange);border-bottom-color:var(--orange);}
+  .wrap{max-width:680px;margin:0 auto;padding:16px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 16px;margin-bottom:16px;}
+  .card h2{margin:0 0 14px;font-size:.95rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;}
+  label{display:block;font-size:.82rem;font-weight:700;margin:0 0 6px;}
+  select,input[type=text],input[type=number]{width:100%;padding:13px 12px;font-size:1.05rem;border:2px solid var(--line);
+    border-radius:10px;background:#fff;color:var(--ink);appearance:none;}
+  select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;}
+  .field{margin-bottom:14px;}
+  .ev-badge{display:inline-block;background:var(--orange-soft);color:#9a4a1a;font-weight:800;font-size:.82rem;
+    padding:5px 12px;border-radius:999px;margin-bottom:4px;}
+  .menu-block{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:#fdfdff;}
+  .menu-block .mb-head{font-size:.78rem;font-weight:800;color:var(--muted);margin-bottom:7px;}
+  .group-title{display:flex;align-items:center;gap:8px;font-weight:900;margin:18px 0 8px;font-size:1rem;}
+  .group-title .ico{font-size:1.2rem;}
+  .total-prev{text-align:center;padding:14px;border-radius:10px;background:var(--bg);font-size:1.05rem;font-weight:800;margin:10px 0 4px;}
+  .total-prev b{color:var(--orange);font-size:1.3rem;}
+  .submit{width:100%;margin-top:8px;padding:18px;font-size:1.12rem;font-weight:800;border:none;border-radius:12px;background:var(--orange);color:#fff;cursor:pointer;}
+  .submit:disabled{opacity:.45;}
+  .submit:active{transform:translateY(1px);}
+  .note{font-size:.74rem;color:var(--muted);margin-top:10px;}
+  .help{background:var(--orange-soft);border-radius:10px;padding:10px 12px;font-size:.78rem;color:#9a4a1a;margin-bottom:14px;}
+  .loading{text-align:center;color:var(--muted);padding:20px;font-size:.88rem;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--green);color:#fff;
+    padding:14px 22px;border-radius:999px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;z-index:30;box-shadow:0 4px 16px rgba(0,0,0,.2);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.err{background:var(--red);}
+  table{width:100%;border-collapse:collapse;font-size:.86rem;}
+  th,td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--line);}
+  th{font-size:.72rem;color:var(--muted);}
+  th:first-child,td:first-child{text-align:left;font-weight:700;}
+  td.amt{font-weight:800;color:var(--orange);}
+  tfoot td{font-weight:800;border-top:2px solid var(--ink);border-bottom:none;}
+  /* ===== 注文集計（発注用）：お店プルダウン＋発注レ点 ===== */
+  .kmenu-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+  .kmenu-bar label{font-size:.78rem;color:var(--muted);font-weight:700;}
+  .kmenu-bar select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:.86rem;background:#fff;font-weight:700;}
+  .kmenu-prog{font-size:.78rem;color:var(--muted);margin-left:auto;}
+  .kmenu-prog b{color:var(--green);font-size:.95rem;}
+  .kmenu-reset{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:.72rem;color:var(--muted);cursor:pointer;}
+  .chk{width:22px;height:22px;accent-color:var(--green);cursor:pointer;vertical-align:middle;}
+  tr.ordered td{color:#9aa3b2;}
+  tr.ordered td.amt{color:#9aa3b2;}
+  tr.ordered .mname{text-decoration:line-through;}
+  .shop-tag{display:inline-block;font-size:.64rem;font-weight:700;color:#7a5c00;background:#fff3d6;border-radius:999px;padding:1px 8px;vertical-align:middle;}
+  .cur-order{background:#eef6ff;border:1px solid #cfe3fb;border-radius:10px;padding:11px 13px;font-size:.84rem;margin-bottom:14px;}
+  .cur-order .co-title{font-weight:800;color:#2a6db5;margin-bottom:4px;}
+  .cur-order .co-edit{margin-top:9px;display:inline-block;background:#fff;border:2px solid var(--orange);color:var(--orange);
+    font-weight:800;font-size:.82rem;padding:8px 16px;border-radius:999px;cursor:pointer;}
+  .summary-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+  .summary-head h2{margin:0;}
+  .refresh{background:none;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:.82rem;color:var(--muted);cursor:pointer;}
+  .k-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;}
+  .k-stat{background:var(--bg);border-radius:10px;padding:12px;}
+  .k-stat .lbl{font-size:.72rem;color:var(--muted);}
+  .k-stat .val{font-size:1.25rem;font-weight:800;}
+  .unpaid-box{background:#fff0f0;border-radius:10px;padding:10px 12px;font-size:.82rem;color:#9a2a2a;margin-top:10px;}
+  .paid-yes{color:var(--green);font-weight:800;}
+  .paid-no{color:var(--red);font-weight:800;}
+  /* 家庭別カード */
+  .fcard{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#fff;}
+  .fc-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
+  .fc-name{font-weight:800;font-size:1.05rem;}
+  .fc-people{font-size:.76rem;color:var(--muted);margin-bottom:6px;}
+  .fc-menu{background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:8px;}
+  .fc-menu .fm-item{font-size:.92rem;font-weight:600;padding:2px 0;}
+  .fc-menu .fm-pres{font-size:.82rem;color:#a03060;padding-top:3px;border-top:1px dashed #e3c9d6;margin-top:4px;}
+  .fc-amt{font-size:.9rem;}
+  .fc-amt b{font-size:1.3rem;color:var(--orange);}
+  .fc-brk{font-size:.68rem;color:var(--muted);margin-left:6px;white-space:nowrap;}
+</style>
+</head>
+<body>
+<header>
+  <h1>🍱 注文・会計</h1>
+  <p>子どもの名前で注文をまとめて登録（公開）</p>
+</header>
+
+<div class="tabbar">
+  <button class="tab active" data-panel="order">注文入力</button>
+  <button class="tab" data-panel="kaikei">会計</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== 注文入力 ===== -->
+  <div class="panel active" id="panel-order">
+    <div class="card">
+      <div id="evBadge" class="ev-badge">読み込み中…</div>
+      <div class="help">お名前で注文をまとめます（監督・コーチもOK）。兄弟がいる場合は「子どもの人数」で増やせます。同じ名前で入れ直すと、最新の内容に更新されます。</div>
+      <div id="presentNote" style="display:none;background:#fff0f6;border:1px solid #f6c9de;border-radius:10px;padding:10px 12px;font-size:.8rem;color:#a03060;margin-bottom:14px;"></div>
+
+      <div class="field">
+        <label for="child">名前（監督・コーチ・子ども）</label>
+        <select id="child"><option>読み込み中…</option></select>
+      </div>
+
+      <div id="curOrder" class="cur-order" style="display:none"></div>
+
+      <div class="group-title"><span class="ico">🧒</span>子どもの注文</div>
+      <div class="field">
+        <label for="childCount">子どもの人数</label>
+        <select id="childCount"></select>
+      </div>
+      <div id="childMenus"></div>
+
+      <div class="group-title"><span class="ico">🧑</span>大人の注文</div>
+      <div class="field">
+        <label for="adultCount">大人の人数</label>
+        <select id="adultCount"></select>
+      </div>
+      <div id="adultMenus"></div>
+
+      <div class="total-prev" id="totalPrev">合計　<b>0</b> 円</div>
+      <button class="submit" id="submit" disabled>この注文を登録</button>
+      <p class="note">登録後も、同じ子の名前で入れ直せば修正できます（締め切りはLINEでアナウンス予定です）。</p>
+    </div>
+  </div>
+
+  <!-- ===== 会計 ===== -->
+  <div class="panel" id="panel-kaikei">
+    <div class="card">
+      <div class="summary-head">
+        <h2 id="kEvent">会計サマリー</h2>
+        <button class="refresh" id="kRefresh">↻</button>
+      </div>
+      <div id="kSummary"><div class="loading">読み込み中…</div></div>
+    </div>
+    <div class="card">
+      <h2>注文集計（発注用）</h2>
+      <div id="kMenu"><div class="loading">読み込み中…</div></div>
+    </div>
+    <div class="card">
+      <h2>家庭別 会計一覧</h2>
+      <div id="kFamilies"><div class="loading">読み込み中…</div></div>
+      <p class="note">支払い欄のチェック操作は別画面。ここは閲覧用です。</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">登録しました</div>
+
+<script>
+/* ===== 設定：GASのウェブアプリURLを貼る（既存システムと同じGAS） ===== */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwuFKWO06Awsft9SuP_Oj5Jc6gssisUxGFpinvAGE6BYVJKavIyKC4eD4vmX10w7sSW/exec";
+
+/* ===== 発注先のお店分け（会計タブ「注文集計」のプルダウン用） =====
+   基本は【スプレッドシートのmenuシートE列「お店」】に入力した値を使う（GAS第6段階が返してくれる）。
+   → イベントが変わっても、menuシートにお店を書くだけでOK（HTMLの修正不要）。
+   E列が未入力のメニューだけ、下のキーワードで補助判定する（それでも不明なら「その他」に出る）。
+   （ー と － などの長音の表記ゆれは自動で吸収して照合する） */
+const SHOP_DEFS=[
+  { shop:"マック",       keywords:["マック","ハンバーガー"] },
+  { shop:"ほっともっと", keywords:["ドラえもん","ドラミちゃん","スポーツ弁当","もちミニ"] }
+];
+
+let CHILDREN=[], STAFF=[], EVENT="", MENU_ITEMS=[], CHILD_MENUS=[], ADULT_MENUS=[], PRICE={};
+let ORDERS_BY_NAME={};
+let KMENU=[], KEVENT="", shopFilter="全部";   // 注文集計の状態（お店絞り込み）
+
+const childSel=document.getElementById("child");
+const childCountSel=document.getElementById("childCount");
+const adultCountSel=document.getElementById("adultCount");
+
+function toast(msg,isErr){const t=document.getElementById("toast");t.textContent=msg;t.className="toast show"+(isErr?" err":"");setTimeout(()=>t.className="toast",1900);}
+
+/* ===== フロント メモリキャッシュ（同一URLは一定時間 再取得しない。書き込みで全クリア、↻でfresh） ===== */
+const _mem={}; const MEM_TTL=60000;
+async function cachedGet(url,fresh){
+  const now=Date.now();
+  if(!fresh){const c=_mem[url];if(c&&now-c.t<MEM_TTL)return JSON.parse(c.s);}
+  const u=fresh?(url+(url.indexOf('?')>=0?'&':'?')+'fresh=1'):url;
+  const s=await (await fetch(u)).text();
+  _mem[url]={t:now,s:s};
+  return JSON.parse(s);
+}
+function clearMem(){for(const k in _mem)delete _mem[k];}
+
+/* タブ切り替え */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");document.getElementById("panel-"+t.dataset.panel).classList.add("active");
+    if(t.dataset.panel==="kaikei")loadKaikei();
+  };
+});
+
+/* 0〜6人の人数プルダウン */
+function fillCount(sel){
+  sel.innerHTML="";
+  for(let i=0;i<=6;i++){const o=document.createElement("option");o.value=i;o.textContent=i+"人";sel.appendChild(o);}
+}
+
+/* メニュー選択肢のoption文字列 */
+function menuOptions(list){
+  let h='<option value="">選んでください</option>';
+  list.forEach(m=>{h+='<option value="'+escAttr(m.name)+'">'+esc(m.name)+'（'+m.price+'円）</option>';});
+  return h;
+}
+function esc(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function escAttr(s){return esc(s).replace(/"/g,"&quot;");}
+
+/* 名前プルダウン（監督・コーチ → 子ども の順でグループ表示） */
+function buildNameSelect(){
+  let h='<option value="">選んでください</option>';
+  if(STAFF.length){
+    h+='<optgroup label="監督・コーチ">';
+    STAFF.forEach(s=>{h+='<option value="'+escAttr(s)+'">'+esc(s)+'</option>';});
+    h+='</optgroup>';
+  }
+  if(CHILDREN.length){
+    h+='<optgroup label="子ども">';
+    CHILDREN.forEach(c=>{h+='<option value="'+escAttr(c)+'">'+esc(c)+'</option>';});
+    h+='</optgroup>';
+  }
+  if(!STAFF.length && !CHILDREN.length){h='<option value="">名簿が空です</option>';}
+  childSel.innerHTML=h;
+}
+
+/* 人数に応じてメニュー選択欄を生成 */
+function renderMenus(containerId,count,list,labelWord){
+  const c=document.getElementById(containerId);c.innerHTML="";
+  if(!list.length){
+    if(count>0)c.innerHTML='<div class="note">この区分のメニューがまだ設定されていません。</div>';
+    return;
+  }
+  for(let i=0;i<count;i++){
+    const b=document.createElement("div");b.className="menu-block";
+    b.innerHTML='<div class="mb-head">'+labelWord+' '+(i+1)+'人目</div><select class="menu-sel">'+menuOptions(list)+'</select>';
+    c.appendChild(b);
+  }
+  c.querySelectorAll(".menu-sel").forEach(s=>s.onchange=updateAll);
+}
+
+/* 選んだメニュー（1品＝1要素。区分つき） */
+function selectedItems(){
+  const arr=[];
+  document.querySelectorAll("#childMenus .menu-sel").forEach(s=>{if(s.value)arr.push({name:s.value,seg:"子ども"});});
+  document.querySelectorAll("#adultMenus .menu-sel").forEach(s=>{if(s.value)arr.push({name:s.value,seg:"大人"});});
+  return arr;
+}
+function updateTotal(){
+  let total=0;selectedItems().forEach(it=>{total+=PRICE[it.name]||0;});
+  document.getElementById("totalPrev").innerHTML="合計　<b>"+total.toLocaleString()+"</b> 円";
+  return total;
+}
+function updateSubmit(){
+  const cc=+childCountSel.value,ac=+adultCountSel.value;
+  const ok = childSel.value && (cc+ac)>0 && selectedItems().length===(cc+ac);
+  document.getElementById("submit").disabled=!ok;
+}
+function updateAll(){updateTotal();updateSubmit();}
+
+childCountSel.onchange=()=>{renderMenus("childMenus",+childCountSel.value,CHILD_MENUS,"お子さん");updateAll();};
+adultCountSel.onchange=()=>{renderMenus("adultMenus",+adultCountSel.value,ADULT_MENUS,"大人");updateAll();};
+childSel.onchange=()=>{updateSubmit();showCurrentOrder();};
+
+/* 送信 */
+document.getElementById("submit").onclick=async()=>{
+  const cc=+childCountSel.value,ac=+adultCountSel.value;
+  if(!childSel.value||(cc+ac)===0)return;
+  const list=selectedItems();
+  const btn=document.getElementById("submit");btn.disabled=true;btn.textContent="送信中…";
+  const payload={type:"order",event:EVENT,child:childSel.value,childCount:cc,adultCount:ac,list:list};
+  try{
+    await fetch(GAS_URL,{method:"POST",body:JSON.stringify(payload)});
+    toast("注文を登録しました ✓");
+    childCountSel.value=0;adultCountSel.value=0;
+    renderMenus("childMenus",0,CHILD_MENUS,"お子さん");renderMenus("adultMenus",0,ADULT_MENUS,"大人");
+    updateAll();
+    clearMem();loadKaikei(); // 確認・会計を最新化（書き込み直後は待ち不要）
+  }catch(e){toast("送信に失敗しました",true);}
+  btn.textContent="この注文を登録";updateSubmit();
+};
+
+/* 初期化 */
+async function init(){
+  fillCount(childCountSel);fillCount(adultCountSel);
+  try{
+    const menuP=cachedGet(GAS_URL+"?view=menu"); // menuと会計を並列取得（初期表示を短縮）
+    const kaikeiP=loadKaikei();
+    const d=await menuP;
+    CHILDREN=d.roster||[];STAFF=d.staff||[];EVENT=d.event||"";MENU_ITEMS=d.menu||[];
+    CHILD_MENUS=MENU_ITEMS.filter(m=>m.seg==="子ども");
+    ADULT_MENUS=MENU_ITEMS.filter(m=>m.seg==="大人");
+    PRICE={};MENU_ITEMS.forEach(m=>{PRICE[m.name]=m.price;});
+    document.getElementById("evBadge").textContent=EVENT?("🎉 "+EVENT):"（イベント未設定）";
+    // イベント名（config「現在のイベント名」）をブラウザのタブタイトルにも反映＝忘年会等に使い回せる
+    document.title=EVENT?("オレンジライン "+EVENT):"オレンジライン 注文・会計";
+    const pu=Number(d.present)||0;
+    const pn=document.getElementById("presentNote");
+    if(pu>0){pn.style.display="block";pn.textContent="🎁 この会は子ども1人あたり お菓子代 "+pu.toLocaleString()+"円 がかかります（メニュー代とは別に加算されます）。";}
+    else{pn.style.display="none";}
+    buildNameSelect();
+    if(!MENU_ITEMS.length){document.getElementById("evBadge").textContent="（メニュー未設定：menuシートを設定してください）";}
+    updateAll();
+    await kaikeiP; // 並列で走らせた会計取得の完了を待つ
+  }catch(e){
+    document.getElementById("evBadge").textContent="取得に失敗。GAS_URLを確認してください。";
+    toast("データ取得に失敗しました",true);
+  }
+}
+
+/* ===== 会計データの取得＋確認/会計の描画 ===== */
+async function loadKaikei(fresh){
+  try{
+    const d=await cachedGet(GAS_URL+"?view=kaikei",fresh);
+    const k=d.kaikei||{families:[],menu:[],summary:{}};
+    ORDERS_BY_NAME={};(k.families||[]).forEach(f=>{ORDERS_BY_NAME[f.name]=f;});
+    showCurrentOrder();
+    renderKaikei(k);
+  }catch(e){
+    document.getElementById("kSummary").innerHTML='<div class="loading">取得できませんでした。</div>';
+  }
+}
+
+/* 入力中の名前の「現在の登録」を表示（確認＋修正ボタン） */
+function showCurrentOrder(){
+  const box=document.getElementById("curOrder");
+  const name=childSel.value;
+  if(!name){box.style.display="none";return;}
+  const f=ORDERS_BY_NAME[name];
+  box.style.display="block";
+  if(!f){
+    box.innerHTML='<div class="co-title">📝 '+esc(name)+' さんの登録</div>まだ登録がありません。下で入力して登録してください。';
+    return;
+  }
+  const list=(f.items||[]).map(it=>esc(it.menu)+'（'+(it.price||0)+'円）').join("・");
+  box.innerHTML='<div class="co-title">✅ '+esc(name)+' さんは登録済みです</div>'
+    +'子ども'+f.child+'人・大人'+f.adult+'人／'+list
+    +'<br>合計 <b>'+(f.total||0).toLocaleString()+' 円</b>　支払い：'+(f.paid?'<span class="paid-yes">済</span>':'<span class="paid-no">未</span>')
+    +'<br><button class="co-edit" id="coEdit">この内容を修正する</button>';
+  document.getElementById("coEdit").onclick=()=>loadOrderIntoForm(f);
+}
+
+/* 現在の注文をフォームに読み込む（修正用） */
+function loadOrderIntoForm(f){
+  const childItems=(f.items||[]).filter(it=>it.seg==="子ども");
+  const adultItems=(f.items||[]).filter(it=>it.seg==="大人");
+  childCountSel.value=childItems.length;adultCountSel.value=adultItems.length;
+  renderMenus("childMenus",childItems.length,CHILD_MENUS,"お子さん");
+  renderMenus("adultMenus",adultItems.length,ADULT_MENUS,"大人");
+  document.querySelectorAll("#childMenus .menu-sel").forEach((s,i)=>{if(childItems[i])s.value=childItems[i].menu;});
+  document.querySelectorAll("#adultMenus .menu-sel").forEach((s,i)=>{if(adultItems[i])s.value=adultItems[i].menu;});
+  updateAll();
+  toast("現在の内容を読み込みました。修正して登録してください。");
+  document.getElementById("childCount").scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+/* ===== 注文集計（発注用）：お店プルダウン＋発注レ点チェック ===== */
+/* 長音の表記ゆれ（ー/－/‐/−/ｰ）をそろえてから照合する */
+function normShop(s){return String(s||"").replace(/[－‐−ｰ]/g,"ー");}
+/* お店の判定：①menuシートE列「お店」（GASがshopとして返す）を最優先
+   ②未入力ならSHOP_DEFSのキーワードで補助判定 ③それでも不明なら「その他」 */
+function shopOfItem(m){
+  const fromSheet=String((m&&m.shop)||"").trim();
+  if(fromSheet)return fromSheet;
+  const n=normShop(m&&m.menu);
+  for(const d of SHOP_DEFS){
+    for(const k of d.keywords){if(n.indexOf(normShop(k))>=0)return d.shop;}
+  }
+  return "その他";
+}
+/* 発注済みレ点は「この端末のブラウザ」にイベント名ごとに保存（発注担当者用） */
+function checkedKey(){return "orderChecked|"+KEVENT;}
+function loadChecked(){try{return JSON.parse(localStorage.getItem(checkedKey())||"{}");}catch(e){return {};}}
+function saveChecked(o){try{localStorage.setItem(checkedKey(),JSON.stringify(o));}catch(e){}}
+
+function renderMenuList(){
+  const box=document.getElementById("kMenu");
+  if(!KMENU.length){box.innerHTML='<div class="loading">まだ注文がありません。</div>';return;}
+  const checked=loadChecked();
+  /* お店ごとの品数（プルダウン。データに出てきた順＋その他は最後） */
+  const shopCount={};const shopList=[];
+  KMENU.forEach(m=>{
+    const s=shopOfItem(m);
+    shopCount[s]=(shopCount[s]||0)+1;
+    if(s!=="その他"&&shopList.indexOf(s)<0)shopList.push(s);
+  });
+  if(shopCount["その他"])shopList.push("その他");
+  if(shopFilter!=="全部"&&shopList.indexOf(shopFilter)<0)shopFilter="全部";
+  const rows=(shopFilter==="全部")?KMENU:KMENU.filter(m=>shopOfItem(m)===shopFilter);
+  const done=rows.filter(m=>checked[m.menu]).length;
+
+  let h='<div class="kmenu-bar">'
+    +'<label>お店</label>'
+    +'<select id="kShopSel">'
+    +'<option value="全部"'+(shopFilter==="全部"?" selected":"")+'>全部（'+KMENU.length+'品）</option>'
+    +shopList.map(s=>'<option value="'+escAttr(s)+'"'+(shopFilter===s?" selected":"")+'>'+esc(s)+'（'+shopCount[s]+'品）</option>').join("")
+    +'</select>'
+    +'<span class="kmenu-prog">発注済み <b>'+done+'</b> / '+rows.length+' 品</span>'
+    +'<button class="kmenu-reset" id="kChkReset">リセット</button>'
+    +'</div>';
+  h+='<table><thead><tr><th>済</th><th>メニュー</th><th>個数</th><th>単価</th><th>金額</th></tr></thead><tbody>';
+  let tc=0,ta=0;
+  rows.forEach(m=>{
+    tc+=m.count;ta+=m.amount;
+    const on=!!checked[m.menu];
+    h+='<tr'+(on?' class="ordered"':'')+'>'
+      +'<td><input type="checkbox" class="chk" data-menu="'+escAttr(m.menu)+'"'+(on?' checked':'')+'></td>'
+      +'<td class="mname">'+esc(m.menu)+(shopFilter==="全部"?' <span class="shop-tag">'+esc(shopOfItem(m))+'</span>':'')+'</td>'
+      +'<td>'+m.count+'</td><td>'+(m.price||0).toLocaleString()+'</td><td class="amt">'+(m.amount||0).toLocaleString()+'</td></tr>';
+  });
+  h+='</tbody><tfoot><tr><td></td><td>'+(shopFilter==="全部"?"合計":esc(shopFilter)+"の合計")+'</td><td>'+tc+'</td><td></td><td class="amt">'+ta.toLocaleString()+'</td></tr></tfoot></table>';
+  h+='<p class="note" style="margin-top:6px">レ点＝発注済みの印（この端末のブラウザに保存されます）。お店で絞り込んで上から順に発注すると、もれ・かぶりを防げます。</p>';
+  box.innerHTML=h;
+  /* 操作の紐づけ */
+  document.getElementById("kShopSel").onchange=e=>{shopFilter=e.target.value;renderMenuList();};
+  box.querySelectorAll(".chk").forEach(c=>{c.onchange=()=>{
+    const o=loadChecked();const key=c.getAttribute("data-menu");
+    if(c.checked)o[key]=true;else delete o[key];
+    saveChecked(o);renderMenuList();
+  };});
+  document.getElementById("kChkReset").onclick=()=>{
+    if(!confirm("発注済みのレ点を全部消します。よろしいですか？"))return;
+    saveChecked({});renderMenuList();
+  };
+}
+
+/* 会計タブの描画 */
+function renderKaikei(k){
+  document.getElementById("kEvent").textContent=(k.event?k.event+"　":"")+"会計サマリー";
+  const s=k.summary||{};
+  document.getElementById("kSummary").innerHTML=
+    '<div class="k-summary">'
+    +'<div class="k-stat"><div class="lbl">総額</div><div class="val">'+(s.grand||0).toLocaleString()+' 円</div></div>'
+    +'<div class="k-stat"><div class="lbl">参加（子/大人）</div><div class="val">'+(s.child||0)+' / '+(s.adult||0)+'</div></div>'
+    +'<div class="k-stat"><div class="lbl">集金済み</div><div class="val paid-yes">'+(s.paid||0).toLocaleString()+' 円</div></div>'
+    +'<div class="k-stat"><div class="lbl">未集金</div><div class="val paid-no">'+(s.unpaid||0).toLocaleString()+' 円</div></div>'
+    +'</div>'
+    +((k.presentUnit||0)>0?'<div class="note" style="margin-top:8px">内訳：メニュー代 '+(s.menu||0).toLocaleString()+'円 ＋ 🎁お菓子代 '+(s.present||0).toLocaleString()+'円（'+(k.presentUnit).toLocaleString()+'円×子ども'+(s.child||0)+'人）</div>':'')
+    +((s.unpaidNames&&s.unpaidNames.length)?'<div class="unpaid-box">未払い：'+s.unpaidNames.map(esc).join("、")+'</div>':'');
+
+  // 注文集計（発注用）：お店プルダウン＋発注レ点（renderMenuListで描画）
+  KMENU=k.menu||[];
+  KEVENT=k.event||"";
+  renderMenuList();
+
+  // 家庭別 会計一覧（カード型）
+  const fam=k.families||[];
+  if(fam.length){
+    let h='';
+    fam.forEach(f=>{
+      const agg={},order=[];
+      (f.items||[]).forEach(it=>{const m=esc(it.menu);if(!agg[m]){agg[m]=0;order.push(m);}agg[m]++;});
+      let menuHtml=order.length?order.map(m=>'<div class="fm-item">'+m+' ×'+agg[m]+'</div>').join(""):'<div class="fm-item" style="color:var(--muted)">（メニューなし）</div>';
+      if((f.present||0)>0)menuHtml+='<div class="fm-pres">🎁 お菓子代 '+(f.present||0).toLocaleString()+'円（子ども'+f.child+'人）</div>';
+      const brk=(f.present||0)>0?'<span class="fc-brk">(ﾒﾆｭｰ'+(f.menuTotal||0).toLocaleString()+'＋菓子'+(f.present||0).toLocaleString()+')</span>':'';
+      h+='<div class="fcard"><div class="fc-top"><span class="fc-name">'+esc(f.name)+'</span>'
+        +'<span>'+(f.paid?'<span class="paid-yes">済</span>':'<span class="paid-no">未</span>')+'</span></div>'
+        +'<div class="fc-people">子ども '+f.child+'人・大人 '+f.adult+'人</div>'
+        +'<div class="fc-menu">'+menuHtml+'</div>'
+        +'<div class="fc-amt">合計 <b>'+(f.total||0).toLocaleString()+'円</b>'+brk+'</div></div>';
+    });
+    document.getElementById("kFamilies").innerHTML=h;
+  }else{document.getElementById("kFamilies").innerHTML='<div class="loading">まだ注文がありません。</div>';}
+}
+document.getElementById("kRefresh").onclick=()=>loadKaikei(true);
+
+init();
+</script>
+</body>
+</html>
