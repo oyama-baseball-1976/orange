@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 ティーボール大会 お疲れ様会</title>
+<!--
+  ============================================================
+  発表用スライドページ（お疲れ様会 表彰演出）
+  ver007：チームのきせきのしめ演出＋個人表彰の導入スライド
+    ・チームのきせき：カード全部のあと、最後のクリックで「みんなすごい！」＋紙吹雪＋歓声
+    　（歓声＝sounds/cheer.mp3。無ければ合成拍手で代用。文言はTEAM_WOW定数）
+    ・チームのきせきの次に「今から 個人表彰！」の導入スライド（山吹色・紙吹雪つき。文言はAWARD_INTRO定数）
+  ver006：しめの前にセレモニー3枚を追加
+    ・はじめての記録②のあと：礼（監督・コーチへ ありがとうございました）
+    　→ 小林コーチのひとこと → 前川監督のひとこと → しめ
+    ・文言・名前は DATA の下の CEREMONY 定数で変更（データ取込で消えない）
+  ver005：チームのきせきを順次表示に変更
+    ・最初はタイトルのみ→クリックごとにカード（せいせき→通算ヒット→総得点→勢い）を1枚ずつ発表
+    ・←キーで1枚ずつ巻き戻し。全部出たら次のクリックで次のスライドへ
+  ver004：BGM対応
+    ・sounds/bgm.mp3 を置くと、最初の操作からループ再生（無ければ鳴らない）
+    ・音量は BGM_VOLUME（ふだん）/ BGM_DUCK（ドラムロール〜発表中）で調整
+    ・Bキー＝BGMだけON/OFF、Mキー＝効果音もBGMも全部ON/OFF
+  ver003：進行を「賞→その子のインタビュー」交互に変更
+    ・全児童がAWARD/SPECIAL AWARDを受賞する前提（発表→お菓子→意気込みインタビュー）
+    ・ポジション別MVPスライドは廃止（DATAのposAwardsは残るが表示しない）
+    ・はじめての記録は「しめ」の直前（8人超は2枚に自動分割）
+    ・HERO INTERVIEWは写真あり横並びの1種類に統一（未配置はプレースホルダー枠）
+  ver002：デザイン「ステッカーポップ」適用（機能・演出・データ取込はver001と同一）
+  ver001：音のMP3対応（sounds/）＋顔写真対応（photos/）
+  ・同じ場所に sounds/ と photos/ フォルダを置いて使う（すべてローカル＝オフラインで動く）。
+    sounds/drumroll.mp3 … ドラムロール（発表前のタメ）
+    sounds/fanfare.mp3  … 名前登場のジャジャーン
+    sounds/applause.mp3 … 拍手
+    photos/01.jpg, 02.jpg … 顔写真（名簿順の番号。無い子は名前だけの表示になる）
+  ・MP3が無い／読めないときは、従来のWebAudio合成音で代用（必ず音が出る）。
+  ・操作：クリック / → / Space / Enter / PageDown = 進む
+          ← / PageUp = 戻る（賞スライドは発表前の状態に戻る）
+          Home = 最初へ / End = 最後へ
+          F = 全画面の切り替え ／ M = 効果音のON/OFF ／ D = データ取込（幹事用）
+  ・賞スライドは3段階：賞名 →（操作）ドラムロール🥁 → 受賞者名がバーン＋紙吹雪
+    （ドラムロール中にもう一度操作すると、すぐ発表にスキップ）
+  ============================================================
+-->
+<style>
+  :root{
+    --ink:#21324B; --orange:#F0662A; --bg:#FFF6DF; --muted:#7A6E55;
+    --green:#2C9E6B; --red:#E9505F; --blue:#3D7DD8; --yellow:#E89A00;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none;}
+  html,body{height:100%;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:var(--bg); color:var(--ink); overflow:hidden; cursor:pointer;
+  }
+  /* 背景のドット紙（シール帳の下地） */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:radial-gradient(#F2DFAE 2.5px, transparent 3px);
+    background-size:30px 30px;
+  }
+
+  /* ===== スライド共通 ===== */
+  .slide{
+    position:absolute; inset:0; display:none;
+    flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:4vh 5vw; z-index:1;
+  }
+  .slide.active{display:flex;}
+  /* 自動フィット枠：中身が画面より大きいときJSで縮小（人数が多くてもはみ出さない） */
+  .fitbox{display:flex; flex-direction:column; align-items:center; justify-content:center;}
+  .inner{display:flex; flex-direction:column; align-items:center; justify-content:center; animation:fadeUp .45s ease both; max-width:96vw;}
+  .s-label{font-size:clamp(16px,2.2vw,30px); font-weight:800; color:var(--muted); letter-spacing:.18em;}
+  .s-title{font-size:clamp(34px,6vw,84px); font-weight:900; line-height:1.25; margin:2vh 0;}
+  .s-sub{font-size:clamp(16px,2.2vw,30px); color:var(--muted);}
+
+  /* ベタ色背景スライド（各賞・MVP・しめ）：ドット紙の質感＋文字は白 */
+  .slide.grad{
+    color:#fff;
+    background-image:radial-gradient(rgba(33,50,75,.10) 2.5px, transparent 3px);
+    background-size:30px 30px;
+  }
+  .slide.grad .s-label{
+    background:var(--ink); color:#FFE9A8; border-radius:999px;
+    padding:.7vh 2.4vw; letter-spacing:.2em;
+  }
+
+  /* ===== 表紙（ステッカー看板＋テープ帯） ===== */
+  .cover-emoji{font-size:clamp(50px,9vw,120px); animation:floaty 2.6s ease-in-out infinite;}
+  .cover-board{
+    background:#fff; border:5px solid var(--ink); border-radius:26px; box-shadow:12px 12px 0 var(--ink);
+    padding:4vh 5vw; display:flex; flex-direction:column; align-items:center;
+    --tilt:-1.5deg; animation:popIn .55s ease both;
+  }
+  .cover-title{
+    font-size:clamp(34px,6.2vw,88px); font-weight:900; line-height:1.3; margin:1.5vh 0; color:var(--ink);
+  }
+  .cover-team{
+    background:var(--orange); color:#fff; border:3px solid var(--ink); border-radius:999px;
+    box-shadow:4px 4px 0 var(--ink); padding:.8vh 2.4vw;
+    font-size:clamp(14px,1.8vw,26px); font-weight:900;
+  }
+  .cover-tape{
+    position:absolute; color:#fff; font-weight:900; letter-spacing:.25em;
+    border:3px solid var(--ink); box-shadow:5px 5px 0 var(--ink);
+    padding:1vh 4vw; font-size:clamp(13px,1.6vw,24px); z-index:2;
+  }
+  .tape-l{top:7vh; left:-1.5vw; background:var(--blue); transform:rotate(-7deg);}
+  .tape-r{bottom:8vh; right:-1.5vw; background:var(--green); transform:rotate(6deg);}
+  .cover-hint{
+    margin-top:5vh; font-size:clamp(12px,1.5vw,19px); color:var(--muted);
+    background:#fff; border:3px solid var(--ink); border-radius:14px; box-shadow:4px 4px 0 var(--ink);
+    padding:10px 22px; line-height:1.9;
+  }
+
+  /* ===== チーム振り返り ===== */
+  .team-grid{display:flex; flex-wrap:wrap; gap:2vw; justify-content:center; margin-top:3vh;}
+  /* ver005：カードを1枚も出していないときの案内（クリックで順次発表） */
+  .team-hint{
+    margin-top:4vh; font-size:clamp(18px,2.4vw,34px); font-weight:800; color:var(--muted);
+    animation:pulse 1.4s ease-in-out infinite;
+  }
+  /* ver007：カード全部のあとに出る「みんなすごい！」（紙吹雪＋歓声つき） */
+  .team-wow{
+    margin-top:3.5vh; font-size:clamp(40px,7vw,96px); font-weight:900; color:var(--orange);
+    text-shadow:4px 4px 0 var(--ink);
+    animation:bam .6s cubic-bezier(.2,1.4,.4,1) both;
+  }
+  .big-card{
+    color:#fff; border-radius:22px; padding:3vh 3vw; min-width:220px;
+    border:4px solid var(--ink); box-shadow:8px 8px 0 var(--ink); animation:popIn .55s ease both;
+  }
+  .big-card .lbl{font-size:clamp(14px,1.8vw,26px); font-weight:800; opacity:.92;}
+  .big-card .val{font-size:clamp(40px,6.5vw,96px); font-weight:900; line-height:1.15; text-shadow:0 3px 10px rgba(0,0,0,.18);}
+  .big-card .unit{font-size:clamp(16px,2vw,30px); font-weight:800;}
+  .big-card .sub{font-size:clamp(12px,1.4vw,20px); opacity:.92; font-weight:700;}
+
+  /* ===== 各賞スライド ===== */
+  .award-emoji{font-size:clamp(60px,10vw,140px); animation:floaty 2.4s ease-in-out infinite;}
+  .award-name{
+    font-size:clamp(36px,6.5vw,92px); font-weight:900; margin:1.5vh 0 2vh;
+    text-shadow:4px 4px 0 var(--ink);
+  }
+  .award-wait{
+    margin-top:3.5vh; font-size:clamp(20px,3vw,44px); font-weight:800;
+    color:rgba(255,255,255,.92); animation:pulse 1.4s ease-in-out infinite;
+  }
+  /* ドラムロール中 */
+  .drumroll{margin-top:3vh; animation:shakeX .12s linear infinite;}
+  .drumroll .dr-emoji{font-size:clamp(60px,9vw,130px);}
+  .drumroll .dr-text{font-size:clamp(22px,3.4vw,50px); font-weight:900; letter-spacing:.2em; margin-top:1vh; text-shadow:3px 3px 0 var(--ink);}
+  /* 受賞者バーン（白いステッカーカードで登場） */
+  .winner-name{
+    font-size:clamp(52px,9vw,140px); font-weight:900; line-height:1.2; color:var(--orange);
+    background:#fff; border:5px solid var(--ink); border-radius:24px; box-shadow:10px 10px 0 var(--ink);
+    padding:1.5vh 4vw; -webkit-text-stroke:2px var(--ink);
+    --tilt:-2deg; animation:bam .6s cubic-bezier(.2,1.4,.4,1) both;
+  }
+  .winner-value{font-size:clamp(22px,3.2vw,46px); font-weight:900; margin-top:2.2vh;
+    background:var(--ink); color:#FFE9A8; border-radius:999px; padding:.6vh 2.6vw;
+    animation:fadeUp .5s .25s ease both;}
+  .winner-comment{font-size:clamp(16px,2.2vw,32px); color:#fff; text-shadow:2px 2px 0 rgba(33,50,75,.55); margin-top:1.8vh; font-weight:800; animation:fadeUp .5s .4s ease both;}
+
+  /* ===== 初めて記録 ===== */
+  .firsts-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:1.5vh 1.5vw; margin-top:3vh; width:min(1200px,92vw);
+  }
+  .first-card{
+    background:#fff; border:3px solid var(--ink); border-radius:14px;
+    padding:1.4vh 1.2vw; text-align:left; box-shadow:5px 5px 0 var(--ink);
+    animation:popIn .45s ease both;
+  }
+  .first-card .fc-name{font-size:clamp(16px,1.9vw,28px); font-weight:900;}
+  .first-card .fc-tags{font-size:clamp(12px,1.4vw,20px); margin-top:.5vh; line-height:1.8;}
+  .first-card .fc-tags span{display:inline-block; background:#FFEFD1; border-radius:999px; padding:1px 10px; margin:1px 3px 1px 0; font-weight:700;}
+
+  /* ===== 一人ひとり ===== */
+  /* 写真がある子：写真＋（名前・賞・スタンプ）の横並び。無い子は従来の中央縦配置 */
+  .child-flex{display:flex; align-items:center; justify-content:center; gap:3.5vw; margin-top:1.5vh;}
+  .child-photo{
+    width:clamp(220px,26vw,400px); aspect-ratio:3/4; object-fit:cover;
+    border-radius:8px; border:5px solid var(--ink);
+    box-shadow:10px 10px 0 var(--ink);
+    --tilt:-3deg; animation:popIn .55s cubic-bezier(.2,1.4,.4,1) both;
+    background:#fff;
+  }
+  .child-col{display:flex; flex-direction:column; align-items:center; justify-content:center;}
+  .child-flex .child-name{font-size:clamp(40px,7vw,104px);}   /* 写真がある分すこし控えめに */
+  /* 写真未配置の子のプレースホルダー枠（.child-photoと同寸で、レイアウトを崩さない） */
+  .child-photo-ph{
+    display:flex; align-items:center; justify-content:center;
+    font-size:clamp(64px,9vw,140px); background:#FFF6DF;
+  }
+  /* インタビューのお題（🎤 投げ試合への意気込み） */
+  .child-mic{
+    margin-top:2.2vh; background:#fff; border:3px solid var(--ink); border-radius:999px;
+    box-shadow:4px 4px 0 var(--ink); padding:1vh 2.6vw;
+    font-weight:900; font-size:clamp(14px,2vw,30px); color:var(--ink);
+    animation:fadeUp .5s .55s ease both;
+  }
+  .child-name{
+    font-size:clamp(44px,8vw,116px); font-weight:900; line-height:1.2; color:var(--ink);
+    background:#fff; border:4px solid var(--ink); border-radius:20px; box-shadow:7px 7px 0 var(--ink);
+    padding:.8vh 2.6vw;
+    --tilt:1.5deg; animation:bam .55s cubic-bezier(.2,1.4,.4,1) both;
+  }
+  .child-award{
+    margin-top:2.5vh; color:#fff; border-radius:18px; padding:2vh 3.4vw;
+    font-size:clamp(20px,3vw,44px); font-weight:900;
+    border:3px solid var(--ink); box-shadow:6px 6px 0 var(--ink);
+    --tilt:-1deg; animation:popIn .5s .15s ease both;
+  }
+  .child-award .ca-value{font-size:clamp(14px,1.8vw,26px); font-weight:800; opacity:.95; margin-top:.4vh;}
+  .child-award .ca-comment{font-size:clamp(13px,1.6vw,22px); font-weight:700; opacity:.95; margin-top:.4vh;}
+  .child-stamps{margin-top:2.2vh; animation:fadeUp .5s .3s ease both;}
+  .child-stamps .cs-lbl{font-size:clamp(13px,1.5vw,20px); color:var(--muted); display:block; margin-bottom:.8vh; font-weight:800; letter-spacing:.1em;}
+  .child-stamps .cs-row{display:flex; gap:.7vw; justify-content:center;}
+  .child-stamps .cs-row i{
+    font-style:normal; font-size:clamp(20px,2.8vw,40px);
+    background:#fff; border:3px solid var(--ink); border-radius:50%; box-shadow:3px 3px 0 var(--ink);
+    width:1.9em; height:1.9em; display:flex; align-items:center; justify-content:center;
+  }
+  .child-totals{margin-top:2.4vh; font-size:clamp(15px,2vw,28px); animation:fadeUp .5s .42s ease both;}
+  .child-totals b{color:var(--orange); font-size:clamp(20px,2.6vw,38px);}
+
+  /* ===== しめ ===== */
+  .closing-msg{font-size:clamp(38px,6.5vw,92px); font-weight:900; line-height:1.35; color:var(--ink);
+    background:#fff; border:5px solid var(--ink); border-radius:26px; box-shadow:12px 12px 0 var(--ink);
+    padding:3vh 5vw; margin-top:2vh;
+    --tilt:-1.5deg; animation:bam .6s cubic-bezier(.2,1.4,.4,1) both;}
+  .closing-note{margin-top:4vh; font-size:clamp(20px,3vw,44px); font-weight:800; color:#fff; text-shadow:2px 2px 0 rgba(33,50,75,.55); animation:fadeUp .5s .35s ease both;}
+
+  /* ===== 紙吹雪 ===== */
+  .confetti{position:fixed; inset:0; pointer-events:none; z-index:20; overflow:hidden;}
+  .confetti i{position:absolute; top:-24px; display:block; animation:fall linear forwards;}
+
+  /* ===== 進捗・音インジケーター ===== */
+  #progress{
+    position:fixed; right:14px; bottom:10px; font-size:13px; color:var(--ink); font-weight:700;
+    background:#fff; border:2px solid var(--ink); border-radius:999px; padding:3px 12px; z-index:30;
+  }
+  #soundInd{
+    position:fixed; left:14px; bottom:10px; font-size:13px; color:var(--ink); font-weight:700;
+    background:#fff; border:2px solid var(--ink); border-radius:999px; padding:3px 12px; z-index:30;
+  }
+  #bgmInd{
+    position:fixed; left:14px; bottom:44px; font-size:13px; color:var(--ink); font-weight:700;
+    background:#fff; border:2px solid var(--ink); border-radius:999px; padding:3px 12px; z-index:30;
+  }
+
+  /* ===== データ取込画面（Dキー・幹事用） ===== */
+  #importOverlay{position:fixed; inset:0; background:rgba(20,25,45,.6); z-index:50; display:none;
+    align-items:center; justify-content:center; cursor:auto;}
+  #importOverlay.open{display:flex;}
+  .imp-box{background:#fff; border-radius:16px; width:min(780px,94vw); max-height:92vh; overflow:auto;
+    padding:22px 24px; text-align:left; box-shadow:0 16px 48px rgba(0,0,0,.3);}
+  .imp-box h2{margin:0 0 4px; font-size:1.05rem;}
+  .imp-note{font-size:.78rem; color:var(--muted); line-height:1.7;}
+  .imp-box label{font-size:.8rem; font-weight:800; display:block; margin-top:12px;}
+  .imp-box input{width:100%; padding:9px 10px; border:1px solid #d5d9e3; border-radius:8px; font-size:.85rem;}
+  .imp-btn{margin-top:14px; margin-right:8px; padding:10px 20px; border-radius:10px; border:none;
+    background:var(--orange); color:#fff; font-weight:800; font-size:.9rem; cursor:pointer;}
+  .imp-btn.gray{background:#8a90a3;}
+  .imp-btn:disabled{opacity:.5;}
+  #impStatus{font-size:.84rem; margin-top:12px; white-space:pre-wrap; line-height:1.7;}
+  #impOut{width:100%; height:210px; margin-top:10px; font-family:Consolas,monospace; font-size:11px;
+    border:1px solid #d5d9e3; border-radius:8px; padding:8px;}
+
+  /* ===== アニメーション定義 ===== */
+  @keyframes fadeUp{from{opacity:0; transform:translateY(28px);} to{opacity:1; transform:none;}}
+  /* --tilt：シールの傾き。アニメ終了後も傾きが残るようにキーフレーム側で参照する */
+  @keyframes popIn{0%{opacity:0; transform:scale(.55);} 70%{opacity:1; transform:scale(1.07) rotate(var(--tilt,0deg));} 100%{opacity:1; transform:scale(1) rotate(var(--tilt,0deg));}}
+  @keyframes bam{0%{opacity:0; transform:scale(.15) rotate(-7deg);} 55%{opacity:1; transform:scale(1.22) rotate(2deg);} 75%{transform:scale(.96) rotate(var(--tilt,0deg));} 100%{opacity:1; transform:scale(1) rotate(var(--tilt,0deg));}}
+  @keyframes floaty{0%,100%{transform:translateY(0);} 50%{transform:translateY(-12px);}}
+  @keyframes pulse{0%,100%{opacity:.65;} 50%{opacity:1;}}
+  @keyframes shakeX{0%{transform:translate(0,0);} 25%{transform:translate(3px,-2px);} 50%{transform:translate(-3px,2px);} 75%{transform:translate(2px,1px);} 100%{transform:translate(0,0);}}
+  @keyframes fall{to{transform:translateY(112vh) rotate(720deg);}}
+</style>
+</head>
+<body>
+
+<div id="stage"></div>
+<div id="soundInd">🔊 音ON（Mで切替）</div>
+<div id="bgmInd">🎵 BGM ON（Bで切替）</div>
+<div id="progress">- / -</div>
+
+<!-- ===== データ取込画面（Dキーで開閉・幹事用。当日は使わない） ===== -->
+<div id="importOverlay">
+  <div class="imp-box">
+    <h2>📥 データ取込（幹事用）</h2>
+    <p class="imp-note">
+      集計システムのGASから確定データを取得し、このページに焼き込む「DATAブロック」を生成します。<br>
+      <b>ネット接続が必要なのはこの取込だけ</b>です。生成したテキストを
+      presentation_1b_sticker.html の <b>/* ==== DATA START ==== */ 〜 /* ==== DATA END ==== */</b> と丸ごと貼り替えれば、
+      当日はオフラインで動きます。賞の計算は既存の表彰画面と同じ「1人1賞」ロジックです。
+    </p>
+    <label>GASのウェブアプリURL（/exec まで）</label>
+    <input id="impUrl" type="text" placeholder="https://script.google.com/macros/s/…/exec">
+    <label>年度（空欄＝今年度）</label>
+    <input id="impYear" type="text" placeholder="例：2026">
+    <button class="imp-btn" id="impRun">取得して生成</button>
+    <button class="imp-btn gray" id="impClose">閉じる（Dキーでも閉じます）</button>
+    <div id="impStatus"></div>
+    <textarea id="impOut" spellcheck="false" placeholder="ここに生成結果が出ます"></textarea>
+    <button class="imp-btn" id="impCopy" disabled>生成結果をコピー</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   発表データ（ここを差し替え・微調整する）
+   ・いまはサンプルデータ。本番は締め切り後に確定データへ差し替える。
+   ・構造は本番と同一。文字を直せばそのまま画面に反映される。
+   ============================================================ */
+/* ==== DATA START ==== */
+const DATA = {
+  /* 表紙 */
+  title: "2026 ティーボール大会\nお疲れ様会",
+  subtitle: "小山少年野球団 オレンジ",
+
+  /* チーム振り返り（大きな数字で見せる） */
+  team: {
+    win: 5, lose: 2, draw: 1,        // 勝敗
+    gf: 48, ga: 30,                  // 総得点・総失点
+    teamHits: 62,                    // みんなの通算ヒット
+    totalGames: 8,                   // 試合数
+    streak: 3,                       // いまの連勝（0なら表示なし）
+    recent: "〇〇●〇〇"               // 直近5試合
+  },
+
+  /* 各賞（この順に1枚ずつ発表。type:"manual"は手動の一人一賞） */
+  awards: [
+    { name:"打率賞",         child:"はると", value:".500",        comment:"" },
+    { name:"安打賞",         child:"ゆうと", value:"12本",        comment:"" },
+    { name:"打点賞",         child:"さくら", value:"9点",         comment:"" },
+    { name:"得点賞",         child:"ひなた", value:"10点",        comment:"" },
+    { name:"出塁賞",         child:"あおい", value:"15回",        comment:"" },
+    { name:"オールラウンダー賞", child:"りく",   value:"5ポジション", comment:"" },
+    { name:"守備好プレー賞",     child:"めい",   value:"6pt",         comment:"" },
+    { name:"皆勤賞",             child:"そら",   value:"8試合",       comment:"" },
+    { name:"声出しNo.1賞",       child:"ゆい",   value:"",            comment:"いつも元気にチームを盛り上げてくれました", type:"manual" },
+    { name:"ナイスガッツ賞",     child:"かえで", value:"",            comment:"最後まであきらめない姿がかっこよかった！", type:"manual" }
+  ],
+
+  /* ポジション別MVP（1ポジション1枚・複数受賞あり） */
+  posAwards: [
+    { position:"ピッチャー",   winners:["はると"],         value:"4試合" },
+    { position:"キャッチャー", winners:["ゆうと"],         value:"3試合" },
+    { position:"ファースト",   winners:["さくら","りく"],  value:"3試合" },
+    { position:"セカンド",     winners:["あおい"],         value:"5試合" }
+  ],
+
+  /* 初めて記録（日付は「月/日」表示になる） */
+  firsts: [
+    { child:"はると", firstHit:"2026/05/10", firstRbi:"2026/05/10", firstReach:"2026/04/26", firstRun:"2026/05/10" },
+    { child:"ゆうと", firstHit:"2026/04/26", firstRbi:"2026/05/24", firstReach:"2026/04/26", firstRun:"2026/04/26" },
+    { child:"さくら", firstHit:"2026/05/24", firstRbi:"2026/05/24", firstReach:"2026/05/10", firstRun:"2026/06/07" },
+    { child:"ひなた", firstHit:"2026/06/07", firstRbi:"",           firstReach:"2026/05/24", firstRun:"2026/06/07" },
+    { child:"あおい", firstHit:"2026/05/10", firstRbi:"2026/06/21", firstReach:"2026/04/26", firstRun:"2026/05/24" },
+    { child:"りく",   firstHit:"2026/06/21", firstRbi:"",           firstReach:"2026/05/10", firstRun:"" },
+    { child:"めい",   firstHit:"",           firstRbi:"",           firstReach:"2026/06/07", firstRun:"2026/06/21" },
+    { child:"そら",   firstHit:"2026/07/05", firstRbi:"2026/07/05", firstReach:"2026/06/21", firstRun:"2026/07/05" },
+    { child:"ゆい",   firstHit:"",           firstRbi:"",           firstReach:"2026/07/05", firstRun:"" },
+    { child:"かえで", firstHit:"2026/06/07", firstRbi:"2026/06/21", firstReach:"2026/05/24", firstRun:"2026/06/07" }
+  ],
+
+  /* 一人ひとり（名簿順＝roster順。手渡し＆インタビュー用） */
+  children: [
+    { name:"はると", award:{ name:"打率賞", value:".500", comment:"" },
+      stamps:["🎉","⭐","🔥"], totals:{ daseki:24, anda:12, daten:8, tokuten:9, shutsurui:15, daida:0 } },
+    { name:"ゆうと", award:{ name:"安打賞", value:"12本", comment:"" },
+      stamps:["🎉","⭐","🔥"], totals:{ daseki:26, anda:12, daten:6, tokuten:8, shutsurui:14, daida:1 } },
+    { name:"さくら", award:{ name:"打点賞", value:"9点", comment:"" },
+      stamps:["🎉","⭐"], totals:{ daseki:22, anda:8, daten:9, tokuten:6, shutsurui:11, daida:0 } },
+    { name:"ひなた", award:{ name:"得点賞", value:"10点", comment:"" },
+      stamps:["🎉"], totals:{ daseki:20, anda:5, daten:3, tokuten:10, shutsurui:12, daida:2 } },
+    { name:"あおい", award:{ name:"出塁賞", value:"15回", comment:"" },
+      stamps:["🎉","⭐","👟","🚀"], totals:{ daseki:25, anda:9, daten:5, tokuten:7, shutsurui:15, daida:0 } },
+    { name:"りく", award:{ name:"オールラウンダー賞", value:"5ポジション", comment:"" },
+      stamps:["🎉","👟"], totals:{ daseki:18, anda:4, daten:2, tokuten:5, shutsurui:8, daida:3 } },
+    { name:"めい", award:{ name:"守備好プレー賞", value:"6pt", comment:"" },
+      stamps:["👟"], totals:{ daseki:15, anda:0, daten:0, tokuten:3, shutsurui:6, daida:2 } },
+    { name:"そら", award:{ name:"皆勤賞", value:"8試合", comment:"" },
+      stamps:["🎉","👟"], totals:{ daseki:21, anda:6, daten:4, tokuten:6, shutsurui:9, daida:1 } },
+    { name:"ゆい", award:{ name:"声出しNo.1賞", value:"", comment:"いつも元気にチームを盛り上げてくれました" },
+      stamps:["👟"], totals:{ daseki:12, anda:0, daten:0, tokuten:2, shutsurui:4, daida:4 } },
+    { name:"かえで", award:{ name:"ナイスガッツ賞", value:"", comment:"最後まであきらめない姿がかっこよかった！" },
+      stamps:["🎉","👟"], totals:{ daseki:16, anda:3, daten:2, tokuten:4, shutsurui:7, daida:2 } }
+  ],
+
+  /* しめ */
+  closing: {
+    message: "これからも\nがんばろう！",
+    note: "このあと みんなで集合写真を撮ります 📷"
+  }
+};
+/* ==== DATA END ==== */
+
+/* ===== ver006：しめ前のセレモニー（礼＋監督・コーチのひとこと） =====
+   文言・名前・順番はここを直す。DATAブロックの外にあるので、
+   Dキーのデータ取込で貼り替えても消えない。 */
+const CEREMONY = {
+  thanks: {                                   /* 子どもたちから監督・コーチへの礼 */
+    label: "THANK YOU",
+    emoji: "🙇",
+    title: "監督・コーチへ",
+    message: "ありがとうございます",
+    sub: "みんなで れい！"
+  },
+  speechLabel: "MESSAGE",
+  speechTitle: "投げ試合に挑む子供達にむけて ひとこと",
+  speeches: [                                 /* この順番で1人1枚（先＝小林コーチ、後＝前川監督） */
+    { name: "小林コーチ", emoji: "🎤" },
+    { name: "前川監督",   emoji: "🎤" }
+  ]
+};
+
+/* ===== ver007：個人表彰の導入スライド＆チームのきせきのしめ文言 =====
+   文言はここを直す（DATAの外＝データ取込で消えない） */
+const AWARD_INTRO = {
+  label: "AWARD TIME",
+  emoji: "🏆✨🏆",
+  title: "今から 個人表彰！",
+  sub: "だれが どんな賞を もらうかな…？"
+};
+const TEAM_WOW = "みんなすごい！";   /* チームのきせきの最後に出るメッセージ（紙吹雪＋歓声つき） */
+
+/* ===== 賞ごとの絵文字とベタ色（ステッカーポップ：グラデ廃止のフラット配色） ===== */
+const AWARD_META = {
+  "打率賞":   {emoji:"👑", grad:"#F0662A"},
+  "安打賞":   {emoji:"🏏", grad:"#E89A00"},
+  "打点賞":   {emoji:"💥", grad:"#E9505F"},
+  "得点賞":   {emoji:"🏃", grad:"#3D7DD8"},
+  "出塁賞":   {emoji:"🚀", grad:"#2C9E6B"},
+  "オールラウンダー賞":{emoji:"🌈", grad:"#9B6BD3"},
+  "守備好プレー賞":{emoji:"🧤", grad:"#2AA8A0"},
+  "カバーありがとう賞":{emoji:"🤝", grad:"#E9647E"},
+  "最多途中出場賞":{emoji:"🔥", grad:"#E06A2C"},
+  "最多代打賞":   {emoji:"⚡", grad:"#C25AA8"},
+  "皆勤賞":       {emoji:"🎖️", grad:"#6BA43A"}
+};
+const AWARD_FALLBACK={emoji:"🏅", grad:"#F0662A"};
+const MANUAL_GRADS=["#E9647E","#9B6BD3","#2AA8A0","#E89A00","#3D7DD8","#2C9E6B"];
+const POS_ICON = { "ピッチャー":"⚾","キャッチャー":"🧢","ファースト":"🥎","セカンド":"🧤",
+  "サード":"🛡️","ショート":"⚡","レフト":"🍃","センター":"🎯","ライト":"🌟" };
+const POS_GRADS=["#3D7DD8","#9B6BD3","#2C9E6B","#2AA8A0"];
+const TEAM_GRADS=["#F0662A","#E89A00","#3D7DD8","#2C9E6B"];
+const CLOSING_GRAD="#F0662A";
+
+function esc(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function nl2br(s){return esc(s).replace(/\n/g,"<br>");}
+function mmdd(d){const p=String(d||"").split("/");return p.length<3?"":(parseInt(p[1],10)+"/"+parseInt(p[2],10));}
+
+/* ============================================================
+   スライド一覧の組み立て（DATAから自動生成・仕様書の順番で固定）
+   ============================================================ */
+function buildSlides(){
+  const s=[];
+  s.push({type:"cover"});
+  s.push({type:"team"});
+  s.push({type:"awardIntro"});   /* ver007：個人表彰の導入スライド（ワクワク） */
+  /* ver003：賞（AWARD/SPECIAL AWARD）→その子のHERO INTERVIEW を交互に並べる。
+     当日の運用＝発表→前に来てお菓子プレゼント→そのままインタビュー（投げ試合への意気込み）。
+     全員が賞をもらう前提（データ賞＋手動賞で全児童をカバーする）。 */
+  const nameToIdx={};
+  DATA.children.forEach((c,i)=>{nameToIdx[c.name]=i;});   // i＝名簿順（写真ファイル番号に対応）
+  const interviewed={};
+  let mi=0;
+  DATA.awards.forEach(a=>{
+    const meta=(a.type==="manual")
+      ? {emoji:"🎀", grad:MANUAL_GRADS[(mi++)%MANUAL_GRADS.length]}
+      : (AWARD_META[a.name]||AWARD_FALLBACK);
+    s.push({type:"award", a:a, meta:meta});
+    const ci=nameToIdx[a.child];
+    if(ci!=null && !interviewed[a.child]){
+      interviewed[a.child]=true;
+      s.push({type:"child", c:DATA.children[ci], ci:ci});
+    }
+  });
+  /* 万一、賞のない子がいてもインタビューは全員分出す（名簿順で追補） */
+  DATA.children.forEach((c,i)=>{
+    if(!interviewed[c.name])s.push({type:"child", c:c, ci:i});
+  });
+  /* ポジション別MVPは廃止（作者指示。DATAのposAwardsは残るが表示しない） */
+  /* はじめての記録：しめの直前。8人を超えるときは2枚に分割 */
+  const fl=(DATA.firsts||[]).filter(f=>f.firstHit||f.firstRbi||f.firstReach||f.firstRun);
+  if(fl.length>8){
+    const half=Math.ceil(fl.length/2);
+    s.push({type:"firsts", items:fl.slice(0,half), page:" ①"});
+    s.push({type:"firsts", items:fl.slice(half),  page:" ②"});
+  }else if(fl.length){
+    s.push({type:"firsts", items:fl, page:""});
+  }
+  /* ver006：しめの前にセレモニー（礼→監督・コーチのひとこと） */
+  s.push({type:"thanks"});
+  CEREMONY.speeches.forEach(sp=>s.push({type:"speech", sp:sp}));
+  s.push({type:"closing"});
+  return s;
+}
+
+/* ============================================================
+   顔写真（photos/01.jpg, 02.jpg … 名簿順の番号）
+   起動時に全員分の有無を調べる。ver003では全員「写真あり横並び」レイアウトで、
+   写真が未配置の子は同寸のプレースホルダー枠（😊）を表示する。
+   ============================================================ */
+const PHOTO_DIR="photos/", PHOTO_EXT=".jpg";
+function photoFile(i){return PHOTO_DIR+String(i+1).padStart(2,"0")+PHOTO_EXT;}   // 0始まり→01.jpg
+const photoOk={};   // 名簿順index → true（写真あり）
+(function initPhotos(){
+  DATA.children.forEach((c,i)=>{
+    const img=new Image();
+    img.onload=()=>{
+      photoOk[i]=true;
+      /* その子のスライドを表示中に読み込み終わったら描き直す */
+      if(SLIDES[idx]&&SLIDES[idx].type==="child"&&SLIDES[idx].ci===i)render();
+    };
+    img.src=photoFile(i);
+  });
+})();
+const SLIDES=buildSlides();
+let idx=0;
+/* 賞スライドの状態：0=賞名のみ / 1=ドラムロール中 / 2=発表済み */
+const state=SLIDES.map(()=>0);
+let rollTimer=null, rollSound=null, closingDone=false, introDone=false;   /* introDone=ver007：導入スライドの紙吹雪を1回だけ */
+
+function hasReveal(sl){return sl.type==="award"||sl.type==="posmvp";}
+
+/* ============================================================
+   効果音
+   ・基本は sounds/ フォルダの固定名MP3を再生（同名で上書き＝差し替え）
+   ・MP3が無い／読めないときは、下のWebAudio合成音で代用（必ず音が出る）
+   ・音を増やすときは SOUNDS に1行足して playSound("キー") を呼ぶだけ
+   ============================================================ */
+const SOUNDS={
+  drumroll:"sounds/drumroll.mp3",   // 受賞者発表前のタメ
+  fanfare: "sounds/fanfare.mp3",    // 名前がバーンと出る瞬間
+  applause:"sounds/applause.mp3",   // 受賞の瞬間の拍手
+  cheer:   "sounds/cheer.mp3"       // ver007：みんなすごい！の歓声（無ければ合成拍手で代用）
+};
+const _audio={};   // キー→{el:Audio, failed:読めなかったらtrue}
+(function initSounds(){
+  Object.keys(SOUNDS).forEach(k=>{
+    const a=new Audio();
+    _audio[k]={el:a, failed:false};
+    a.addEventListener("error",()=>{_audio[k].failed=true;});
+    a.preload="auto"; a.src=SOUNDS[k]; a.load();
+  });
+})();
+/* MP3を再生できたら true。false のときは呼び出し側が合成音で代用する */
+function playSound(k){
+  const s=_audio[k];
+  if(muted||!s||s.failed)return false;
+  try{
+    s.el.currentTime=0;
+    const p=s.el.play();
+    /* 「ファイルが再生不能」のときだけ合成音に切替。
+       AbortError（ロール中の早送りスキップ等で直後にpauseした場合）は正常動作なので無視 */
+    if(p&&p.catch)p.catch(err=>{if(err&&err.name==="NotSupportedError")s.failed=true;});
+    return true;
+  }catch(e){return false;}
+}
+function stopSound(k){
+  const s=_audio[k];
+  if(s&&s.el){try{s.el.pause();s.el.currentTime=0;}catch(e){}}
+}
+function stopAllSounds(){Object.keys(_audio).forEach(stopSound);}
+
+/* ============================================================
+   BGM（sounds/bgm.mp3 を置くと最初の操作からループ再生。無ければ鳴らない）
+   ・音量は BGM_VOLUME で調整（効果音より控えめに）
+   ・ドラムロール〜発表の間は自動で音量を下げる（効果音を聞かせるため）
+   ・Bキー＝BGMだけON/OFF、Mキー＝効果音もBGMも全部ON/OFF
+   ============================================================ */
+const BGM_FILE="sounds/bgm.mp3";
+const BGM_VOLUME=0.13;   /* ふだんの音量（0〜1） */
+const BGM_DUCK=0.07;     /* ドラムロール〜発表中に下げた音量 */
+let bgmEl=null, bgmWanted=true, bgmStarted=false, bgmFailed=false;
+(function initBgm(){
+  bgmEl=new Audio();
+  bgmEl.loop=true; bgmEl.preload="auto"; bgmEl.volume=BGM_VOLUME;
+  bgmEl.addEventListener("error",()=>{bgmFailed=true;updateBgmInd();});
+  bgmEl.src=BGM_FILE; bgmEl.load();
+})();
+/* 最初の操作のときに呼ぶ（ブラウザの自動再生制限対応） */
+function bgmStart(){
+  if(bgmStarted||muted||!bgmWanted||bgmFailed)return;
+  const p=bgmEl.play();
+  if(p&&p.then)p.then(()=>{bgmStarted=true;updateBgmInd();}).catch(()=>{});
+  else{bgmStarted=true;updateBgmInd();}
+}
+function bgmPause(){try{bgmEl.pause();}catch(e){}}
+function bgmResume(){if(!muted&&bgmWanted&&bgmStarted&&!bgmFailed){const p=bgmEl.play();if(p&&p.catch)p.catch(()=>{});}}
+function bgmToggle(){ /* Bキー：BGMだけのON/OFF */
+  bgmWanted=!bgmWanted;
+  if(bgmWanted){if(bgmStarted)bgmResume();else bgmStart();}
+  else bgmPause();
+  updateBgmInd();
+}
+let bgmDuckTimer=null;
+function bgmDuck(low){
+  if(bgmDuckTimer){clearTimeout(bgmDuckTimer);bgmDuckTimer=null;}  // 予約済みの復帰をキャンセル（連打対策）
+  if(bgmEl)bgmEl.volume=low?BGM_DUCK:BGM_VOLUME;
+}
+function bgmDuckRestoreLater(ms){  // 発表の効果音が落ち着いてからBGM音量を戻す
+  if(bgmDuckTimer)clearTimeout(bgmDuckTimer);
+  bgmDuckTimer=setTimeout(()=>{bgmDuckTimer=null;if(bgmEl)bgmEl.volume=BGM_VOLUME;},ms);
+}
+function updateBgmInd(){
+  const el=document.getElementById("bgmInd");if(!el)return;
+  el.textContent=bgmFailed?"🎵 BGMなし（sounds/bgm.mp3を置くと流れます）"
+    :(bgmWanted?"🎵 BGM ON（Bで切替）":"🎵 BGM OFF（Bで切替）");
+}
+
+/* ---- 以下はフォールバック用の合成音（WebAudio・外部ファイル不要） ---- */
+let audioCtx=null, muted=false;
+function ac(){
+  if(!audioCtx){const AC=window.AudioContext||window.webkitAudioContext;if(AC)audioCtx=new AC();}
+  if(audioCtx&&audioCtx.state==="suspended")audioCtx.resume();
+  return audioCtx;
+}
+/* ドラムロール：低いタム音を加速しながら連打（durationSec の間） */
+function playDrumroll(durationSec){
+  if(muted)return null;const ctx=ac();if(!ctx)return null;
+  const master=ctx.createGain();master.gain.value=1;master.connect(ctx.destination);
+  let t=ctx.currentTime+0.03;const end=t+durationSec;let gap=0.15;
+  while(t<end){
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    const f=130+Math.random()*25;
+    o.type="sine";o.frequency.setValueAtTime(f,t);
+    o.frequency.exponentialRampToValueAtTime(f*0.55,t+0.07);
+    g.gain.setValueAtTime(0.45,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.09);
+    o.connect(g).connect(master);o.start(t);o.stop(t+0.1);
+    t+=gap;gap=Math.max(0.04,gap*0.94);   // だんだん速く
+  }
+  return {stop(){try{master.gain.value=0;master.disconnect();}catch(e){}}};
+}
+/* 発表：シンバル＋タターン♪（2音） */
+function playFanfare(){
+  if(muted)return;const ctx=ac();if(!ctx)return;
+  const t0=ctx.currentTime+0.02;
+  /* シンバル（ホワイトノイズ） */
+  const len=Math.floor(ctx.sampleRate*1.1);
+  const buf=ctx.createBuffer(1,len,ctx.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.4);
+  const src=ctx.createBufferSource();src.buffer=buf;
+  const hp=ctx.createBiquadFilter();hp.type="highpass";hp.frequency.value=4200;
+  const ng=ctx.createGain();ng.gain.value=0.4;
+  src.connect(hp).connect(ng).connect(ctx.destination);src.start(t0);
+  /* タターン♪（ド→ソの2音） */
+  [[523.25,0,0.16],[783.99,0.14,0.5]].forEach(([f,dt,dur])=>{
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.type="triangle";o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,t0+dt);
+    g.gain.exponentialRampToValueAtTime(0.35,t0+dt+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001,t0+dt+dur);
+    o.connect(g).connect(ctx.destination);o.start(t0+dt);o.stop(t0+dt+dur+0.05);
+  });
+}
+/* 拍手（applause.mp3が無いとき用：短いノイズを不規則に重ねてパチパチ感を出す） */
+function playApplauseSynth(){
+  if(muted)return;const ctx=ac();if(!ctx)return;
+  const t0=ctx.currentTime+0.05;
+  for(let i=0;i<36;i++){
+    const t=t0+Math.random()*1.6;                    // 1.6秒の間に36回の「パチ」
+    const len=Math.floor(ctx.sampleRate*0.03);
+    const buf=ctx.createBuffer(1,len,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let j=0;j<len;j++)d[j]=(Math.random()*2-1)*Math.pow(1-j/len,1.5);
+    const src=ctx.createBufferSource();src.buffer=buf;
+    const bp=ctx.createBiquadFilter();bp.type="bandpass";bp.frequency.value=1800+Math.random()*1800;
+    const g=ctx.createGain();g.gain.value=0.10+Math.random()*0.12;
+    src.connect(bp).connect(g).connect(ctx.destination);src.start(t);
+  }
+}
+
+/* ============================================================
+   紙吹雪（CSSパーティクル。数秒で自動削除）
+   ============================================================ */
+function confetti(n){
+  const colors=["#F0662A","#E9505F","#F5B301","#2C9E6B","#3D7DD8","#9B6BD3","#2AA8A0","#E89A00"];
+  const wrap=document.createElement("div");wrap.className="confetti";
+  for(let i=0;i<(n||80);i++){
+    const p=document.createElement("i");
+    p.style.left=(Math.random()*100)+"vw";
+    p.style.background=colors[i%colors.length];
+    const sz=(6+Math.random()*9);
+    p.style.width=sz+"px";p.style.height=(Math.random()<.4?sz:sz*0.6)+"px";
+    if(Math.random()<.5)p.style.borderRadius="50%";
+    p.style.animationDelay=(Math.random()*0.35)+"s";
+    p.style.animationDuration=(1.9+Math.random()*1.6)+"s";
+    p.style.opacity=String(0.75+Math.random()*0.25);
+    wrap.appendChild(p);
+  }
+  document.body.appendChild(wrap);
+  setTimeout(()=>wrap.remove(),4200);
+}
+
+/* ============================================================
+   描画
+   ============================================================ */
+/* ver005：チームのきせきのカード定義（表示順もここで決まる。枚数は勢いの有無で3〜4枚） */
+function teamCardDefs(){
+  const t=DATA.team||{};
+  const defs=[];
+  defs.push(["せいせき", t.win+'<span class="unit">勝</span>'+t.lose+'<span class="unit">敗</span>'+t.draw+'<span class="unit">分</span>', "全"+(t.totalGames||0)+"試合"]);
+  defs.push(["みんなの通算ヒット", (t.teamHits||0)+'<span class="unit">本</span>', ""]);
+  defs.push(["チーム総得点", (t.gf||0)+'<span class="unit">点</span>', ""]);
+  if(t.streak>0)defs.push(["いまの勢い", t.streak+'<span class="unit">連勝</span>', "直近 "+esc(t.recent||"")]);
+  return defs;
+}
+/* ver007：カード全部＋最後の「みんなすごい！」で1ステップ増える */
+function teamSteps(){return teamCardDefs().length+1;}
+
+function renderSlide(sl,i){
+  if(sl.type==="cover"){
+    return '<div class="cover-tape tape-l">おつかれさま！</div>'
+      +'<div class="cover-tape tape-r">がんばった！</div>'
+      +'<div class="inner">'
+      +'<div class="cover-board">'
+      +'<div class="cover-emoji">🏆⚾🏆</div>'
+      +'<div class="cover-title">'+nl2br(DATA.title)+'</div>'
+      +'<div class="cover-team">'+esc(DATA.subtitle||"")+'</div>'
+      +'</div>'
+      +'<div class="cover-hint">クリック / → で進む　・　← で戻る<br>F = 全画面　・　M = 音ON/OFF　・　B = BGMのON/OFF</div>'
+      +'</div>';
+  }
+  if(sl.type==="team"){
+    /* ver005：クリックごとに1枚ずつカードを発表（state[i]＝表示済みの枚数） */
+    const shown=state[i]||0;
+    const defs=teamCardDefs();
+    let cards="";
+    for(let ci=0;ci<shown&&ci<defs.length;ci++){
+      const latest=(ci===shown-1);   /* いま出た1枚だけポン、表示済みは静止 */
+      cards+='<div class="big-card" style="background:'+TEAM_GRADS[ci%TEAM_GRADS.length]+';'
+        +(latest?'animation:popIn .55s cubic-bezier(.3,1.4,.4,1) both;':'animation:none;opacity:1;')
+        +'"><div class="lbl">'+defs[ci][0]+'</div><div class="val">'+defs[ci][1]+'</div>'
+        +(defs[ci][2]?'<div class="sub">'+defs[ci][2]+'</div>':'')+'</div>';
+    }
+    /* ver007：カード全部のあと、最後のクリックで「みんなすごい！」（紙吹雪＋歓声はforward側で鳴らす） */
+    const wow=(shown>defs.length)?'<div class="team-wow">'+esc(TEAM_WOW)+'</div>':'';
+    return '<div class="inner"><div class="s-label">TEAM REPORT</div>'
+      +'<div class="s-title" style="font-size:clamp(28px,4.5vw,64px)">⚾ チームのきせき ⚾</div>'
+      +(shown>0
+        ?'<div class="team-grid">'+cards+'</div>'
+        :'<div class="team-hint">クリックで ひとつずつ発表！</div>')
+      +wow
+      +'</div>';
+  }
+  if(sl.type==="award"||sl.type==="posmvp"){
+    const isPos=(sl.type==="posmvp");
+    const name=isPos?(sl.p.position+"MVP"):sl.a.name;
+    const emoji=isPos?(POS_ICON[sl.p.position]||"🧤"):sl.meta.emoji;
+    const label=isPos?"POSITION MVP":(sl.a.type==="manual"?"SPECIAL AWARD":"AWARD");
+    let h='<div class="inner"><div class="s-label">'+label+'</div>'
+      +'<div class="award-emoji">'+emoji+'</div>'
+      +'<div class="award-name">'+esc(name)+'</div>';
+    if(state[i]===0){
+      h+='<div class="award-wait">受賞者は…？</div>';
+    }else if(state[i]===1){
+      h+='<div class="drumroll"><div class="dr-emoji">🥁</div><div class="dr-text">ドコドコドコドコ…</div></div>';
+    }else{
+      const winner=isPos?(sl.p.winners||[]).join("・"):sl.a.child;
+      const value=isPos?(sl.p.value?("出場："+sl.p.value):""):(sl.a.value?("記録："+sl.a.value):"");
+      const comment=isPos?"":(sl.a.comment||"");
+      h+='<div class="winner-name">'+esc(winner)+'</div>';
+      if(value)h+='<div class="winner-value">'+esc(value)+'</div>';
+      if(comment)h+='<div class="winner-comment">'+esc(comment)+'</div>';
+    }
+    h+='</div>';
+    return h;
+  }
+  if(sl.type==="firsts"){
+    /* ver003：buildSlidesで分割済みの sl.items を描画（2枚構成のときは sl.page が「 ①」「 ②」） */
+    let cards="";let ci=0;
+    (sl.items||[]).forEach(f=>{
+      const tags=[];
+      if(f.firstHit)tags.push("⚾ 初ヒット "+mmdd(f.firstHit));
+      if(f.firstRbi)tags.push("💥 初打点 "+mmdd(f.firstRbi));
+      if(f.firstReach)tags.push("🏃 初出塁 "+mmdd(f.firstReach));
+      if(f.firstRun)tags.push("🎉 初得点 "+mmdd(f.firstRun));
+      if(!tags.length)return;
+      cards+='<div class="first-card" style="animation-delay:'+(ci*0.06)+'s"><div class="fc-name">'+esc(f.child)+'</div>'
+        +'<div class="fc-tags">'+tags.map(t=>'<span>'+esc(t)+'</span>').join("")+'</div></div>';
+      ci++;
+    });
+    return '<div class="inner"><div class="s-label">FIRST MEMORIES</div>'
+      +'<div class="s-title" style="font-size:clamp(28px,4.5vw,64px)">🌱 はじめての記録'+esc(sl.page||"")+' 🌱</div>'
+      +'<div class="firsts-grid">'+cards+'</div></div>';
+  }
+  if(sl.type==="child"){
+    const c=sl.c;
+    const meta=AWARD_META[c.award&&c.award.name]||{emoji:"🏅",grad:AWARD_FALLBACK.grad};
+    /* 名前・賞・スタンプ・通算のまとまり（写真あり/なし共通） */
+    let col='<div class="child-name">'+esc(c.name)+'</div>';
+    if(c.award&&c.award.name){
+      col+='<div class="child-award" style="background:'+meta.grad+'">'+meta.emoji+' '+esc(c.award.name)
+        +(c.award.value?'<div class="ca-value">記録：'+esc(c.award.value)+'</div>':'')
+        +(c.award.comment?'<div class="ca-comment">'+esc(c.award.comment)+'</div>':'')
+        +'</div>';
+    }
+    if(c.stamps&&c.stamps.length){
+      col+='<div class="child-stamps"><span class="cs-lbl">獲得スタンプ</span><span class="cs-row">'+c.stamps.map(s=>'<i>'+esc(s)+'</i>').join("")+'</span></div>';
+    }
+    const t=c.totals||{};
+    col+='<div class="child-totals">打席 <b>'+(t.daseki||0)+'</b>　安打 <b>'+(t.anda||0)+'</b>　打点 <b>'+(t.daten||0)+'</b>　得点 <b>'+(t.tokuten||0)+'</b>　出塁 <b>'+(t.shutsurui||0)+'</b></div>';
+    /* インタビューのお題（当日の進行用） */
+    col+='<div class="child-mic">🎤 投げ試合への意気込みをひとこと！</div>';
+    /* ver003：レイアウトは「写真あり横並び」の1種類に統一（必ず写真枠を表示）。
+       写真が未配置の子は、同じ大きさのプレースホルダー枠を出してレイアウトを崩さない */
+    const photo=photoOk[sl.ci]
+      ? '<img class="child-photo" src="'+photoFile(sl.ci)+'" alt="">'
+      : '<div class="child-photo child-photo-ph">😊</div>';
+    let h='<div class="inner"><div class="s-label">HERO INTERVIEW</div>';
+    h+='<div class="child-flex">'+photo+'<div class="child-col">'+col+'</div></div>';
+    h+='</div>';
+    return h;
+  }
+  if(sl.type==="awardIntro"){     /* ver007：個人表彰の導入（ワクワク） */
+    return '<div class="inner"><div class="s-label">'+esc(AWARD_INTRO.label)+'</div>'
+      +'<div class="award-emoji">'+esc(AWARD_INTRO.emoji)+'</div>'
+      +'<div class="award-name" style="font-size:clamp(40px,7.5vw,104px)">'+esc(AWARD_INTRO.title)+'</div>'
+      +'<div class="award-wait">'+esc(AWARD_INTRO.sub)+'</div>'
+      +'</div>';
+  }
+  if(sl.type==="thanks"){         /* ver006：子どもたちから監督・コーチへの礼 */
+    const c=CEREMONY.thanks;
+    return '<div class="inner"><div class="s-label">'+esc(c.label)+'</div>'
+      +'<div class="award-emoji">'+esc(c.emoji)+'</div>'
+      +'<div class="award-name">'+esc(c.title)+'</div>'
+      +'<div class="winner-name" style="font-size:clamp(40px,6.5vw,110px)">'+esc(c.message)+'</div>'
+      +(c.sub?'<div class="winner-value">'+esc(c.sub)+'</div>':'')
+      +'</div>';
+  }
+  if(sl.type==="speech"){         /* ver006：監督・コーチから投げ試合にむけてひとこと */
+    const sp=sl.sp;
+    return '<div class="inner"><div class="s-label">'+esc(CEREMONY.speechLabel)+'</div>'
+      +'<div class="award-emoji">'+esc(sp.emoji||"🎤")+'</div>'
+      +'<div class="award-name">'+esc(CEREMONY.speechTitle)+'</div>'
+      +'<div class="winner-name">'+esc(sp.name)+'</div>'
+      +'<div class="winner-value">おねがいします！</div>'
+      +'</div>';
+  }
+  if(sl.type==="closing"){
+    return '<div class="inner">'
+      +'<div class="cover-emoji">🎉👏🎉</div>'
+      +'<div class="closing-msg">'+nl2br(DATA.closing.message)+'</div>'
+      +'<div class="closing-note">'+esc(DATA.closing.note||"")+'</div>'
+      +'</div>';
+  }
+  return "";
+}
+
+/* スライドごとの背景（各賞・MVP・しめはグラデ全面） */
+function slideBg(sl){
+  if(sl.type==="award")return sl.meta.grad;
+  if(sl.type==="posmvp")return sl.grad;
+  if(sl.type==="awardIntro")return "#E89A00";   /* ver007：個人表彰の導入＝あかるい山吹色 */
+  if(sl.type==="thanks")return "#2C9E6B";   /* ver006：礼＝緑 */
+  if(sl.type==="speech")return "#3D7DD8";   /* ver006：ひとこと＝青 */
+  if(sl.type==="closing")return CLOSING_GRAD;
+  return "";
+}
+
+function render(){
+  const sl=SLIDES[idx];
+  const bg=slideBg(sl);
+  const stage=document.getElementById("stage");
+  stage.innerHTML='<div class="slide active'+(bg?' grad':'')+'"'+(bg?' style="background-color:'+bg+'"':'')+'><div class="fitbox">'+renderSlide(sl,idx)+'</div></div>';
+  fitSlide();
+  document.getElementById("progress").textContent=(idx+1)+" / "+SLIDES.length;
+  /* しめのスライドで一度だけ紙吹雪 */
+  if(sl.type==="closing"&&!closingDone){closingDone=true;confetti(110);}
+  /* ver007：個人表彰の導入スライドでも一度だけ紙吹雪（ワクワク感） */
+  if(sl.type==="awardIntro"&&!introDone){introDone=true;confetti(70);}
+}
+/* 中身が画面より大きいときだけ縮小してピッタリ収める（名簿人数が多くてもはみ出さない） */
+function fitSlide(){
+  const fb=document.querySelector(".fitbox");if(!fb)return;
+  fb.style.transform="";
+  /* offsetWidth/Heightはアニメーションのtransformの影響を受けない素のサイズ */
+  const w=fb.offsetWidth, h=fb.offsetHeight;
+  const s=Math.min(1,(innerWidth*0.96)/w,(innerHeight*0.94)/h);
+  if(s<1)fb.style.transform="scale("+s.toFixed(3)+")";
+}
+window.addEventListener("resize",()=>{fitSlide();});   // 全画面切替(F)時も収まり直す
+
+/* ============================================================
+   データ取込（Dキー・幹事用）
+   GASから view=awards / stats / teeball を取得し、DATAブロックを生成する。
+   賞の計算は既存の表彰画面（orange_Award）と同一の1人1賞ロジック。
+   ============================================================ */
+const GAS_URL_DEFAULT="https://script.google.com/macros/s/AKfycbxGKwfIE-zp_1FUdBZrDb_ZQ3Fl12dmjDevVNfOEBRuPOTAl2vFtcullzjjXtONFi_Dqg/exec";
+
+/* 1人1賞の優先順（既存 orange_Award の AWARD_DEFS と同一。変更しないこと） */
+const IMPORT_AWARD_DEFS=[
+  {name:"打率賞", cond:function(t,md){return t.daseki>=md;}, metric:function(t){return t.avg;}, fmt:function(v){return v.toFixed(3).replace(/^0/,'');}},
+  {name:"安打賞", metric:function(t){return t.anda;}, fmt:function(v){return v+"本";}},
+  {name:"打点賞", metric:function(t){return t.daten;}, fmt:function(v){return v+"点";}},
+  {name:"得点賞", metric:function(t){return t.tokuten;}, fmt:function(v){return v+"点";}},
+  {name:"出塁賞", metric:function(t){return t.shutsurui;}, fmt:function(v){return v+"回";}},
+  {name:"オールラウンダー賞", metric:function(t){return t.posKinds;}, fmt:function(v){return v+"ポジション";}},
+  {name:"守備好プレー賞", metric:function(t){return t.play;}, fmt:function(v){return v+"pt";}},
+  {name:"カバーありがとう賞", metric:function(t){return t.sub;}, fmt:function(v){return v+"回";}},
+  {name:"最多途中出場賞", metric:function(t){return t.sub;}, fmt:function(v){return v+"回";}},
+  {name:"最多代打賞", metric:function(t){return t.daida;}, fmt:function(v){return v+"回";}},
+  {name:"皆勤賞", metric:function(t,md,tg){return (tg>0 && t.games===tg)?1:0;}, fmt:function(v,tg){return tg+"試合";}}
+];
+/* スタンプ閾値（既存 orange_Award の STAMPS と同一） */
+const IMPORT_STAMPS={
+  batting:{metric:"anda", tiers:[{emoji:"🎉",n:1},{emoji:"⭐",n:5},{emoji:"🔥",n:10},{emoji:"👑",n:20}]},
+  onbase: {metric:"shutsurui", tiers:[{emoji:"👟",n:1},{emoji:"🚀",n:10},{emoji:"🏰",n:20}]}
+};
+
+function isImportOpen(){return document.getElementById("importOverlay").classList.contains("open");}
+function importToggle(){
+  const ov=document.getElementById("importOverlay");
+  if(ov.classList.contains("open")){ov.classList.remove("open");}
+  else{
+    if(!document.getElementById("impUrl").value)document.getElementById("impUrl").value=GAS_URL_DEFAULT;
+    ov.classList.add("open");
+  }
+}
+
+/* 1人1賞の割り当て（既存 renderCeremony と同一の手順） */
+function assignOnePerChild(totals,MIN_DASEKI,TOTAL_GAMES){
+  const assigned={}, list=[];
+  IMPORT_AWARD_DEFS.forEach(function(def){
+    let best=null,bestVal=0;
+    totals.forEach(function(t){
+      if(assigned[t.child])return;
+      if(def.cond && !def.cond(t,MIN_DASEKI,TOTAL_GAMES))return;
+      const v=def.metric(t,MIN_DASEKI,TOTAL_GAMES);
+      if(v>bestVal){bestVal=v;best=t;}
+    });
+    if(best){assigned[best.child]=true;
+      list.push({name:def.name,child:best.child,value:def.fmt?def.fmt(bestVal,TOTAL_GAMES):String(bestVal),comment:""});}
+  });
+  return list;
+}
+
+/* 取得データ → DATAオブジェクトの生成 */
+function genData(aw,stt,tb){
+  const a=aw.awards||{};
+  const roster=aw.roster||[];
+  const totals=a.totals||[];
+  const assignList=assignOnePerChild(totals,a.minDaseki||0,a.totalGames||0);
+  const manual=(a.manual||[]).map(m=>({name:m.award,child:m.child,value:"",comment:m.comment||"",type:"manual"}));
+
+  /* チーム数値（既存の年度成績タブのチームカードと同じ計算） */
+  const games=(stt.games||[]).slice().sort((x,y)=>String(x.date)<String(y.date)?-1:String(x.date)>String(y.date)?1:0);
+  let streak=0;for(let i=games.length-1;i>=0;i--){if(games[i].result==="〇")streak++;else break;}
+  const recent=games.slice(-5).map(g=>g.result).join("");
+  const teamHits=(tb.teeball||[]).reduce((s,r)=>s+(Number(r.anda)||0),0);
+
+  /* 子ごとの通算（スタンプ判定用。既存スタンプタブと同じ合算） */
+  const sums={};
+  (tb.teeball||[]).forEach(r=>{
+    const c=r.child;if(!c)return;
+    if(!sums[c])sums[c]={daseki:0,anda:0,daten:0,tokuten:0,shutsurui:0,daida:0};
+    ["daseki","anda","daten","tokuten","shutsurui","daida"].forEach(k=>sums[c][k]+=Number(r[k])||0);
+  });
+
+  /* 子→賞の対応（データ賞優先、なければ手動賞） */
+  const awardBy={};
+  assignList.forEach(x=>{awardBy[x.child]=x;});
+  manual.forEach(x=>{if(!awardBy[x.child])awardBy[x.child]=x;});
+
+  const children=roster.map(nm=>{
+    const t=sums[nm]||{daseki:0,anda:0,daten:0,tokuten:0,shutsurui:0,daida:0};
+    const stamps=[];
+    Object.keys(IMPORT_STAMPS).forEach(k=>{
+      const g=IMPORT_STAMPS[k];
+      g.tiers.forEach(ti=>{if((t[g.metric]||0)>=ti.n)stamps.push(ti.emoji);});
+    });
+    const w=awardBy[nm];
+    return {name:nm,
+      award:w?{name:w.name,value:w.value,comment:w.comment||""}:{name:"",value:"",comment:""},
+      stamps:stamps, totals:t};
+  });
+  const noAward=roster.filter(nm=>!awardBy[nm]);
+
+  const data={
+    title:DATA.title, subtitle:DATA.subtitle,   // タイトル・しめの文言は現在の値を引き継ぐ
+    team:{win:stt.win||0, lose:stt.lose||0, draw:stt.draw||0, gf:stt.gf||0, ga:stt.ga||0,
+      teamHits:teamHits, totalGames:games.length, streak:streak, recent:recent},
+    awards:assignList.concat(manual),
+    posAwards:(a.posAwards||[]).map(p=>({position:p.position,winners:p.winners||[],value:p.value||""})),
+    firsts:(a.firsts||[]).map(f=>({child:f.child,firstHit:f.firstHit||"",firstRbi:f.firstRbi||"",firstReach:f.firstReach||"",firstRun:f.firstRun||""})),
+    children:children,
+    closing:DATA.closing
+  };
+  const summary="データ賞 "+assignList.length+"件（1人1賞）／ 手動賞 "+manual.length+"件 ／ ポジションMVP "+(a.posAwards||[]).length+"件 ／ 名簿 "+roster.length+"人 ／ 対象試合 "+(a.totalGames||0)+"試合"
+    +(noAward.length
+      ?"\n⚠ まだ賞のない子："+noAward.join("、")+"\n（集計システムで手動賞を入れてから取り込み直すのがおすすめ。DATAのawardsとchildrenに直接書き足してもOK）"
+      :"\n🎊 全員に賞が行き渡っています")
+    +"\n\n📷 顔写真のファイル名対応（photos/ フォルダに置く）：\n"
+    +roster.map((nm,i)=>String(i+1).padStart(2,"0")+".jpg＝"+nm).join("　");
+  return {data:data, summary:summary};
+}
+
+async function runImport(){
+  const url=(document.getElementById("impUrl").value||"").trim();
+  const year=(document.getElementById("impYear").value||"").trim();
+  const st=document.getElementById("impStatus");
+  const btn=document.getElementById("impRun");
+  if(!url){st.textContent="GASのURLを入れてください。";return;}
+  btn.disabled=true;st.textContent="取得中…（10秒ほどかかることがあります）";
+  document.getElementById("impOut").value="";document.getElementById("impCopy").disabled=true;
+  try{
+    const q=year?("&year="+encodeURIComponent(year)):"";
+    /* fresh=1 でサーバーキャッシュも飛ばして確定データを取得 */
+    const [aw,stt,tb]=await Promise.all([
+      fetch(url+"?view=awards&kind=all&bunrui=all&fresh=1"+q).then(r=>r.json()),
+      fetch(url+"?view=stats&fresh=1"+q).then(r=>r.json()),
+      fetch(url+"?view=teeball&fresh=1"+q).then(r=>r.json())
+    ]);
+    if(!aw||!aw.awards)throw new Error("awardsが取得できません（URL・GASのデプロイを確認してください）");
+    const g=genData(aw,stt,tb);
+    const text="/* ==== DATA START ==== */\nconst DATA = "+JSON.stringify(g.data,null,2)+";\n/* ==== DATA END ==== */";
+    document.getElementById("impOut").value=text;
+    document.getElementById("impCopy").disabled=false;
+    st.textContent="✅ 生成できました（年度 "+(year||aw.currentYear||"?")+"）\n"+g.summary
+      +"\n\n① 下のテキストをコピー\n② presentation_1b_sticker.html をメモ帳等で開く\n③ /* ==== DATA START ==== */ 〜 /* ==== DATA END ==== */ を丸ごと貼り替えて保存";
+  }catch(e){
+    st.textContent="❌ 失敗："+(e&&e.message?e.message:e)+"\n（ネット接続と、GASのURL（/execまで）を確認してください）";
+  }
+  btn.disabled=false;
+}
+
+function copyImport(){
+  const ta=document.getElementById("impOut");
+  ta.select();ta.setSelectionRange(0,ta.value.length);
+  let ok=false;
+  try{ok=document.execCommand("copy");}catch(e){}
+  if(!ok&&navigator.clipboard){navigator.clipboard.writeText(ta.value).then(()=>{},()=>{});ok=true;}
+  document.getElementById("impStatus").textContent=(ok?"📋 コピーしました。":"コピーできませんでした。テキストを手で選択してコピーしてください。")
+    +" presentation_1b_sticker.html の DATA START〜END を貼り替えて保存してください。";
+}
+
+document.getElementById("impRun").onclick=runImport;
+document.getElementById("impClose").onclick=importToggle;
+document.getElementById("impCopy").onclick=copyImport;
+
+/* ============================================================
+   操作
+   進む＝クリック/→/Space/Enter/PageDown、戻る＝←/PageUp
+   賞スライド：賞名 →（進む）ドラムロール2.2秒 → 発表＋紙吹雪。
+   ・ドラムロール中に進む＝すぐ発表にスキップ。
+   ・戻る＝発表を巻き戻して賞名だけに（言い直し用）。
+   ============================================================ */
+const ROLL_MS=2200;
+function cancelRoll(){
+  if(rollTimer){clearTimeout(rollTimer);rollTimer=null;}
+  stopSound("drumroll");                      // MP3のドラムロールを停止
+  if(rollSound){rollSound.stop();rollSound=null;}   // 合成音のドラムロールを停止
+  bgmDuck(false);                             // 下げていたBGM音量を戻す
+}
+function doReveal(i){
+  cancelRoll();
+  state[i]=2;
+  bgmDuck(true);                              // 発表の効果音を聞かせるためBGMを下げる
+  if(!playSound("fanfare"))playFanfare();     // 名前登場：MP3がなければ合成音
+  if(!playSound("applause"))playApplauseSynth(); // 拍手：MP3がなければ合成音
+  bgmDuckRestoreLater(2500);                  // 拍手が落ち着いたらBGMを戻す（連打時は自動キャンセル）
+  render();
+  confetti(80);
+}
+function forward(){
+  bgmStart();                                 // 最初の操作でBGM開始（自動再生制限対応）
+  const sl=SLIDES[idx];
+  /* ver005：チームのきせきはクリックごとにカードを1枚ずつ発表。全部出たら次のスライドへ */
+  if(sl.type==="team"&&state[idx]<teamSteps()){
+    state[idx]++;render();
+    /* ver007：最後のステップ＝「みんなすごい！」で紙吹雪＋歓声（無ければ合成拍手） */
+    if(state[idx]===teamSteps()){
+      bgmDuck(true);
+      if(!playSound("cheer"))playApplauseSynth();
+      bgmDuckRestoreLater(3000);
+      confetti(90);
+    }
+    return;
+  }
+  if(hasReveal(sl)){
+    if(state[idx]===0){                       // 賞名 → ドラムロール開始
+      state[idx]=1;render();
+      bgmDuck(true);                          // ドラムロール中はBGMを下げる
+      if(!playSound("drumroll"))rollSound=playDrumroll(ROLL_MS/1000);  // MP3がなければ合成音
+      const cur=idx;
+      rollTimer=setTimeout(()=>{rollTimer=null;doReveal(cur);},ROLL_MS);
+      return;
+    }
+    if(state[idx]===1){doReveal(idx);return;} // ロール中 → すぐ発表
+  }
+  if(idx<SLIDES.length-1){idx++;render();}
+}
+function back(){
+  bgmStart();
+  const sl=SLIDES[idx];
+  /* ver005：チームのきせきは1枚ずつ巻き戻す（言い直し用） */
+  if(sl.type==="team"&&state[idx]>0){state[idx]--;render();return;}
+  if(hasReveal(sl)&&state[idx]>0){cancelRoll();state[idx]=0;render();return;}
+  if(idx>0){cancelRoll();idx--;render();}
+}
+function jump(to){cancelRoll();idx=to;render();}
+
+document.addEventListener("click",e=>{
+  if(isImportOpen())return;                    // 取込画面を開いている間はスライドを進めない
+  forward();
+});
+document.addEventListener("keydown",e=>{
+  const tag=e.target&&e.target.tagName;
+  if(tag==="INPUT"||tag==="TEXTAREA")return;   // 取込画面の入力中はスライド操作しない
+  if(e.key==="d"||e.key==="D"){importToggle();return;}   // データ取込（幹事用）の開閉
+  if(isImportOpen()){if(e.key==="Escape")importToggle();return;}
+  if(e.key==="ArrowRight"||e.key===" "||e.key==="Enter"||e.key==="PageDown"){e.preventDefault();forward();}
+  else if(e.key==="ArrowLeft"||e.key==="PageUp"){e.preventDefault();back();}
+  else if(e.key==="Home"){jump(0);}
+  else if(e.key==="End"){jump(SLIDES.length-1);}
+  else if(e.key==="f"||e.key==="F"){
+    if(document.fullscreenElement)document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  }
+  else if(e.key==="m"||e.key==="M"){
+    muted=!muted;
+    if(muted){                                 // 消音にしたら鳴っている音を止める（演出は続く）
+      stopAllSounds();
+      if(rollSound){rollSound.stop();rollSound=null;}
+      bgmPause();                              // BGMも止める
+    }else{
+      bgmResume();                             // 音ONに戻したらBGMも再開
+    }
+    document.getElementById("soundInd").textContent=muted?"🔇 音OFF（Mで切替）":"🔊 音ON（Mで切替）";
+  }
+  else if(e.key==="b"||e.key==="B"){bgmToggle();}   // BGMだけのON/OFF
+});
+
+render();
+</script>
+</body>
+</html>

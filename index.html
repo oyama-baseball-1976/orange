@@ -3,781 +3,558 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⚾ 成績入力マニュアル｜小山少年野球団 オレンジ</title>
+<title>⚾ オレンジ リンク集｜小山少年野球団 オレンジ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
 <!--
   ============================================================
-  成績入力マニュアル（父母向け・ver003）
-  ・静的な1ページ。データ連携なし。LINEでURLを送って見てもらう。
-  ・スマホ縦で読みやすいことが最優先。
-  ・このあと Claude Design でデザインを整える前提の素直な構造：
-      - 色は :root のCSS変数に集約（--orange など）
-      - セクションは <section id> ブロック（日本語コメントで区切り）
-      - 手順は .step の繰り返し（番号バッジ＋見出し＋説明＋画像）
-  ・画像は images/ フォルダの 01〜17。**png → jpg → jpeg の順に自動で探す**。
-    どれも無ければ「準備中」の枠に《どんな画像が必要か》の説明文が出る（レイアウトは崩れない）。
-    → 枠の説明を見ながらスクリーンショットを撮って、images/01.jpg のように置けばそのまま表示される。
+  オレンジ リンク集（ver001）
+  ・公開場所：orange リポジトリの直下に index.html として置く
+    （いまの index.html＝父母向けマニュアルは manual.html にリネームする）
+  ・リンクの中身は「スプレッドシートの links シート」から取ってくる。
+    → カテゴリを増やしたいときも、シートに行を足すだけでこのHTMLは直さなくてよい。
+  ・2回目からは前回の内容をすぐ表示し、うしろで最新を取り直す（待たされない）。
+  ・幹事用のリンクはHTMLに一切書かない。パスワードが合ったときだけGASが返す。
+
+  ★ さわるのはここだけ ★
+    GAS_URL … スプレッドシートにつながっているGASのURL（末尾 /exec）
+    TEXTS   … 画面に出る文言
   ============================================================
 -->
 <style>
-/* ===== 色（あとから一括で変えられるように変数に集約） ===== */
+/* ===== 色（あとから一括で変えられるように変数に集約。マニュアルと同じ） ===== */
 :root{
-  --orange:      #f06a1e;   /* 基調色 */
-  --orange-dark: #d4530a;   /* ボタンの影など */
-  --orange-soft: #fff4ec;   /* うすいオレンジ（帯・カード背景） */
-  --orange-line: #ffe3ce;   /* オレンジの枠線 */
-  --green:       #1f9d63;   /* 成長セクション */
-  --green-soft:  #eef8f1;
-  --green-line:  #cdecdb;
-  --blue:        #2f7cc4;   /* チームセクション */
-  --blue-soft:   #eff5fc;
-  --blue-line:   #cfe2f6;
-  --red:         #c94a4a;   /* 削除・注意 */
-  --red-soft:    #fff1f1;
-  --red-line:    #f5cccc;
-  --and:         #2f8f4e;   /* Android（緑系） */
-  --and-soft:    #eef8f2;
-  --and-line:    #cfe9d8;
-  --ios:         #4a5568;   /* iPhone（グレー系） */
-  --ios-soft:    #f2f4f7;
-  --ios-line:    #d8dee8;
-  --text:        #333333;
-  --sub:         #6b6b6b;   /* 補足文字 */
-  --line:        #f0d9c8;   /* 全体の枠線 */
-  --bg:          #fffdfa;   /* ページ背景 */
-  --card:        #ffffff;
-  --ph-bg:       #f3ede8;   /* 準備中の枠 */
-  --ph-text:     #a08a7a;
-  --radius:      20px;
-  --round:       'M PLUS Rounded 1c', sans-serif;   /* 丸ゴシック */
+  --orange:#f06a1e; --orange-dark:#d4530a; --orange-soft:#fff4ec; --orange-line:#ffe3ce;
+  --green:#1f9d63;  --green-soft:#eef8f1;  --green-line:#cdecdb;
+  --blue:#2f7cc4;   --blue-soft:#eff5fc;   --blue-line:#cfe2f6;
+  --red:#c94a4a;    --red-soft:#fff1f1;    --red-line:#f5cccc;
+  --warn:#8a5a00;   --warn-soft:#fff8e6;   --warn-line:#ffdf9e;
+  --text:#333333; --sub:#6b6b6b; --line:#f0d9c8; --bg:#fffdfa; --card:#ffffff;
+  --radius:20px; --round:'M PLUS Rounded 1c',sans-serif;
 }
-
-/* ===== 基本（スマホ最優先） ===== */
 *{margin:0;padding:0;box-sizing:border-box;}
-body{
-  font-family:var(--round),"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;
-  background:var(--bg); color:var(--text);
-  font-size:16px; line-height:1.85; font-weight:500;
-}
-.wrap{max-width:640px; margin:0 auto; padding:0 16px 48px;}
-section{margin-top:34px;}
+body{font-family:var(--round),"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;
+  background:var(--bg); color:var(--text); font-size:16px; line-height:1.85; font-weight:500;}
+.wrap{max-width:640px; margin:0 auto; padding:0 16px 44px;}
+section{margin-top:28px;}
 p{margin-bottom:10px; text-wrap:pretty;}
-.note{font-size:.88rem; color:var(--sub);}
+.note{font-size:.86rem; color:var(--sub);}
 b,strong{font-weight:800;}
 
-/* 見出し（絵文字＋色つき） */
-.h2{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
-.h2 .emoji{font-size:1.5rem; line-height:1;}
-.h2 h2{font-family:var(--round); font-weight:800; font-size:1.2rem; color:var(--orange);}
-#growth .h2 h2{color:var(--green);}
-#team   .h2 h2{color:var(--blue);}
-#fix-del .h2 h2{color:var(--red);}
-
-/* ===== ヘッダー ===== */
-header{
-  position:relative; background:var(--orange); color:#fff; text-align:center;
-  padding:30px 20px 40px; border-radius:0 0 28px 28px; overflow:hidden;
-}
+/* ヘッダー */
+header{position:relative; background:var(--orange); color:#fff; text-align:center;
+  padding:28px 20px 32px; border-radius:0 0 28px 28px; overflow:hidden;}
 header .ball{position:absolute; top:-18px; right:-10px; font-size:88px; opacity:.16;}
-header .team{
-  display:inline-block; font-size:.8rem; font-weight:700; letter-spacing:.08em;
-  background:rgba(255,255,255,.22); padding:5px 14px; border-radius:999px;
-}
-header h1{font-family:var(--round); font-weight:800; font-size:1.7rem; margin-top:12px; line-height:1.3;}
-header .lead{font-size:.92rem; margin-top:8px; opacity:.96;}
+header .team{display:inline-block; font-size:.8rem; font-weight:700; letter-spacing:.08em;
+  background:rgba(255,255,255,.22); padding:5px 14px; border-radius:999px;}
+header h1{font-family:var(--round); font-weight:800; font-size:1.6rem; margin-top:10px; line-height:1.3;}
+header .lead{font-size:.9rem; margin-top:6px; opacity:.96;}
 
-/* ===== カード（囲み） ===== */
-.card{background:var(--orange-soft); border-radius:var(--radius); padding:18px;}
-.card.green{background:var(--green-soft); border:2px solid var(--green-line);}
-.card.blue{background:var(--blue-soft);  border:2px solid var(--blue-line);}
-.card.plain{background:var(--card); border:2px solid var(--orange-line); box-shadow:0 3px 0 var(--orange-line);}
-.card ul{padding-left:1.3em;}
-.card li{margin-bottom:4px; font-size:.95rem;}
+/* 見出し */
+.h2{display:flex; align-items:center; gap:10px; margin:0 0 10px;}
+.h2 .emoji{font-size:1.4rem; line-height:1;}
+.h2 h2{font-family:var(--round); font-weight:800; font-size:1.16rem; color:var(--orange);}
+.cat-title{font-family:var(--round); font-weight:800; font-size:1rem; color:var(--orange);
+  padding-bottom:6px; border-bottom:3px solid var(--orange-line); margin:18px 0 10px;}
 
-/* ===== 手順（番号バッジ＋見出し＋説明＋画像） ===== */
-.step{
-  background:var(--card); border:2px solid var(--orange-line); border-radius:var(--radius);
-  padding:16px; margin-bottom:14px; box-shadow:0 3px 0 var(--orange-line);
-}
-.step-head{display:flex; align-items:flex-start; gap:12px;}
-.step-no{
-  flex:none; width:42px; height:42px; border-radius:14px;
-  background:var(--orange); color:#fff; font-family:var(--round); font-weight:800;
-  display:flex; align-items:center; justify-content:center; font-size:1.3rem;
-  box-shadow:0 3px 0 rgba(0,0,0,.12);
-}
-.step-body{flex:1; min-width:0;}
-.step-title{font-family:var(--round); font-weight:700; font-size:1.12rem; line-height:1.4;}
-.step p{font-size:.95rem; margin-top:6px;}
+/* リンクカード */
+.lcard{display:flex; align-items:center; gap:12px; background:var(--card);
+  border:2px solid var(--orange-line); border-radius:16px; box-shadow:0 3px 0 var(--orange-line);
+  padding:13px 14px; margin-bottom:10px; min-height:72px; text-decoration:none; color:var(--text);}
+.lcard:active{transform:translateY(1px);}
+.lc-body{flex:1; min-width:0;}
+.lc-title{display:block; font-family:var(--round); font-weight:800; font-size:1.02rem;
+  line-height:1.45; color:var(--orange); word-break:break-word;}
+.lc-desc{display:block; font-size:.84rem; color:var(--sub); line-height:1.6; margin-top:1px;}
+.lc-go{flex:none; font-size:1.4rem; color:var(--orange); font-weight:800;}
+.lc-author{display:inline-block; font-size:.74rem; color:var(--sub); margin-top:2px;}
+/* 「みんなの追加」は色を変えて区別 */
+.user-block .lcard{border-color:var(--green-line); box-shadow:0 3px 0 var(--green-line);}
+.user-block .lc-title,.user-block .lc-go{color:var(--green);}
 
-/* 小さな手順リスト（修正・削除の番号つき手順） */
-.mini-steps{counter-reset:ms; list-style:none; padding:0; margin:6px 0 0;}
-.mini-steps li{
-  counter-increment:ms; position:relative; padding:7px 0 7px 34px; font-size:.95rem;
-  border-bottom:1px dashed var(--line);
-}
-.mini-steps li:last-child{border-bottom:none;}
-.mini-steps li::before{
-  content:counter(ms); position:absolute; left:0; top:8px;
-  width:24px; height:24px; border-radius:8px; background:var(--orange-soft);
-  color:var(--orange); font-weight:800; font-size:.82rem;
-  display:flex; align-items:center; justify-content:center;
-}
-#fix-del .mini-steps li::before{background:var(--red-soft); color:var(--red);}
+/* 自分が追加した行に出る小さな操作ボタン */
+.row-ops{display:flex; gap:8px; margin:-4px 0 12px; padding-left:2px;}
+.row-ops button{font-size:.76rem; font-weight:800; padding:7px 13px; border-radius:999px;
+  border:2px solid var(--line); background:#fff; color:var(--sub); cursor:pointer;}
+.row-ops .b-edit{border-color:var(--green-line); color:var(--green);}
+.row-ops .b-hide{border-color:var(--red-line); color:var(--red);}
 
-/* ===== ホーム画面ショートカット：機種べつカード（Android＝緑／iPhone＝グレー） ===== */
-.os-card{border-radius:var(--radius); padding:16px; margin-top:12px;}
-.os-card.android{background:var(--and-soft); border:2px solid var(--and-line);}
-.os-card.ios{background:var(--ios-soft); border:2px solid var(--ios-line);}
-.os-title{
-  display:inline-flex; align-items:center; gap:7px; font-family:var(--round); font-weight:800;
-  font-size:1.05rem; color:#fff; padding:5px 14px; border-radius:999px; margin-bottom:4px;
-}
-.os-card.android .os-title{background:var(--and);}
-.os-card.ios .os-title{background:var(--ios);}
-.os-sub{
-  font-family:var(--round); font-weight:800; font-size:.95rem; margin:12px 0 2px;
-  padding-bottom:4px; border-bottom:2px solid var(--ios-line);
-}
-.os-card.android .mini-steps li::before{background:#fff; color:var(--and);}
-.os-card.ios .mini-steps li::before{background:#fff; color:var(--ios);}
-/* 画像を撮ってくれる方を募集する案内 */
-.help-wanted{
-  background:#fff; border:2px dashed var(--ios-line); border-radius:14px;
-  padding:12px 13px; margin:10px 0 4px; font-size:.9rem; line-height:1.75;
-}
+/* ボタン */
+.btn{display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
+  min-height:52px; padding:0 16px; background:var(--orange); color:#fff; font-family:var(--round);
+  font-weight:800; font-size:1rem; border:none; border-radius:16px; box-shadow:0 3px 0 var(--orange-dark);
+  text-decoration:none; cursor:pointer;}
+.btn:active{transform:translateY(1px); box-shadow:0 2px 0 var(--orange-dark);}
+.btn.ghost{background:#fff; color:var(--orange); border:2px solid var(--orange-line); box-shadow:0 3px 0 var(--orange-line);}
+.btn.sub{background:#f4f2f0; color:var(--sub); box-shadow:0 3px 0 #ddd8d3;}
 
-/* ===== スクリーンショット（無い間は「準備中」の枠に説明文） ===== */
-.shot{margin-top:12px;}
-.shot img{width:100%; border:1px solid var(--line); border-radius:14px; display:block;}
-.shot .ph{
-  display:none; flex-direction:column; align-items:center; justify-content:center; gap:6px;
-  min-height:170px; padding:18px 14px; border-radius:14px; text-align:center;
-  background:var(--ph-bg); color:var(--ph-text); font-size:.9rem; font-weight:800;
-}
-.shot .ph .ph-desc{font-weight:500; font-size:.85rem; line-height:1.7;}
-/* 画像の下に出す短い補足（どこを見ればよいかの一言） */
-.shot-cap{font-size:.82rem; color:var(--sub); margin-top:5px; text-align:center; text-wrap:pretty;}
+/* カード・状態表示 */
+.card{background:var(--orange-soft); border-radius:var(--radius); padding:16px;}
+.empty{background:#faf7f4; border-radius:14px; padding:16px; text-align:center; color:var(--sub); font-size:.9rem;}
+.loading{text-align:center; color:var(--sub); font-size:.9rem; padding:18px;}
 
-/* ===== 項目の意味の表 ===== */
-.tbl{width:100%; border-collapse:collapse; margin-top:10px; background:var(--card);
-  border:2px solid var(--orange-line); border-radius:14px; overflow:hidden;}
-.tbl th,.tbl td{padding:9px 10px; font-size:.9rem; text-align:left; border-bottom:1px solid var(--line); vertical-align:top;}
-.tbl th{width:6.2em; white-space:nowrap; color:var(--orange); font-weight:800; background:var(--orange-soft);}
-.tbl tr:last-child th,.tbl tr:last-child td{border-bottom:none;}
+/* モーダル（追加・編集・幹事ログイン・パスワード変更で使い回す） */
+.ov{position:fixed; inset:0; background:rgba(0,0,0,.45); display:none;
+  align-items:flex-start; justify-content:center; padding:20px 14px; z-index:100; overflow-y:auto;}
+.ov.open{display:flex;}
+.modal{background:#fff; border-radius:20px; padding:18px; width:100%; max-width:460px; margin:auto 0;}
+.modal h3{font-family:var(--round); font-weight:800; font-size:1.1rem; color:var(--orange); margin-bottom:10px;}
+.modal label{display:block; font-size:.84rem; font-weight:800; color:var(--sub); margin:10px 0 4px;}
+.modal input{width:100%; font-size:16px; font-family:inherit; padding:11px 12px;
+  border:2px solid var(--line); border-radius:12px; background:#fffdfa;}
+.modal .row-btn{display:flex; gap:10px; margin-top:16px;}
+.modal .row-btn .btn{flex:1;}
+.msg{font-size:.86rem; font-weight:700; margin-top:10px; padding:9px 11px; border-radius:10px; display:none;}
+.msg.show{display:block;}
+.msg.err{background:var(--red-soft); color:var(--red);}
+.msg.ok{background:var(--green-soft); color:var(--green);}
 
-/* ===== 注意ボックス（間違いやすいポイント） ===== */
-.warn{
-  background:#fffaf3; border:2px dashed #ffcf9a; border-radius:16px;
-  padding:14px; margin-top:12px;
-}
-.warn .warn-title{font-family:var(--round); font-weight:800; color:var(--orange-dark); margin-bottom:6px;}
-.warn ul{padding-left:1.2em;}
-.warn li{font-size:.92rem; margin-bottom:6px;}
+/* 幹事ページ */
+#organizerView{display:none;}
+.org-warn{background:var(--warn-soft); border:2px solid var(--warn-line); border-radius:16px;
+  padding:14px; margin-bottom:12px; font-size:.9rem; color:var(--warn); line-height:1.75;}
+.sys-block .lcard{border-color:var(--warn-line); box-shadow:0 3px 0 var(--warn-line); background:#fffdf7;}
+.sys-block .lc-title,.sys-block .lc-go{color:var(--warn);}
+.sys-block .cat-title{color:var(--warn); border-bottom-color:var(--warn-line);}
+.recent{background:var(--green-soft); border:2px solid var(--green-line); border-radius:16px; padding:14px; margin-bottom:14px;}
+.recent .cat-title{margin-top:0; color:var(--green); border-bottom-color:var(--green-line);}
+.recent .r-item{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px dashed var(--green-line);}
+.recent .r-item:last-child{border-bottom:none;}
+.recent .r-body{flex:1; min-width:0;}
+.recent .r-title{font-weight:800; font-size:.94rem; word-break:break-word;}
+.recent .r-sub{font-size:.76rem; color:var(--sub); word-break:break-all;}
+.recent button{flex:none; font-size:.76rem; font-weight:800; padding:7px 11px; border-radius:999px;
+  border:2px solid var(--red-line); background:#fff; color:var(--red); cursor:pointer;}
 
-/* ===== 締めの小さな帯 ===== */
-.done{
-  margin-top:12px; background:var(--orange-soft); border-radius:14px; padding:12px 14px;
-  font-size:.92rem; text-align:center; font-weight:800; color:var(--orange);
-}
-
-/* ===== ボタン（成績入力ページを開く） ===== */
-.btn{
-  display:flex; align-items:center; justify-content:center; gap:8px;
-  min-height:54px; margin-top:12px; padding:0 16px;
-  background:var(--orange); color:#fff; font-family:var(--round); font-weight:800; font-size:1.05rem;
-  border-radius:16px; box-shadow:0 3px 0 var(--orange-dark); text-decoration:none;
-}
-
-/* ===== フッター ===== */
-footer{text-align:center; font-size:.8rem; color:var(--sub); padding:20px 16px 36px;}
-
-/* ===== 成績入力ページへの固定リンク（右下に浮かぶ・スクロールしても常に見える） ===== */
-.entry-link{
-  position:fixed; right:14px; bottom:16px; z-index:50;
-  display:flex; align-items:center; gap:6px;
-  min-height:46px; padding:0 15px;
-  background:var(--orange); color:#fff; font-family:var(--round); font-weight:800;
-  font-size:.86rem; border-radius:999px; text-decoration:none;
-  box-shadow:0 4px 12px rgba(240,106,30,.42);
-}
-.entry-link .el-ic{font-size:1.1rem; line-height:1;}
-.entry-link:active{transform:scale(.96);}
-/* 固定ボタンで文末（フッター・本文末尾のボタン）が隠れないように下に余白をとる */
-body{padding-bottom:74px;}
+footer{text-align:center; font-size:.8rem; color:var(--sub); padding:18px 16px 34px;}
 </style>
 </head>
 <body>
 
-<!-- ■ ヘッダー -->
 <header>
   <div class="ball">⚾</div>
   <div class="team">小山少年野球団 オレンジ</div>
-  <h1>⚾ 成績入力マニュアル</h1>
-  <div class="lead">お子さんの がんばりを、<br>いっしょに記録に残しましょう 🌱</div>
+  <h1>⚾ オレンジ リンク集</h1>
+  <div class="lead">チームで使うページを、ここにまとめました 🌱</div>
 </header>
 
 <div class="wrap">
 
-  <!-- ■ はじめに -->
-  <section id="intro">
-    <div class="h2"><span class="emoji">🌟</span><h2>はじめに</h2></div>
-    <p>試合ごとに成績を入力すると、お子さんの活躍が <strong>数字とグラフ</strong> になって積み上がっていきます。ヒットが増えた、出塁が増えた——そんな成長のあとが、あとから見返せる記録になります。</p>
-    <div class="card">
-      <p style="margin:0;">😊 <strong>正確さよりも、子どもたちが「もっとうまくなりたい！」と思えることが目的です。</strong>きっちり書けていなくても大丈夫。気楽に入力してください。</p>
-    </div>
-  </section>
-
-  <!-- ■ 入力のタイミング -->
-  <section id="timing">
-    <div class="h2"><span class="emoji">⏰</span><h2>入力のタイミング</h2></div>
-    <div class="card">
-      <p><strong>試合のあと、LINEに試合のアルバムが届いたら</strong>入力をお願いします。</p>
-      <p class="note" style="margin:0;">試合そのもの（日付・対戦相手）は幹事が先に登録しています。スコアはLINEのアルバムの中にあります。</p>
-    </div>
-  </section>
-
-  <!-- ■ 画面の見かた -->
-  <section id="screen">
-    <div class="h2"><span class="emoji">📱</span><h2>画面の見かた</h2></div>
-    <p>ページを開くと、上のほうに <strong>タブが6つ</strong> 並んでいます。</p>
-    <div class="card plain">
-      <p style="margin:0;">成績入力 ／ 入力確認 ／ 賞の確認 ／ 表彰 ／ 年度成績 ／ スタンプ</p>
-    </div>
-    <p style="margin-top:12px;">保護者のみなさんがよく使うのは、このうち <strong>4つ</strong> です。</p>
-    <div class="card">
-      <ul>
-        <li><strong>成績入力</strong>… お子さんの成績を入れる</li>
-        <li><strong>入力確認</strong>… 入れた内容を見直す・直す</li>
-        <li><strong>スタンプ</strong>… お子さんの成長を見る</li>
-        <li><strong>年度成績</strong>… チームの1年を見る</li>
-      </ul>
-    </div>
-    <p style="margin-top:12px;">タブの下には <strong>「区分（全部／大会／練習）」「試合種別（全部／ティー／投げ）」</strong> のしぼりこみ（フィルタ）があります。どのタブでも共通で効きます。</p>
-    <p class="note">👉 ふだんは <strong>「全部」のまま</strong>で大丈夫です。「大会の成績だけ見たい」ときに使ってください。</p>
-    <figure class="shot">
-      <img data-shot-img src="images/01.png" alt="タブとフィルタが並んだ画面の上部">
-      <div class="ph" data-ph>🖼️ 画像01（準備中）
-        <span class="ph-desc">タブ6つ（成績入力／入力確認／賞の確認／表彰／年度成績／スタンプ）と、その下の「区分」「試合種別」フィルタが並んでいる画面の上部</span>
-      </div>
-    </figure>
-  </section>
-
-  <!-- ■ 入力の手順 -->
-  <section id="steps">
-    <div class="h2"><span class="emoji">✏️</span><h2>入力の手順</h2></div>
-
-    <!-- 手順1 -->
-    <div class="step">
-      <div class="step-head">
-        <span class="step-no">1</span>
-        <div class="step-body">
-          <div class="step-title">🔗 リンクを開く</div>
-          <p>LINEで届いたリンクを、スマホでそのまま開きます（このページと同じように開けます）。</p>
-        </div>
-      </div>
-      <figure class="shot">
-        <img data-shot-img src="images/02.png" alt="ページを開いた直後の画面">
-        <div class="ph" data-ph>🖼️ 画像02（準備中）
-          <span class="ph-desc">リンクを開いた直後の画面（いちばん上から見えている状態）</span>
-        </div>
-      </figure>
-    </div>
-
-    <!-- ■ ホーム画面ショートカット（手順1の直後・手順2の前。手順の番号はずらさない別枠） -->
-    <section id="shortcut">
-      <div class="h2"><span class="emoji">📲</span><h2>ホーム画面にショートカットを作っておくと便利</h2></div>
-      <p>毎回LINEをさかのぼってリンクを探すのは大変です。スマホの<strong>ホーム画面にアイコンを置いておく</strong>と、次からは<strong>ワンタップで開けます</strong>。</p>
-      <div class="card">
-        <p style="margin:0;">😊 <strong>最初に一度だけ設定しておくと、あとがラクです。</strong>（設定しなくても入力はできます。あとからでもOK）</p>
-      </div>
-
-      <!-- 共通の準備（アドレスバーからURLをコピー → ブラウザで開き直す） -->
-      <div class="card plain" style="margin-top:12px;">
-        <p style="font-weight:800;margin-bottom:2px;">🔧 まずは共通の準備（AndroidもiPhoneも同じ）</p>
-        <p class="note" style="margin:0 0 4px;">👉 LINEのメッセージを長押しする方法だと「部分コピー」でURLだけを選ぶ必要があって大変です。<strong>いったんリンクを開いてから、アドレスバーでコピー</strong>するほうがかんたんです。</p>
-        <ol class="mini-steps">
-          <li>LINEで届いた<strong>リンクをタップして開きます</strong></li>
-          <li>開いた画面の<strong>上部にあるアドレスバー（URLが出ているところ）を長押し</strong>します</li>
-          <li>出てきたメニューから <strong>「リンクのコピー」</strong>（または「コピー」）を選びます</li>
-        </ol>
-        <figure class="shot">
-          <img data-shot-img src="images/18-3.png" alt="アドレスバーを長押しして「リンクのコピー」">
-          <div class="ph" data-ph>🖼️ 画像18-3（準備中）
-            <span class="ph-desc">上部のアドレスバーを長押しして <strong>「リンクのコピー」</strong> が出ている画面</span>
-          </div>
-          <figcaption class="shot-cap">▲ アドレスバーを長押しすると「リンクのコピー」が出ます</figcaption>
-        </figure>
-        <figure class="shot">
-          <img data-shot-img src="images/18-2.png" alt="アドレスバーを長押ししてコピー（別の機種の例）">
-          <div class="ph" data-ph>🖼️ 画像18-2（準備中）
-            <span class="ph-desc">アドレスバーを長押しして、URLが選ばれて <strong>「コピー」</strong> が出ている画面（別の機種の例）</span>
-          </div>
-          <figcaption class="shot-cap">▲ 機種によっては、URLが選ばれて「コピー」と出ます（どちらでもOK）</figcaption>
-        </figure>
-
-        <p style="font-weight:800;margin:14px 0 2px;">つづいて、コピーしたURLをブラウザで開きます</p>
-        <ol class="mini-steps">
-          <li>ホーム画面から <strong>Chrome</strong>（iPhoneの方は Safari）を開きます</li>
-          <li>上の<strong>アドレス欄（「Google で検索または URL」のところ）をタップ</strong>します</li>
-          <li><strong>長押しして「貼り付け」</strong>を選び、開きます</li>
-        </ol>
-        <figure class="shot">
-          <img data-shot-img src="images/19-1.png" alt="Chromeのアイコン">
-          <div class="ph" data-ph>🖼️ 画像19-1（準備中）
-            <span class="ph-desc">ホーム画面の <strong>Chrome のアイコン</strong></span>
-          </div>
-          <figcaption class="shot-cap">▲ このアイコンが Chrome です</figcaption>
-        </figure>
-        <figure class="shot">
-          <img data-shot-img src="images/19-2.png" alt="Chromeを開いた画面">
-          <div class="ph" data-ph>🖼️ 画像19-2（準備中）
-            <span class="ph-desc">Chrome を開いた画面（「Google で検索または URL」のアドレス欄が見えている）</span>
-          </div>
-          <figcaption class="shot-cap">▲ ここをタップします</figcaption>
-        </figure>
-        <figure class="shot">
-          <img data-shot-img src="images/19-3.png" alt="アドレス欄に貼り付け">
-          <div class="ph" data-ph>🖼️ 画像19-3（準備中）
-            <span class="ph-desc">アドレス欄を長押しして <strong>「貼り付け」</strong> が出ている画面</span>
-          </div>
-          <figcaption class="shot-cap">▲ 「貼り付け」を選んで開けば準備おわり！</figcaption>
-        </figure>
-      </div>
-
-      <!-- 目立つ注意：LINEの中の画面からは作れない -->
-      <div class="warn">
-        <div class="warn-title">⚠️ ここがいちばん大事です</div>
-        <ul style="margin:0;">
-          <li style="margin:0;"><strong>LINEの中で開いた画面からは、ショートカットを作れません。</strong>かならず<strong>ブラウザ（Chrome または Safari）で開き直して</strong>から、下の手順に進んでください。</li>
-        </ul>
-      </div>
-
-      <!-- Android -->
-      <div class="os-card android">
-        <div class="os-title">🤖 Android（Chrome）</div>
-        <ol class="mini-steps">
-          <li><strong>Chrome</strong> で成績入力ページを開きます（上の「共通の準備」で開けています）</li>
-          <li>画面<strong>右上の三点リーダー（︙）</strong>を探します</li>
-          <li>三点リーダー（︙）を<strong>タップ</strong>すると、メニューが開きます</li>
-          <li>メニューを<strong>下にスクロール</strong>して <strong>「インストールしてショートカットを作成」</strong> を選びます</li>
-          <li><strong>「ショートカットを作成」</strong>が出るので、名前を確認して <strong>「追加」</strong> をタップします</li>
-          <li>ホーム画面にアイコンができます 🎉</li>
-        </ol>
-        <figure class="shot">
-          <img data-shot-img src="images/20-1.png" alt="三点リーダーの位置">
-          <div class="ph" data-ph>🖼️ 画像20-1（準備中）
-            <span class="ph-desc">Chrome で成績入力ページを開いた画面。<strong>右上の三点リーダー（︙）の位置</strong>が分かるところ</span>
-          </div>
-          <figcaption class="shot-cap">▲ 画面のいちばん右上にある「︙」が三点リーダーです</figcaption>
-        </figure>
-        <figure class="shot">
-          <img data-shot-img src="images/20-2.png" alt="三点リーダーをタップした状態">
-          <div class="ph" data-ph>🖼️ 画像20-2（準備中）
-            <span class="ph-desc">三点リーダー（︙）を<strong>タップしてメニューが開いた状態</strong></span>
-          </div>
-          <figcaption class="shot-cap">▲ タップするとこのメニューが開きます</figcaption>
-        </figure>
-        <figure class="shot">
-          <img data-shot-img src="images/20-3.png" alt="インストールしてショートカットを作成">
-          <div class="ph" data-ph>🖼️ 画像20-3（準備中）
-            <span class="ph-desc">メニューの下のほうにある <strong>「インストールしてショートカットを作成」</strong> が見えている画面</span>
-          </div>
-          <figcaption class="shot-cap">▲ 下のほうまでスクロールすると出てきます</figcaption>
-        </figure>
-        <figure class="shot">
-          <img data-shot-img src="images/21.png" alt="ショートカットを作成のダイアログ">
-          <div class="ph" data-ph>🖼️ 画像21（準備中）
-            <span class="ph-desc">タップすると出てくる <strong>「ショートカットを作成」</strong> の画面（名前と「追加」ボタン）</span>
-          </div>
-          <figcaption class="shot-cap">▲ 「追加」をタップすれば完成！</figcaption>
-        </figure>
-        <div class="warn" style="margin-top:12px;">
-          <div class="warn-title">📱 端末によって名前が違います</div>
-          <ul style="margin:0;">
-            <li style="margin:0;">メニューの項目は、機種やChromeのバージョンによって
-              <strong>「インストールしてショートカットを作成」</strong>／<strong>「ホーム画面に追加」</strong>／<strong>「インストール」</strong>
-              などと表示が変わります。<strong>言葉がちがっても同じ機能</strong>なので、似た名前のものを選んでください。</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- iPhone -->
-      <div class="os-card ios">
-        <div class="os-title">🍎 iPhone</div>
-        <div class="help-wanted">
-          🙇 <strong>iPhoneの画面写真は準備中です。</strong><br>
-          iPhoneをお使いで「画面写真を撮ってもいいよ」という方がいらっしゃったら、<strong>グループラインでご連絡いただけると助かります！</strong><br>
-          <span class="note">（写真がなくても、下の手順どおりで作れます）</span>
-        </div>
-
-        <div class="os-sub">▼ Safari の場合</div>
-        <ol class="mini-steps">
-          <li><strong>Safari</strong> で成績入力ページを開きます</li>
-          <li>画面<strong>下の共有ボタン（□に↑）</strong>をタップします</li>
-          <li>メニューを<strong>下にスクロール</strong>して <strong>「ホーム画面に追加」</strong> を選びます</li>
-          <li><strong>「追加」</strong> をタップします 🎉</li>
-        </ol>
-        <figure class="shot">
-          <img data-shot-img src="images/22.png" alt="iPhone Safariの共有ボタン">
-          <div class="ph" data-ph>🖼️ 画像22（準備中）
-            <span class="ph-desc">iPhone の Safari で<strong>画面下の共有ボタン（□に↑）の位置が分かる</strong>画面</span>
-          </div>
-        </figure>
-        <figure class="shot">
-          <img data-shot-img src="images/23.png" alt="iPhone Safariのホーム画面に追加">
-          <div class="ph" data-ph>🖼️ 画像23（準備中）
-            <span class="ph-desc">iPhone の Safari の共有メニューの中で <strong>「ホーム画面に追加」</strong> が見えている画面</span>
-          </div>
-        </figure>
-
-        <div class="os-sub">▼ Chrome の場合</div>
-        <ol class="mini-steps">
-          <li><strong>Chrome</strong> で成績入力ページを開きます</li>
-          <li>画面<strong>右上の共有ボタン</strong>（または三点リーダー）をタップします</li>
-          <li><strong>「ホーム画面に追加」</strong> を選びます 🎉</li>
-        </ol>
-        <p class="note" style="margin-top:6px;">👉 「ホーム画面に追加」が見当たらないときは、<strong>Safari で開き直す</strong>とできます。</p>
-      </div>
-
-      <figure class="shot">
-        <img data-shot-img src="images/24.png" alt="ホーム画面にアイコンができた状態（準備中）">
-        <div class="ph" data-ph>🖼️ 画像24（準備中）
-          <span class="ph-desc"><strong>ホーム画面にアイコンができた状態</strong>（他のアプリと並んでいるところ）</span>
-        </div>
-      </figure>
-
-      <div class="done">🎉 次からは、ホーム画面のアイコンをタップするだけで開けます</div>
+  <!-- ===== 公開ページ ===== -->
+  <div id="publicView">
+    <section id="teamSec">
+      <div class="h2"><span class="emoji">📚</span><h2>チーム共通</h2></div>
+      <div id="teamList"><div class="loading">読み込み中…</div></div>
     </section>
 
-    <!-- 手順2 -->
-    <div class="step">
-      <div class="step-head">
-        <span class="step-no">2</span>
-        <div class="step-body">
-          <div class="step-title">📝 「成績入力」タブを開く</div>
-          <p>画面の上のタブから <strong>「成績入力」</strong> を選びます。</p>
-        </div>
-      </div>
-      <figure class="shot">
-        <img data-shot-img src="images/03.png" alt="成績入力タブを選んだ状態">
-        <div class="ph" data-ph>🖼️ 画像03（準備中）
-          <span class="ph-desc">「成績入力」タブを選んで、そのタブがオレンジ色になっている状態</span>
-        </div>
-      </figure>
-    </div>
+    <section id="userSec">
+      <div class="h2"><span class="emoji">✨</span><h2>みんなの追加</h2></div>
+      <div id="userList" class="user-block"></div>
+      <button class="btn ghost" id="btnAdd" style="margin-top:12px;">＋ リンクを追加</button>
+      <p class="note" style="margin-top:8px;">みんなで使えるリンクを自由に足せます（自分が足したものは、あとから直せます）。</p>
+    </section>
 
-    <!-- 手順3 -->
-    <div class="step">
-      <div class="step-head">
-        <span class="step-no">3</span>
-        <div class="step-body">
-          <div class="step-title">📅 試合を選ぶ</div>
-          <p>「試合を選ぶ」の <strong>試合日</strong> から、入力したい試合を選びます。</p>
-          <p class="note">👉 入力したい試合が出てこないときは、まだ幹事が試合を登録していないかもしれません。<strong>グループラインでお知らせください。</strong></p>
-        </div>
-      </div>
-      <figure class="shot">
-        <img data-shot-img src="images/04.png" alt="試合日のプルダウンを開いたところ">
-        <div class="ph" data-ph>🖼️ 画像04（準備中）
-          <span class="ph-desc">「試合日」のプルダウンをタップして、試合の日付が一覧で出ているところ</span>
-        </div>
-      </figure>
-    </div>
+    <section id="orgSec">
+      <button class="btn sub" id="btnOrganizer">🔑 幹事用</button>
+    </section>
+  </div>
 
-    <!-- 手順4 -->
-    <div class="step">
-      <div class="step-head">
-        <span class="step-no">4</span>
-        <div class="step-body">
-          <div class="step-title">👦 自分のお子さんを選ぶ</div>
-          <p>「選手の成績」の <strong>児童氏名</strong> から、自分のお子さんを選びます。</p>
-        </div>
-      </div>
-      <figure class="shot">
-        <img data-shot-img src="images/05.png" alt="児童氏名のプルダウンを開いたところ">
-        <div class="ph" data-ph>🖼️ 画像05（準備中）
-          <span class="ph-desc">「児童氏名」のプルダウンをタップして、子どもの名前が一覧で出ているところ</span>
-        </div>
-      </figure>
-    </div>
-
-    <!-- 手順5（項目の説明つき） -->
-    <div class="step">
-      <div class="step-head">
-        <span class="step-no">5</span>
-        <div class="step-body">
-          <div class="step-title">⚾ 打撃成績を入力する</div>
-          <p>LINEのアルバムにある <strong>スコア</strong> を見ながら、数字を入れていきます。</p>
-        </div>
-      </div>
-      <figure class="shot">
-        <img data-shot-img src="images/06.png" alt="打席からホームランまでの入力欄">
-        <div class="ph" data-ph>🖼️ 画像06（準備中）
-          <span class="ph-desc">打席・安打・打点・得点・出塁・代打・盗塁・四球・死球・振り逃げ・ホームランの入力欄が<strong>全部見えている</strong>画面</span>
-        </div>
-      </figure>
-
-      <p style="margin-top:14px;font-weight:800;">📖 項目の意味</p>
-      <table class="tbl">
-        <tr><th>打席</th><td>バッターとして打つ順番が回ってきた回数。アウトでも三振でも、打席に立ったら1回です。</td></tr>
-        <tr><th>安打</th><td>ヒットの数。<strong>ホームランも安打に含めて</strong>数えます。</td></tr>
-        <tr><th>打点</th><td>自分の打席で、味方をホームに返して点が入った数。</td></tr>
-        <tr><th>得点</th><td>自分自身がホームまで帰ってきて、点になった数。</td></tr>
-        <tr><th>出塁</th><td><strong>塁に出た回数のすべて。</strong>ヒット・四球・死球・振り逃げ・エラーなど、理由は問いません。</td></tr>
-        <tr><th>代打</th><td>ほかの子のかわりに打席に立った回数。</td></tr>
-        <tr><th>盗塁</th><td>ピッチャーが投げているすきに、次の塁へ走って進んだ数。</td></tr>
-        <tr><th>四球</th><td>フォアボール。ボールが4つで塁に進んだ数。よく見て歩いた証拠です👀</td></tr>
-        <tr><th>死球</th><td>デッドボール。ボールが体に当たって塁に進んだ数。<strong>当たって痛かったけど頑張った記録です</strong>🩹</td></tr>
-        <tr><th>振り逃げ</th><td>三振したあと、キャッチャーが捕りそこねたすきに一塁まで走ってセーフになった数。</td></tr>
-        <tr><th>ホームラン</th><td>ホームランの数。<strong>安打の内訳</strong>なので、安打にも数えたうえで、ここにも入れます。</td></tr>
-      </table>
-
-      <div class="warn">
-        <div class="warn-title">⚠️ ここだけ気をつけてください</div>
-        <ul>
-          <li><strong>「出塁」は塁に出た回数のすべて</strong>です（ヒット・四球・死球・振り逃げ・エラー、ぜんぶ含めます）。</li>
-          <li><strong>「四球・死球・振り逃げ」はその内訳</strong>の記録です。出塁に足す必要はありません（二重に数えません）。</li>
-          <li><strong>「安打」も今までどおり</strong>（ホームランも安打に数えます）。<strong>「ホームラン」は安打の内訳</strong>です。</li>
-          <li><strong>分からない項目は 0 のままでOK。</strong>無理に埋めなくて大丈夫です😊</li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- 手順6 -->
-    <div class="step">
-      <div class="step-head">
-        <span class="step-no">6</span>
-        <div class="step-body">
-          <div class="step-title">🧤 守備位置を選ぶ（いくつでもOK）</div>
-          <p>その試合で守ったポジションを選びます。<strong>複数選んでかまいません</strong>（途中で代わった場合は両方選んでください）。</p>
-        </div>
-      </div>
-      <figure class="shot">
-        <img data-shot-img src="images/07.png" alt="守備位置の選択ボタン">
-        <div class="ph" data-ph>🖼️ 画像07（準備中）
-          <span class="ph-desc">守備位置の選択ボタン（ピッチャー〜ライト）が並んでいるところ。1つ選んで色が変わっている状態だと分かりやすいです</span>
-        </div>
-      </figure>
-    </div>
-
-    <!-- 手順7 -->
-    <div class="step">
-      <div class="step-head">
-        <span class="step-no">7</span>
-        <div class="step-body">
-          <div class="step-title">🏃 出場区分を選ぶ</div>
-          <p><strong>スタメン</strong>（最初から出た）か <strong>途中出場</strong> か、どちらかを選びます。</p>
-        </div>
-      </div>
-      <figure class="shot">
-        <img data-shot-img src="images/08.png" alt="出場区分の選択">
-        <div class="ph" data-ph>🖼️ 画像08（準備中）
-          <span class="ph-desc">「出場区分」の選択（スタメン／途中出場）が見えているところ</span>
-        </div>
-      </figure>
-    </div>
-
-    <!-- 手順8 -->
-    <div class="step">
-      <div class="step-head">
-        <span class="step-no">8</span>
-        <div class="step-body">
-          <div class="step-title">⭐ 守備好プレー評価（任意）</div>
-          <p><strong>なし ／ ○（good） ／ ◎（大活躍）</strong> から選びます。</p>
-          <p class="note">👉 スコアには残らない項目です。むずかしく考えず、<strong>親御さんの判断</strong>でどんどん評価してあげてください👏</p>
-        </div>
-      </div>
-      <figure class="shot">
-        <img data-shot-img src="images/09.png" alt="守備好プレー評価の選択">
-        <div class="ph" data-ph>🖼️ 画像09（準備中）
-          <span class="ph-desc">「守備好プレー評価」の選択（なし／○ good／◎ 大活躍）が見えているところ</span>
-        </div>
-      </figure>
-    </div>
-
-    <!-- 手順9 -->
-    <div class="step">
-      <div class="step-head">
-        <span class="step-no">9</span>
-        <div class="step-body">
-          <div class="step-title">✅ 記録ボタンを押す</div>
-          <p>最後に <strong>「＋ この選手の成績を記録」</strong> を押せば完了です。</p>
-        </div>
-      </div>
-      <figure class="shot">
-        <img data-shot-img src="images/10.png" alt="記録ボタン">
-        <div class="ph" data-ph>🖼️ 画像10（準備中）
-          <span class="ph-desc">画面の下にある「＋ この選手の成績を記録」ボタン</span>
-        </div>
-      </figure>
-      <div class="done">🎉 これで入力かんりょう！おつかれさまでした</div>
-    </div>
-  </section>
-
-  <!-- ■ 正しく入力できたか確認する -->
-  <section id="check">
-    <div class="h2"><span class="emoji">🔍</span><h2>正しく入力できたか確認する</h2></div>
-    <p><strong>「入力確認」タブ</strong> を開くと、入力済みのデータが一覧で見られます。試合日・児童名・入力した数字が並びます。</p>
-    <div class="card">
-      <p style="margin:0;">👉 <strong>入力したあとは、必ずここで見直してください。</strong>数字がずれていないか、選手を間違えていないかを確認できます。</p>
-    </div>
-    <figure class="shot">
-      <img data-shot-img src="images/11.png" alt="入力確認タブの一覧">
-      <div class="ph" data-ph>🖼️ 画像11（準備中）
-        <span class="ph-desc">「入力確認」タブの一覧。<strong>スマホのカード表示</strong>（1件が1枚のカードになって、試合日・名前・成績・修正／削除ボタンが見えている状態）</span>
-      </div>
-    </figure>
-  </section>
-
-  <!-- ■ まちがえたときは（修正） -->
-  <section id="fix">
-    <div class="h2"><span class="emoji">🔧</span><h2>まちがえたときは（直す）</h2></div>
-    <div class="card plain">
-      <ol class="mini-steps">
-        <li><strong>「入力確認」タブ</strong>を開きます</li>
-        <li>直したい記録の <strong>「修正」</strong> を押します</li>
-        <li><strong>「成績入力」タブ</strong>に、その記録の内容が入った状態で開きます。直したいところを書き換えます</li>
-        <li>もう一度 <strong>記録ボタン</strong> を押すと上書きされます</li>
-        <li>途中でやめたいときは <strong>「修正をやめる」</strong> ボタンを押します</li>
-      </ol>
-    </div>
-    <figure class="shot">
-      <img data-shot-img src="images/12.png" alt="入力確認タブの修正ボタン">
-      <div class="ph" data-ph>🖼️ 画像12（準備中）
-        <span class="ph-desc">「入力確認」タブのカードにある <strong>「修正」ボタン</strong> の部分（アップで分かりやすく）</span>
-      </div>
-    </figure>
-    <figure class="shot">
-      <img data-shot-img src="images/13.png" alt="修正モードの成績入力タブ">
-      <div class="ph" data-ph>🖼️ 画像13（準備中）
-        <span class="ph-desc">「修正」を押したあとの成績入力タブ。<strong>「修正をやめる」ボタンが出ている状態</strong>（修正中のお知らせも一緒に写るとベスト）</span>
-      </div>
-    </figure>
-  </section>
-
-  <!-- ■ まちがえたときは（削除） -->
-  <section id="fix-del">
-    <div class="h2"><span class="emoji">🗑</span><h2>まちがえたときは（消す）</h2></div>
-    <div class="card plain">
-      <ol class="mini-steps">
-        <li><strong>「入力確認」タブ</strong>を開きます</li>
-        <li>消したい記録の <strong>「削除」</strong> を押します</li>
-      </ol>
-    </div>
-    <figure class="shot">
-      <img data-shot-img src="images/14.png" alt="入力確認タブの削除ボタン">
-      <div class="ph" data-ph>🖼️ 画像14（準備中）
-        <span class="ph-desc">「入力確認」タブのカードにある <strong>「削除」ボタン</strong> の部分（アップで分かりやすく）</span>
-      </div>
-    </figure>
-    <div class="card" style="margin-top:12px;">
-      <p style="margin:0;text-align:center;"><strong>まちがえても、あとからいつでも直せます。安心して入力してください😊</strong></p>
-    </div>
-  </section>
-
-  <!-- ■ 成長を見る -->
-  <section id="growth">
-    <div class="h2"><span class="emoji">🌱</span><h2>成長を見る（おたのしみ）</h2></div>
-    <div class="card green">
-      <p><strong>「スタンプ」タブ</strong> で自分のお子さんを選ぶと、<strong>成長グラフ</strong>と、これまでに集めた<strong>スタンプ</strong>が見られます🏅</p>
-      <p><strong>スタンプは上限なし。</strong>記録を重ねるほど、どんどん増えていきます。</p>
-      <p style="margin:0;">👉 いま持っているスタンプと、<strong>次にもらえるスタンプ</strong>が表示されるので、<strong>あと何本で次がもらえるか</strong>が分かります。</p>
-    </div>
-    <p style="margin-top:12px;">ぜひ <strong>お子さんといっしょに</strong> 見てみてください。「次のスタンプまであと1本だね！」という会話が、次の試合の楽しみになります⚾</p>
-    <figure class="shot">
-      <img data-shot-img src="images/15.png" alt="スタンプタブ">
-      <div class="ph" data-ph>🖼️ 画像15（準備中）
-        <span class="ph-desc">「スタンプ」タブ。<strong>達成済みのスタンプ（色つき）と、次のスタンプの「あと◯本」</strong>が一緒に見えているところ</span>
-      </div>
-    </figure>
-    <figure class="shot">
-      <img data-shot-img src="images/16.png" alt="成長グラフ">
-      <div class="ph" data-ph>🖼️ 画像16（準備中）
-        <span class="ph-desc">「スタンプ」タブの中の <strong>せいちょうグラフ</strong>（試合を重ねて右上に伸びている折れ線）</span>
-      </div>
-    </figure>
-  </section>
-
-  <!-- ■ チームの1年も見られる -->
-  <section id="team">
-    <div class="h2"><span class="emoji">📊</span><h2>チームの1年も見られる</h2></div>
-    <div class="card blue">
-      <p style="margin:0;"><strong>「年度成績」タブ</strong> では、チームの <strong>勝ち負け</strong> や <strong>得点・失点</strong> など、1年の記録が見られます⚾ お子さんの成績だけでなく、みんなで戦った1年がどんな年だったかも分かります。</p>
-    </div>
-    <figure class="shot">
-      <img data-shot-img src="images/17.png" alt="年度成績タブ">
-      <div class="ph" data-ph>🖼️ 画像17（準備中）
-        <span class="ph-desc">「年度成績」タブ。勝敗・勝率・総得点／総失点のカードやグラフが見えているところ</span>
-      </div>
-    </figure>
-  </section>
-
-  <!-- ■ 困ったときは -->
-  <section id="help">
-    <div class="h2"><span class="emoji">💬</span><h2>困ったときは</h2></div>
-    <div class="card">
-      <ul>
-        <li>🤔 入力がうまくいかない</li>
-        <li>🚪 ページにアクセスできない</li>
-        <li>🔢 スコアの見方が分からない</li>
-        <li>😵 どこに何を入れるか迷った</li>
-      </ul>
-      <p style="margin-top:10px;text-align:center;">そんなときは、<strong>グループラインでお問い合わせください</strong> 🙆</p>
-      <a class="btn" href="https://123yooooou-art.github.io/oyama_baseball_orange_team/orange_Award_Production.html" target="_blank" rel="noopener">⚾ 成績入力ページを開く</a>
-    </div>
-  </section>
-
-  <!-- ■ 締め -->
-  <section id="closing">
-    <div class="card" style="text-align:center;">
-      <p><strong>無理のない範囲で大丈夫です。</strong></p>
-      <p style="margin:0;">みんなで少しずつ、子どもたちの記録を残していけたらうれしいです🌟</p>
-    </div>
-  </section>
+  <!-- ===== 幹事ページ（ログインできて初めて中身が入る。HTMLには何も書かない） ===== -->
+  <div id="organizerView">
+    <section>
+      <div class="h2"><span class="emoji">🔑</span><h2>幹事メニュー</h2></div>
+      <div id="recentBox"></div>
+      <div id="orgList"></div>
+      <button class="btn ghost" id="btnChangePw" style="margin-top:14px;">🔒 パスワードを変更</button>
+      <button class="btn sub" id="btnBackPublic" style="margin-top:10px;">← リンク集にもどる</button>
+    </section>
+  </div>
 
 </div>
 
 <footer>小山少年野球団 オレンジ 父母会</footer>
 
-<!-- 成績入力ページへの固定リンク（どこを読んでいてもワンタップで入力へ移れる。別タブで開く） -->
-<a class="entry-link" href="https://123yooooou-art.github.io/oyama_baseball_orange_team/orange_Award_Production.html" target="_blank" rel="noopener">
-  <span class="el-ic">⚾</span>入力ページへ
-</a>
+<!-- ===== モーダル：リンクの追加・編集 ===== -->
+<div class="ov" id="ovLink">
+  <div class="modal">
+    <h3 id="lkTitle">リンクを追加</h3>
+    <label for="fTitle">タイトル（必須・50文字まで）</label>
+    <input id="fTitle" type="text" maxlength="50" placeholder="例：〇〇球場の地図">
+    <label for="fUrl">URL（必須・https:// から始まるもの）</label>
+    <input id="fUrl" type="url" inputmode="url" placeholder="https://">
+    <label for="fNote">ひとこと（任意・100文字まで）</label>
+    <input id="fNote" type="text" maxlength="100" placeholder="例：駐車場は北側です">
+    <label for="fAuthor">追加した人（任意・20文字まで）</label>
+    <input id="fAuthor" type="text" maxlength="20" placeholder="例：和泉">
+    <div class="msg" id="lkMsg"></div>
+    <div class="row-btn">
+      <button class="btn sub" data-close>とじる</button>
+      <button class="btn" id="btnSaveLink">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== モーダル：幹事ログイン ===== -->
+<div class="ov" id="ovAuth">
+  <div class="modal">
+    <h3>🔑 幹事用パスワード</h3>
+    <label for="fPw">パスワード</label>
+    <input id="fPw" type="password" autocomplete="current-password" placeholder="パスワードを入力">
+    <div class="msg" id="authMsg"></div>
+    <div class="row-btn">
+      <button class="btn sub" data-close>とじる</button>
+      <button class="btn" id="btnLogin">ひらく</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== モーダル：パスワード変更 ===== -->
+<div class="ov" id="ovPw">
+  <div class="modal">
+    <h3>🔒 パスワードを変更</h3>
+    <label for="fPwNow">いまのパスワード</label>
+    <input id="fPwNow" type="password" autocomplete="current-password">
+    <label for="fPwNew">新しいパスワード（英数字6文字以上）</label>
+    <input id="fPwNew" type="password" autocomplete="new-password">
+    <label for="fPwNew2">新しいパスワード（もう一度）</label>
+    <input id="fPwNew2" type="password" autocomplete="new-password">
+    <div class="msg" id="pwMsg"></div>
+    <div class="row-btn">
+      <button class="btn sub" data-close>とじる</button>
+      <button class="btn" id="btnSavePw">変更する</button>
+    </div>
+  </div>
+</div>
 
 <script>
-/* 画像は .png / .jpg どちらでもOK（png→jpg→jpeg の順に自動で探す）
-   どれも無ければ「準備中」の枠（どんな画像が必要かの説明つき）を表示する。
-   images/ に 01.jpg のように置けば、そのまま実画像に切り替わる（ページ側の変更は不要）。 */
-(function(){
-  var EXTS=['png','jpg','jpeg'];
-  function swap(img){
-    var fig=img.closest('figure');if(!fig)return;
-    var ph=fig.querySelector('[data-ph]');
-    img.style.display='none';
-    if(ph)ph.style.display='flex';
-  }
-  function tryNext(img){
-    var base=img.getAttribute('data-shot-base')||'';
-    var i=Number(img.getAttribute('data-shot-i')||'0')+1;
-    if(!base||i>=EXTS.length){swap(img);return;}
-    img.setAttribute('data-shot-i',String(i));
-    img.src=base+'.'+EXTS[i];
-  }
-  document.querySelectorAll('[data-shot-img]').forEach(function(img){
-    var src=img.getAttribute('src')||'';
-    var dot=src.lastIndexOf('.');
-    var base=dot>0?src.slice(0,dot):src;
-    var ext=dot>0?src.slice(dot+1).toLowerCase():'';
-    var start=EXTS.indexOf(ext);
-    img.setAttribute('data-shot-base',base);
-    img.setAttribute('data-shot-i',String(start<0?0:start));
-    img.addEventListener('error',function(){tryNext(img);});
-    if(img.complete&&img.naturalWidth===0)tryNext(img);
+/* ============================================================
+   ★ 設定（さわるのはここだけ） ★
+   ============================================================ */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxGKwfIE-zp_1FUdBZrDb_ZQ3Fl12dmjDevVNfOEBRuPOTAl2vFtcullzjjXtONFi_Dqg/exec";
+
+const TEXTS = {
+  emptyUser   : "まだありません。下のボタンから追加できます 🌱",
+  emptyTeam   : "リンクがまだ登録されていません。",
+  offline     : "最新の情報を取れませんでした（前回の内容を表示しています）",
+  addedOk     : "追加しました 🎉",
+  savedOk     : "なおしました ✓",
+  hiddenOk    : "非表示にしました",
+  confirmHide : "このリンクを消しますか？（あとで幹事が戻せます）",
+  sysWarn     : "壊れても直せます。週1回の自動バックアップがあります。ただし、触る前に幹事役割まとめの該当ページを読んでください。"
+};
+
+/* 保存キー */
+const K_CACHE  = "orangeLinksCache";   // リンク一覧のひかえ（すぐ表示するため）
+const K_MINE   = "orangeMyLinkIds";    // 自分が追加した行のid
+const K_CLIENT = "orangeClientId";     // 端末の目印（連投ふせぎ用）
+
+/* ============================================================
+   共通の道具
+   ============================================================ */
+function $(id){ return document.getElementById(id); }
+/* 文字はすべて textContent で入れる＝タグが書かれても文字として表示される */
+function el(tag, cls, text){
+  const e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(text != null) e.textContent = text;
+  return e;
+}
+function lsGet(k, def){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; }catch(e){ return def; } }
+function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function clientId(){
+  let c = lsGet(K_CLIENT, null);
+  if(!c){ c = "c" + Date.now() + Math.random().toString(36).slice(2,8); lsSet(K_CLIENT, c); }
+  return c;
+}
+/* GASへの送信（text/plain で送る＝プリフライトで弾かれないため） */
+async function api(payload){
+  const res = await fetch(GAS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
   });
-})();
+  return await res.json();
+}
+function showMsg(id, text, ok){
+  const m = $(id);
+  m.textContent = text;
+  m.className = "msg show " + (ok ? "ok" : "err");
+}
+function hideMsg(id){ $(id).className = "msg"; }
+function openOv(id){ $(id).classList.add("open"); }
+function closeOv(id){ $(id).classList.remove("open"); }
+document.querySelectorAll("[data-close]").forEach(function(b){
+  b.onclick = function(){ b.closest(".ov").classList.remove("open"); };
+});
+/* 背景をタップしても閉じる */
+document.querySelectorAll(".ov").forEach(function(o){
+  o.onclick = function(ev){ if(ev.target === o) o.classList.remove("open"); };
+});
+/* 表示してよいURLか（https:// だけ通す。javascript: などは弾く） */
+function safeUrl(u){
+  const s = String(u == null ? "" : u).trim();
+  return s.indexOf("https://") === 0 ? s : "";
+}
+
+/* ============================================================
+   リンクの描画（カテゴリはデータから作る＝シートに足すだけで増える）
+   ============================================================ */
+let DATA = { team:[], user:[] };
+let TOKEN = "";   // 幹事のログイン中だけ入る（sessionStorage）
+
+function makeCard(r, colorClass){
+  const url = safeUrl(r.url);
+  const a = el("a", "lcard" + (colorClass ? " " + colorClass : ""));
+  if(url){ a.href = url; a.target = "_blank"; a.rel = "noopener"; }
+  const body = el("span", "lc-body");
+  body.appendChild(el("span", "lc-title", r.title || ""));
+  if(r.note) body.appendChild(el("span", "lc-desc", r.note));
+  if(r.author) body.appendChild(el("span", "lc-author", "＋ " + r.author));
+  a.appendChild(body);
+  a.appendChild(el("span", "lc-go", "›"));
+  return a;
+}
+/* カテゴリごとに区切って描く。カテゴリの順は sort の小さい行がある順 */
+function renderByCategory(box, rows, colorClass){
+  box.textContent = "";
+  if(!rows.length){ box.appendChild(el("div","empty",TEXTS.emptyTeam)); return; }
+  const cats = [];
+  rows.forEach(function(r){
+    const name = r.category || "その他";
+    let c = cats.filter(function(x){ return x.name === name; })[0];
+    if(!c){ c = { name:name, min:r.sort, rows:[] }; cats.push(c); }
+    if(r.sort < c.min) c.min = r.sort;
+    c.rows.push(r);
+  });
+  cats.sort(function(a,b){ return a.min - b.min; });
+  cats.forEach(function(c){
+    box.appendChild(el("div","cat-title", c.name));
+    c.rows.sort(function(a,b){ return a.sort - b.sort; })
+      .forEach(function(r){ box.appendChild(makeCard(r, colorClass)); });
+  });
+}
+/* 「みんなの追加」＝カテゴリ分けなし。自分が足した行にだけ操作ボタンを出す */
+function renderUser(){
+  const box = $("userList");
+  box.textContent = "";
+  if(!DATA.user.length){ box.appendChild(el("div","empty",TEXTS.emptyUser)); return; }
+  const mine = lsGet(K_MINE, []);
+  DATA.user.slice().sort(function(a,b){ return a.sort - b.sort; }).forEach(function(r){
+    box.appendChild(makeCard(r));
+    /* 自分が追加した行だけ、直す／消すを出す（ロックされた行には出さない） */
+    if(!r.locked && mine.indexOf(r.id) >= 0){
+      const ops = el("div","row-ops");
+      const be = el("button","b-edit","✏️ なおす");
+      be.onclick = function(){ openEdit(r); };
+      const bh = el("button","b-hide","🗑 けす");
+      bh.onclick = function(){ hideLink(r); };
+      ops.appendChild(be); ops.appendChild(bh);
+      box.appendChild(ops);
+    }
+  });
+}
+function renderAll(){
+  renderByCategory($("teamList"), DATA.team);
+  renderUser();
+}
+
+/* ============================================================
+   読み込み：まずひかえを出す → うしろで最新を取り直す
+   ============================================================ */
+function loadLinks(){
+  const cached = lsGet(K_CACHE, null);
+  if(cached && (cached.team || cached.user)){
+    DATA = { team: cached.team || [], user: cached.user || [] };
+    renderAll();                                   // ← 待たずにすぐ出る
+  }
+  api({ action:"getLinks" }).then(function(res){
+    if(!res || !res.ok) return;
+    const fresh = { team: res.team || [], user: res.user || [] };
+    if(JSON.stringify(fresh) !== JSON.stringify(DATA)){   // 中身が変わったときだけ描き直す
+      DATA = fresh;
+      renderAll();
+    }
+    lsSet(K_CACHE, fresh);
+  }).catch(function(){
+    if(!cached) $("teamList").textContent = TEXTS.offline;
+  });
+}
+/* 保存後は必ずサーバーから取り直す（ひかえも上書きする） */
+function refresh(){
+  return api({ action:"getLinks" }).then(function(res){
+    if(!res || !res.ok) return;
+    DATA = { team: res.team || [], user: res.user || [] };
+    lsSet(K_CACHE, DATA);
+    renderAll();
+  });
+}
+
+/* ============================================================
+   追加・編集・非表示
+   ============================================================ */
+let editingId = null;
+$("btnAdd").onclick = function(){
+  editingId = null;
+  $("lkTitle").textContent = "リンクを追加";
+  ["fTitle","fNote","fAuthor"].forEach(function(id){ $(id).value = ""; });
+  $("fUrl").value = "https://";
+  hideMsg("lkMsg");
+  openOv("ovLink");
+};
+function openEdit(r){
+  editingId = r.id;
+  $("lkTitle").textContent = "リンクをなおす";
+  $("fTitle").value = r.title || "";
+  $("fUrl").value = r.url || "";
+  $("fNote").value = r.note || "";
+  $("fAuthor").value = r.author || "";
+  hideMsg("lkMsg");
+  openOv("ovLink");
+}
+$("btnSaveLink").onclick = async function(){
+  const title = $("fTitle").value.trim();
+  const url = $("fUrl").value.trim();
+  if(!title){ showMsg("lkMsg","タイトルを入れてください"); return; }
+  if(url.indexOf("https://") !== 0){ showMsg("lkMsg","URLは https:// から始まるものを入れてください"); return; }
+  const btn = this; btn.disabled = true; btn.textContent = "保存中…";
+  try{
+    const res = await api({
+      action: editingId ? "updateLink" : "addLink",
+      id: editingId, title: title, url: url,
+      note: $("fNote").value.trim(), author: $("fAuthor").value.trim(),
+      clientId: clientId()
+    });
+    if(!res.ok){ showMsg("lkMsg", res.error || "保存できませんでした"); return; }
+    if(!editingId && res.id){                       // 自分が足した行として覚えておく
+      const mine = lsGet(K_MINE, []); mine.push(res.id); lsSet(K_MINE, mine);
+    }
+    showMsg("lkMsg", editingId ? TEXTS.savedOk : TEXTS.addedOk, true);
+    setTimeout(function(){ closeOv("ovLink"); refresh(); }, 700);
+  }catch(e){
+    showMsg("lkMsg","送信できませんでした。通信を確認してください");
+  }finally{
+    btn.disabled = false; btn.textContent = "保存する";
+  }
+};
+async function hideLink(r){
+  if(!confirm(TEXTS.confirmHide)) return;
+  try{
+    const res = await api({ action:"hideLink", id:r.id });
+    if(!res.ok){ alert(res.error || "できませんでした"); return; }
+    refresh();
+  }catch(e){ alert("通信できませんでした"); }
+}
+
+/* ============================================================
+   幹事用（ログインできて初めてリンクが届く）
+   ============================================================ */
+$("btnOrganizer").onclick = function(){
+  $("fPw").value = ""; hideMsg("authMsg"); openOv("ovAuth");
+  setTimeout(function(){ $("fPw").focus(); }, 100);
+};
+$("fPw").addEventListener("keydown", function(e){ if(e.key === "Enter") $("btnLogin").click(); });
+
+$("btnLogin").onclick = async function(){
+  const pw = $("fPw").value;
+  if(!pw){ showMsg("authMsg","パスワードを入れてください"); return; }
+  const btn = this; btn.disabled = true; btn.textContent = "確認中…";
+  try{
+    const res = await api({ action:"auth", password: pw });
+    if(!res.ok){ showMsg("authMsg", res.error || "ひらけませんでした"); return; }
+    TOKEN = res.token;
+    try{ sessionStorage.setItem("orangeOrgToken", TOKEN); }catch(e){}
+    closeOv("ovAuth");
+    showOrganizer(res.organizer || [], res.recent || []);
+  }catch(e){
+    showMsg("authMsg","通信できませんでした");
+  }finally{
+    btn.disabled = false; btn.textContent = "ひらく";
+  }
+};
+
+function showOrganizer(rows, recent){
+  /* 最近みんなが追加したリンク（新しい順・5件） */
+  const rb = $("recentBox");
+  rb.textContent = "";
+  if(recent.length){
+    const box = el("div","recent");
+    box.appendChild(el("div","cat-title","🆕 最近みんなが追加したリンク"));
+    recent.forEach(function(r){
+      const it = el("div","r-item");
+      const body = el("div","r-body");
+      body.appendChild(el("div","r-title", r.title || ""));
+      body.appendChild(el("div","r-sub", (r.author ? r.author + "さん ・ " : "") + (r.url || "")));
+      const b = el("button", null, "非表示にする");
+      b.onclick = async function(){
+        try{
+          const res = await api({ action:"organizerHideLink", token:TOKEN, id:r.id });
+          if(!res.ok){ alert(res.error || "できませんでした"); return; }
+          it.remove(); refresh();
+        }catch(e){ alert("通信できませんでした"); }
+      };
+      it.appendChild(body); it.appendChild(b);
+      box.appendChild(it);
+    });
+    rb.appendChild(box);
+  }
+
+  /* 幹事業務 ／ システム管理（取扱注意） の2つに分ける */
+  const list = $("orgList");
+  list.textContent = "";
+  const sys = rows.filter(function(r){ return String(r.category).indexOf("システム") === 0; });
+  const biz = rows.filter(function(r){ return String(r.category).indexOf("システム") !== 0; });
+
+  if(biz.length){
+    const box = el("div");
+    renderByCategory(box, biz);
+    list.appendChild(box);
+  }
+  if(sys.length){
+    const box = el("div","sys-block");
+    box.appendChild(el("div","org-warn", TEXTS.sysWarn));
+    const inner = el("div");
+    renderByCategory(inner, sys);
+    box.appendChild(inner);
+    list.appendChild(box);
+  }
+
+  $("publicView").style.display = "none";
+  $("organizerView").style.display = "block";
+  window.scrollTo(0,0);
+}
+$("btnBackPublic").onclick = function(){
+  $("organizerView").style.display = "none";
+  $("publicView").style.display = "block";
+  window.scrollTo(0,0);
+};
+
+/* パスワード変更 */
+$("btnChangePw").onclick = function(){
+  ["fPwNow","fPwNew","fPwNew2"].forEach(function(id){ $(id).value = ""; });
+  hideMsg("pwMsg"); openOv("ovPw");
+};
+$("btnSavePw").onclick = async function(){
+  const cur = $("fPwNow").value, n1 = $("fPwNew").value, n2 = $("fPwNew2").value;
+  if(!cur || !n1){ showMsg("pwMsg","すべて入れてください"); return; }
+  if(n1 !== n2){ showMsg("pwMsg","新しいパスワードが2つでちがっています"); return; }
+  if(!/^[A-Za-z0-9]{6,}$/.test(n1)){ showMsg("pwMsg","新しいパスワードは英数字6文字以上にしてください"); return; }
+  const btn = this; btn.disabled = true; btn.textContent = "変更中…";
+  try{
+    const res = await api({ action:"changePassword", token:TOKEN, current:cur, next:n1 });
+    if(!res.ok){ showMsg("pwMsg", res.error || "変更できませんでした"); return; }
+    showMsg("pwMsg","変更しました ✓ 新しいパスワードを忘れずに！", true);
+    setTimeout(function(){ closeOv("ovPw"); }, 1200);
+  }catch(e){
+    showMsg("pwMsg","通信できませんでした");
+  }finally{
+    btn.disabled = false; btn.textContent = "変更する";
+  }
+};
+
+/* 開いたときの処理 */
+try{ TOKEN = sessionStorage.getItem("orangeOrgToken") || ""; }catch(e){}
+loadLinks();
 </script>
 
 </body>
