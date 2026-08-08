@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オレンジチームのあゆみ（変遷映像）</title>
+<!--
+  ============================================================
+  チーム変遷映像html（デザイン整え済み版）
+  ver009：おまけセクション（新メンバー紹介）を追加
+    ・場所＝大会の総括のあと・エンディングの前。台本 OMAKE_SCRIPT（区切り🌟→テロップ→
+    　かいと3枚→さよ3枚。文言・秒数・写真はすべて台本で変更可）
+    ・写真は photos/omake/（kaito1〜3.jpg・sayo1〜3.jpg）。無い行は自動スキップ
+    ・行削除（または OMAKE_SCRIPT=[]）でセクションごと消える。エンジンは無変更
+  ver008：3点修正
+    ・第5戦（最終戦）亀城ベースボールA を追加：CH3_SCRIPTに3行セット（vs→photos→result）。
+    　写真は photos/game5/（01=挨拶、02=スコアボードの2枚構成）。総括を「5しあい」に
+    ・対比写真（reveal）の子ども写真の最終位置を右下へ（親の写真を隠さない）。
+    　一言テロップは左下（.reveal-cap）
+    ・「つづく」スライドの背景を台本で指定可能に：closing行に file:"◯◯/◯◯.jpg" を
+    　足すとその写真が背景になる（無指定・写真なし＝従来どおり team/02→01）
+  ver007：エンディング改造
+    ・対比写真（reveal行）：子どもの集合写真が全画面→引いて「1枚の写真」になり、
+    　撮っていた親たちの写真が現れる→一言テロップ（photos/ending/kids.jpg・parents.jpg）
+    ・エンディング全体を ENDING_SCRIPT で構成：reveal→closing（つづく）→telop（なげしあい）→highlight（ふりかえろう）
+    　順序・文言・秒数・写真すべて台本で変更可。写真が無いreveal行はスキップ
+  ver006：集合写真に「写っていない人」を重ねる機能＋エンディングの締め変更
+    ・台本の groupphoto 行（missing:[背番号,…]）＝どの章でも使える／第1章しめは CH1_GROUP_MISSING 定数で指定
+    ・顔写真（photos/members/）が写真の上部に横一列で重なる。人数可変・写真なしはバッジ
+    ・missingが空なら今までどおりの表示
+    ・エンディングの後に ENDING_SCRIPT（なげしあいに触れて→表彰式へつなぐ2枚。文言は定数で変更可）
+  ver005：第2章（練習の日々）・第3章（大会）を実装
+    ・第2章＝台本 CH2_SCRIPT で構成（冬→体験会→転換点の山場→夏の練習メニュー）。
+    　テロップ文言・秒数・写真フォルダ・順番はぜんぶ CH2_SCRIPT を直すだけで変わる
+    ・写真は内容べつフォルダ（photos/taiken・junbi・dash・catch・hoshoku・shidou・fun）の
+    　連番を自動検出＝枚数可変。空フォルダの行は自然にスキップ
+    ・第3章＝CH3_SCRIPT：円陣どうが（movies/enjin.mp4）が音付きで自動再生→終わると自動で次へ。
+    　動画は複数本OK（台本に video の行を足す）。未配置なら案内カード
+    ・Fキー＝全画面。スタートのクリックが音声許可の解錠になる（→動画の音が出る）
+  ver004：溜まっていく○を画面の四辺に配置（19人でもはみ出さない）
+    ・選手＝上・左・右辺（左右対称優先：左右=ceil(選手数÷3)、上=残り。14人→上4左5右5）
+    ・コーチ・監督＝下辺（チームを下支え）。登場順は加入順のまま、席は最初から固定
+    ・人数可変：増減しても自動で振り分け。○は基本92px、収まらないときだけ自動縮小（下限64px）
+  ver003：第1章の選手の最後に 大野コーチ→岩田コーチ→石本コーチ→小林コーチ→前川監督 を追加
+    ・MEMBERSの label 付きエントリ＝背番号の代わりに役職（コーチ/監督）を表示
+    ・写真は photos/members/ 21.jpg=石本、22.jpg=小林、23.jpg=前川、24.jpg=大野、25.jpg=岩田
+  ・自動再生の鑑賞型。クリック→3秒カウントダウン→最後まで自動で流れる。
+  ・Rキー＝最初からやり直し（録画のリテイク用）。
+  ・BGMなし（動画編集で付ける）。画面キャプチャして映像素材にする。
+  ・写真は photos/ フォルダの実ファイルから読む（オフライン）。
+      photos/members/01.jpg …（背番号のファイル名）
+      photos/practice/01.jpg…（練習写真・連番。欠番は自動で詰める）
+      photos/game/01.jpg …  （大会写真・連番。欠番は自動で詰める）
+      photos/team/01.jpg     （集合写真。第1章のしめ＆エンディングで使用）
+  ・調整は CONFIG（秒数）と MEMBERS（加入順リスト）と TEXTS だけ触ればよい。
+  ・Webフォント（M PLUS Rounded 1c）はオンライン時のみ。オフラインでも
+    丸ゴシック系にフォールバックするので録画に支障なし。
+  ============================================================
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ===== デザイン変数 ===== */
+  :root{
+    --orange:#f0662a;        /* チームカラー */
+    --orange-deep:#d84e10;
+    --orange-light:#ff9a3d;
+    --yellow:#ffd166;        /* サブアクセント */
+    --navy:#22335c;          /* 引き締め色（チップ・影） */
+    --ink:#fffdf8;           /* 基本文字色 */
+    --muted:rgba(255,253,248,.78);
+    --photo-frame:#ffffff;
+  }
+  *{box-sizing:border-box; user-select:none;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:#000; overflow:hidden; cursor:pointer;
+    font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    color:var(--ink);
+    font-weight:800;
+  }
+
+  /* ===== 16:9固定ステージ（1920×1080。画面に合わせて自動スケール） ===== */
+  #stage{
+    position:absolute; left:50%; top:50%;
+    width:1920px; height:1080px;
+    transform:translate(-50%,-50%) scale(1);
+    transform-origin:center center;
+    background:linear-gradient(160deg,#ff9a3d 0%, #f0662a 48%, #dd4e0f 100%);
+    overflow:hidden;
+  }
+
+  /* ===== 常時うごく背景（サンバースト＋ぼんやり光） ===== */
+  #bg{position:absolute; inset:0; pointer-events:none;}
+  #bg .rays{
+    position:absolute; left:50%; top:50%; width:3400px; height:3400px;
+    margin:-1700px 0 0 -1700px; border-radius:50%;
+    background:repeating-conic-gradient(rgba(255,255,255,.075) 0 6deg, transparent 6deg 15deg);
+    animation:spin 90s linear infinite;
+  }
+  #bg .bokeh{
+    position:absolute; border-radius:50%; filter:blur(6px);
+    background:rgba(255,255,255,.14);
+    animation:floatUp var(--d,16s) linear infinite;
+  }
+  #bg .vig{
+    position:absolute; inset:0;
+    background:radial-gradient(120% 125% at 50% 42%, transparent 52%, rgba(130,42,0,.42) 100%);
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @keyframes floatUp{
+    from{transform:translateY(120px); opacity:0;}
+    12%{opacity:1;}
+    88%{opacity:1;}
+    to{transform:translateY(-1240px); opacity:0;}
+  }
+
+  /* ===== シーン共通 ===== */
+  #scenes{position:absolute; inset:0;}
+  .scene{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center;
+    animation:sceneIn var(--fade,0.7s) ease both;
+  }
+  .scene.leave{animation:sceneOut .45s ease both; z-index:0; pointer-events:none;}
+  @keyframes sceneIn{from{opacity:0;} to{opacity:1;}}
+  @keyframes sceneOut{from{opacity:1;} to{opacity:0; transform:scale(.97);}}
+  @keyframes riseIn{from{opacity:0; transform:translateY(46px);} to{opacity:1; transform:none;}}
+  @keyframes popIn{
+    from{opacity:0; transform:scale(.55);}
+    62%{opacity:1; transform:scale(1.07);}
+    to{opacity:1; transform:scale(1);}
+  }
+  @keyframes charPop{
+    from{opacity:0; transform:translateY(56px) scale(.5) rotate(6deg);}
+    62%{opacity:1; transform:translateY(-10px) scale(1.1) rotate(-2deg);}
+    to{opacity:1; transform:none;}
+  }
+  @keyframes softZoomIn{from{transform:scale(1);} to{transform:scale(1.08);}}
+  @keyframes softZoomOut{from{transform:scale(1.08);} to{transform:scale(1);}}
+  @keyframes sweep{from{transform:scaleX(0);} to{transform:scaleX(1);}}
+  @keyframes bounceSoft{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-14px);}
+  }
+
+  /* ===== 場面転換ワイプ（黄→紺の斜めパネルが横切る） ===== */
+  #wipe{position:absolute; inset:0; z-index:60; pointer-events:none; overflow:hidden; display:none;}
+  #wipe.run{display:block;}
+  #wipe .p{
+    position:absolute; top:-12%; bottom:-12%; width:135%; left:-145%;
+    transform:skewX(-12deg);
+  }
+  #wipe .p1{background:var(--yellow); animation:wipeMove .85s cubic-bezier(.72,0,.28,1) both;}
+  #wipe .p2{background:var(--navy);   animation:wipeMove .85s .08s cubic-bezier(.72,0,.28,1) both;}
+  @keyframes wipeMove{to{left:145%;}}
+
+  /* ===== チップ（ラベル用の丸いふだ） ===== */
+  .chip{
+    display:inline-block; padding:12px 44px; border-radius:999px;
+    background:var(--navy); color:var(--ink);
+    font-size:34px; font-weight:900; letter-spacing:.22em; text-indent:.22em;
+    box-shadow:0 8px 0 rgba(0,0,0,.18);
+  }
+  .chip.yellow{background:var(--yellow); color:var(--navy);}
+
+  /* ===== ポップな文字（白文字＋紺の落ち影） ===== */
+  .pop-text{
+    color:var(--ink);
+    text-shadow:0 8px 0 rgba(34,51,92,.55), 0 20px 44px rgba(0,0,0,.3);
+  }
+
+  /* ===== オープニング ===== */
+  .op-badge{animation:riseIn .8s .2s ease both;}
+  .main-title{
+    font-size:140px; font-weight:900; line-height:1.35; margin-top:44px;
+    animation:popIn 1s .55s cubic-bezier(.3,1.4,.4,1) both;
+  }
+  .main-accent{color:var(--yellow);}
+  .title-bar{
+    width:560px; height:14px; border-radius:999px; margin-top:38px;
+    background:linear-gradient(90deg,var(--yellow),#fff);
+    transform-origin:left center;
+    animation:sweep .7s 1.25s cubic-bezier(.6,0,.2,1) both;
+    box-shadow:0 6px 18px rgba(0,0,0,.25);
+  }
+  .main-sub{font-size:42px; color:var(--muted); margin-top:36px; font-weight:800; letter-spacing:.12em; animation:riseIn 1s 1.6s ease both;}
+
+  /* ===== 章扉 ===== */
+  .chapter-num{
+    position:absolute; right:60px; bottom:-90px;
+    font-size:640px; font-weight:900; line-height:1;
+    color:rgba(255,255,255,.13);
+    animation:riseIn 1s .1s ease both;
+  }
+  .chapter-label{animation:riseIn .7s .15s ease both;}
+  .chapter-title{
+    font-size:116px; font-weight:900; margin-top:42px;
+    animation:popIn .9s .4s cubic-bezier(.3,1.4,.4,1) both;
+  }
+  .chapter-bar{
+    width:360px; height:12px; border-radius:999px; margin-top:36px;
+    background:var(--yellow); transform-origin:center;
+    animation:sweep .6s .95s cubic-bezier(.6,0,.2,1) both;
+  }
+
+  /* ===== 第1章：選手登場 ===== */
+  /* ver004：四辺の○と重ならないよう、中央コンテンツに上下左右の余白を確保 */
+  .member-scene{flex-direction:row; gap:110px; padding:150px 175px 165px;}
+  .member-count{
+    position:absolute; top:44px; right:64px;
+    font-size:40px; font-weight:900; color:var(--ink); white-space:nowrap;
+    background:rgba(34,51,92,.5); border-radius:999px; padding:8px 34px;
+    animation:riseIn .5s ease both;
+  }
+  .member-count small{font-size:28px; color:var(--muted); font-weight:800;}
+  .m-left{position:relative; display:flex; align-items:center; justify-content:center;}
+  .burst{
+    position:absolute; left:50%; top:50%; width:1020px; height:1020px;
+    transform:translate(-50%,-50%);
+    background:repeating-conic-gradient(rgba(255,255,255,.2) 0 5deg, transparent 5deg 17deg);
+    border-radius:50%;
+    -webkit-mask:radial-gradient(circle, #000 26%, transparent 66%);
+            mask:radial-gradient(circle, #000 26%, transparent 66%);
+    animation:burstIn .8s .05s cubic-bezier(.3,1.3,.4,1) both;
+  }
+  @keyframes burstIn{
+    from{opacity:0; transform:translate(-50%,-50%) scale(.35) rotate(-24deg);}
+    to{opacity:1; transform:translate(-50%,-50%) scale(1) rotate(0deg);}
+  }
+  .photo-tilt{
+    position:relative; transform:rotate(-2.5deg);
+    animation:photoIn .75s .1s cubic-bezier(.3,1.35,.4,1) both;
+  }
+  @keyframes photoIn{
+    from{opacity:0; transform:translateX(-160px) rotate(-10deg) scale(.85);}
+    to{opacity:1; transform:translateX(0) rotate(-2.5deg) scale(1);}
+  }
+  .member-photo{
+    display:block; width:520px; height:660px; object-fit:cover;
+    border:14px solid var(--photo-frame); border-radius:24px;
+    box-shadow:0 30px 70px rgba(120,30,0,.5);
+    background:var(--navy);
+  }
+  .member-photo-ph{
+    display:flex; align-items:center; justify-content:center;
+    font-size:230px; font-weight:900; color:var(--yellow);
+  }
+  .photo-tape{ /* 写真の角のオレンジテープ */
+    position:absolute; top:-22px; left:50%; width:220px; height:44px;
+    margin-left:-110px; transform:rotate(-4deg);
+    background:var(--yellow); border-radius:6px; opacity:.94;
+    box-shadow:0 6px 14px rgba(0,0,0,.2);
+  }
+  .m-right{display:flex; flex-direction:column; align-items:flex-start; text-align:left; max-width:760px;}
+  .member-chip{animation:popIn .55s .35s cubic-bezier(.3,1.4,.4,1) both;}
+  .member-name{
+    font-size:132px; font-weight:900; line-height:1.15; margin-top:34px;
+    white-space:nowrap;
+  }
+  .member-name .ch{display:inline-block; animation:charPop .55s ease both;}
+  .member-no{margin-top:26px; display:flex; align-items:baseline; gap:26px; animation:riseIn .6s .85s ease both;}
+  .member-no small{font-size:38px; font-weight:900; color:var(--muted); letter-spacing:.2em;}
+  .member-no b{
+    font-size:190px; font-weight:900; line-height:1; color:var(--yellow);
+    text-shadow:0 10px 0 rgba(34,51,92,.6), 0 24px 50px rgba(0,0,0,.3);
+  }
+  /* ver004：登場済みメンバーの○＝画面の四辺に配置（座標はJSのcomputeTrayで計算） */
+  .member-tray{position:absolute; inset:0; pointer-events:none;}
+  .tray-item{
+    position:absolute; border-radius:50%; object-fit:cover;
+    border:5px solid var(--photo-frame); background:var(--navy);
+    box-shadow:0 8px 20px rgba(120,30,0,.4);
+  }
+  .tray-item.latest{
+    border-color:var(--yellow); z-index:2;
+    animation:popIn .55s .95s cubic-bezier(.3,1.5,.4,1) both, trayGlow 1.8s 1.6s ease-in-out infinite;
+  }
+  @keyframes trayGlow{   /* いま登場した子の強調（サイズを変えず拡大表示＝レイアウト不変） */
+    0%,100%{transform:scale(1.15);}
+    50%{transform:scale(1.28);}
+  }
+  .tray-ph{display:flex; align-items:center; justify-content:center; font-size:36px; font-weight:900; color:var(--yellow);}
+
+  /* ===== 集合写真・章の写真（練習/大会） ===== */
+  .big-photo-wrap{position:absolute; inset:0; overflow:hidden; background:#20160e;}
+  .big-photo{
+    width:100%; height:100%; object-fit:cover;
+    animation:softZoomIn var(--zoom,6s) linear both;
+  }
+  .big-photo.alt{animation-name:softZoomOut;}
+  .photo-shade{ /* 下部の読みやすさ用グラデ */
+    position:absolute; left:0; right:0; bottom:0; height:420px;
+    background:linear-gradient(180deg, transparent, rgba(30,12,2,.72));
+  }
+  /* ===== ver005：第2章のテロップ類 ===== */
+  .season-emoji{font-size:150px; animation:riseIn .6s ease both;}
+  .season-word{
+    font-size:340px; font-weight:900; line-height:1; margin-top:10px;
+    animation:popIn .8s .15s cubic-bezier(.3,1.4,.4,1) both;
+  }
+  .telop-board{
+    background:#fff; border:5px solid var(--navy); border-radius:26px; box-shadow:12px 12px 0 var(--navy);
+    padding:70px 90px; color:var(--navy);
+    font-size:76px; font-weight:900; line-height:1.7; text-align:center;
+    animation:popIn .6s cubic-bezier(.3,1.35,.4,1) both;
+    max-width:1560px;
+  }
+  .highlight-text{
+    font-size:120px; font-weight:900; line-height:1.6; text-align:center;
+    animation:popIn .8s .9s cubic-bezier(.25,1.5,.4,1) both;   /* 0.9秒の「溜め」→バーン */
+    position:relative;
+  }
+  .big-video{width:100%; height:100%; object-fit:cover; background:#000;}
+  /* ===== ver007：対比写真（子どもの集合写真→引いて親たちへ） ===== */
+  .reveal-front-wrap{
+    position:absolute; inset:0; z-index:2;
+    display:flex; align-items:center; justify-content:center;
+    animation:revealShrink 1.6s cubic-bezier(.6,0,.3,1) both;   /* 開始タイミング（holdSec）はインラインdelayで指定 */
+  }
+  .reveal-front{
+    width:100%; height:100%; object-fit:cover;
+    border:14px solid #fff; background:#000;
+    box-shadow:0 30px 80px rgba(0,0,0,.55);
+  }
+  @keyframes revealShrink{
+    from{transform:translate(0,0) scale(1) rotate(0deg);}
+    to{transform:translate(29%,27%) scale(.36) rotate(-3deg);}   /* ver008：引きながら右下へ＝親の写真を隠さない */
+  }
+  /* ver008：対比写真の一言テロップは左下（右下の子ども写真と重ならない位置） */
+  .reveal-cap{
+    left:90px; right:auto; bottom:96px; max-width:46%;
+    text-align:left;
+  }
+  /* ===== ver006：集合写真の「写っていない人」オーバーレイ ===== */
+  .miss-row{
+    position:absolute; top:28px; left:0; right:0; z-index:3;
+    display:flex; gap:20px; justify-content:center; align-items:center;
+    pointer-events:none;
+  }
+  .miss-item{
+    border-radius:50%; object-fit:cover;
+    border:6px solid var(--photo-frame); background:var(--navy);
+    box-shadow:0 10px 26px rgba(0,0,0,.5);
+    animation:riseIn .6s ease both;
+  }
+  .miss-ph{display:flex; align-items:center; justify-content:center; font-size:52px; font-weight:900; color:var(--yellow);}
+  /* ===== ver005：試合のはじまり（vs）とけっか（result） ===== */
+  .vs-shade{position:absolute; inset:0; background:rgba(20,12,40,.45);}
+  .vs-box{position:relative; display:flex; flex-direction:column; align-items:center; gap:34px;}
+  .vs-chip{font-size:44px; padding:14px 56px; animation:riseIn .5s ease both;}
+  .vs-name{
+    font-size:150px; font-weight:900; line-height:1.2;
+    animation:popIn .7s .25s cubic-bezier(.3,1.4,.4,1) both;
+  }
+  .result-mark{
+    width:360px; height:360px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:230px; font-weight:900; line-height:1;
+    border:14px solid #fff; box-shadow:0 20px 60px rgba(0,0,0,.35);
+    animation:popIn .6s cubic-bezier(.3,1.5,.4,1) both;
+  }
+  .result-mark.win{background:var(--yellow); color:#fff; text-shadow:0 8px 0 rgba(34,51,92,.4);}
+  .result-mark.lose{background:var(--navy); color:#fff;}
+  .result-word{font-size:110px; font-weight:900; margin-top:40px; animation:riseIn .6s .35s ease both;}
+  .result-vs{font-size:44px; font-weight:800; color:var(--muted); margin-top:18px; animation:riseIn .6s .5s ease both;}
+  .photo-caption{
+    position:absolute; left:0; right:0; bottom:82px;
+    font-size:64px; font-weight:900;
+    text-shadow:0 6px 0 rgba(34,51,92,.5), 0 14px 40px rgba(0,0,0,.7);
+    animation:riseIn .9s .4s ease both;
+  }
+  .photo-caption small{
+    display:block; width:max-content; margin:0 auto 22px;
+    font-size:28px; font-weight:900; color:var(--navy); background:var(--yellow);
+    padding:8px 34px; border-radius:999px; letter-spacing:.24em; text-indent:.24em;
+  }
+
+  /* ===== かんせい！（集合写真の大見出し） ===== */
+  .done-caption{
+    position:absolute; left:0; right:0; bottom:96px;
+    font-size:84px; font-weight:900;
+    animation:popIn .8s .5s cubic-bezier(.3,1.4,.4,1) both;
+  }
+
+  /* ===== 紙ふぶき ===== */
+  .confetti{position:absolute; inset:0; pointer-events:none; overflow:hidden;}
+  .confetti i{
+    position:absolute; top:-60px; width:22px; height:34px; border-radius:5px;
+    left:var(--x); background:var(--c); opacity:.95;
+    animation:confettiFall var(--d) var(--dl) linear both;
+  }
+  @keyframes confettiFall{
+    from{transform:translateY(0) rotate(0deg);}
+    to{transform:translateY(1240px) rotate(var(--r)); opacity:.9;}
+  }
+
+  /* ===== エンディング ===== */
+  .ending-dim{position:absolute; inset:0; background:linear-gradient(180deg, rgba(28,18,40,.62), rgba(24,14,6,.78));}
+  .ending-msg{
+    font-size:104px; font-weight:900; line-height:1.55;
+    animation:riseIn 1.4s .5s ease both;
+    text-shadow:0 8px 0 rgba(34,51,92,.5), 0 24px 60px rgba(0,0,0,.55);
+  }
+  .ending-sub{font-size:48px; color:var(--yellow); margin-top:48px; font-weight:900; letter-spacing:.1em; animation:riseIn 1.2s 1.6s ease both;}
+  .ending-badge{margin-top:66px; animation:riseIn 1s 2.4s ease both;}
+
+  /* ===== スタート画面・カウントダウン ===== */
+  .start-title{font-size:76px; font-weight:900;}
+  .start-info{font-size:34px; color:var(--muted); margin-top:30px; line-height:2; font-weight:800;}
+  .start-info b{color:var(--yellow);}
+  .countdown{
+    width:460px; height:460px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border:16px solid rgba(255,255,255,.55);
+    background:rgba(34,51,92,.35);
+    font-size:250px; font-weight:900; color:var(--yellow);
+    text-shadow:0 10px 0 rgba(34,51,92,.55);
+    animation:popIn .45s cubic-bezier(.3,1.4,.4,1) both;
+  }
+  .fin-note{position:absolute; bottom:30px; left:0; right:0; font-size:24px; color:var(--muted); text-shadow:0 2px 8px rgba(0,0,0,.4);}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg">
+    <div class="rays"></div>
+    <div class="bokeh" style="width:180px;height:180px;left:8%;bottom:-160px;--d:20s;"></div>
+    <div class="bokeh" style="width:110px;height:110px;left:26%;bottom:-140px;--d:15s;animation-delay:-6s;"></div>
+    <div class="bokeh" style="width:220px;height:220px;left:64%;bottom:-200px;--d:24s;animation-delay:-11s;"></div>
+    <div class="bokeh" style="width:90px;height:90px;left:84%;bottom:-120px;--d:13s;animation-delay:-3s;"></div>
+    <div class="bokeh" style="width:140px;height:140px;left:47%;bottom:-160px;--d:18s;animation-delay:-14s;"></div>
+    <div class="vig"></div>
+  </div>
+  <div id="scenes"></div>
+  <div id="wipe"><div class="p p1"></div><div class="p p2"></div></div>
+</div>
+
+<script>
+/* ============================================================
+   設定（ここだけ触れば調整できる）
+   ============================================================ */
+const CONFIG = {
+  chapterTitle: { sec: 3 },                    /* 各章の扉 */
+  opening:      { sec: 15 },                   /* オープニング（扉と合わせて約18秒） */
+  member:       { sec: 3.5, fade: 0.5 },       /* 第1章：選手1人あたり */
+  groupPhoto:   { sec: 8 },                    /* 第1章しめの集合写真 */
+  practice:     { secPerPhoto: 5, fade: 0.8 }, /* 第2章：写真1枚あたり */
+  game:         { secPerPhoto: 5, fade: 0.8 }, /* 第3章：写真1枚あたり */
+  ending:       { sec: 15 }                    /* エンディング（扉と合わせて約18秒） */
+};
+
+/* 加入順リスト（この並び順で登場。行を入れ替えれば表示順が変わる）
+   no＝背番号 → 写真は photos/members/背番号2桁.jpg を読む
+   ver003：コーチ・監督は label を付ける（背番号の代わりに役職を表示）。
+   　　　　写真番号は空き番号を割り当て：
+   　　　　21=石本コーチ、22=小林コーチ、23=前川監督、24=大野コーチ、25=岩田コーチ
+   　　　　（※登場順はこのリストの並び順。写真番号とは無関係） */
+const MEMBERS = [
+  { no: 10,  name: "たすく" },
+  { no: 1,  name: "ゆうと" },
+  { no: 2,  name: "かずし" },
+  { no: 3, name: "なぎと" },
+  { no: 4,  name: "たける" },
+  { no: 5,  name: "みなと" },
+  { no: 6,  name: "そういち" },
+  { no: 7, name: "ともき" },
+  { no: 8,  name: "ゆうき" },
+  { no: 9,  name: "ゆうひ" },
+  { no: 11,  name: "えま" },
+  { no: 12, name: "とき" },
+  { no: 13,  name: "かいと" },
+  { no: 14,  name: "さよ" },
+  { no: 24, name: "大野コーチ", label: "コーチ" },
+  { no: 25, name: "岩田コーチ", label: "コーチ" },
+  { no: 21, name: "石本コーチ", label: "コーチ" },
+  { no: 22, name: "小林コーチ", label: "コーチ" },
+  { no: 23, name: "前川監督",   label: "監督" }
+];
+
+/* ===== ver006：第1章しめの集合写真に「写っていない人」を重ねる =====
+   写真に写れなかった子・コーチの背番号（写真番号）をここに列挙すると、
+   顔写真が集合写真の上部に横一列で重なって表示される。例：[3, 12]
+   だれも指定しない（空）なら、今までどおり普通に表示。 */
+const CH1_GROUP_MISSING = [12,13,14];
+
+/* 文言（後から差し替えやすいようにここへ） */
+const TEXTS = {
+  opBadge: "小山少年野球団 ORANGE",
+  mainTitle: "オレンジチームの<span class=\"main-accent\">あゆみ</span>",
+  mainSub: "小山少年野球団 オレンジ ─ 2026",
+  ch1Label: "CHAPTER 1", ch1Title: "チームができるまで",
+  memberChip: "なかま {n}人目！",
+  groupCaption: "こうして 今のオレンジチームが完成！",
+  ch2Label: "CHAPTER 2", ch2Title: "練習の日々",
+  ch3Label: "CHAPTER 3", ch3Title: "ティーボール大会へ",
+  endingMsg: "オレンジチームの物語は<br>これからも<span class=\"main-accent\">つづく</span>",
+  endingSub: "つぎは 投げ試合だ！",
+  endingBadge: "ORANGE ─ 2026"
+};
+
+/* ============================================================
+   ver005：第2章・第3章の「台本」（ここを直せば文言・秒数・順番を変えられる）
+   種類：
+     divider   … 区切り（「冬」「夏」を大きく。emojiも変えられる）
+     telop     … お話カード（\nで改行。secは表示秒数）
+     highlight … 山場（少し溜めてからバーン＋紙吹雪）
+     photos    … 写真ぜんぶ（folder=photos/◯◯/ の連番を全部流す。枚数可変。captionは共通の一言。
+     　　　　　　 skipFirst:true を付けると01.jpgを飛ばして02から流す）
+     photo     … 写真1枚（file="taiken/01.jpg"のようにphotos/からの場所を指定。
+     　　　　　　 1枚ずつちがうキャプションを付けたいときに使う。無ければスキップ）
+     video     … 動画（movies/のMP4。音付きで自動再生→終わったら自動で次へ）
+     vs        … 試合のはじまり（第no戦 vs 相手名。file=整列写真。写真が無ければ文字だけで表示）
+     result    … 試合のけっか（result:"○"=かち！／"●"=まけ…。textで文言の上書きも可）
+     groupphoto… 集合写真（ver006）。missing:[背番号,…] を書くと、写っていない人の顔写真が
+     　　　　　　 写真の上部に横一列で重なって表示される（photos/members/の写真を流用。人数可変）
+   ・写真フォルダが空／ファイルが無い行は自然にスキップされる（行の並び替え・追加・削除も自由）
+   ・試合を増やす／減らすときは【vs → photos → result の3行セット】をコピー／削除するだけ
+   ============================================================ */
+const CH2_SCRIPT=[
+  { type:"divider",  text:"冬", emoji:"⛄", sec:2.5 },
+  { type:"telop",    text:"メンバーは 5にんだけ…\nしあいが できなかったんだ", sec:4.5 },
+  /* 1枚ずつちがう文言にしたい写真は photo 行で（例）。残りは photos 行でまとめて流す（skipFirst=01を飛ばす） */
+
+
+  { type:"photo", file:"taiken/01.jpg", caption:"たいけんかい！ みたことある こが いる？", sec:3.5 },
+  { type:"photo", file:"taiken/02.jpg", caption:"11にんも きてくれた！ オレンジは 5にん…", sec:3.5 },
+
+  { type:"photo", file:"taiken/05.jpg", caption:"しあい！ 5にん たい 11にん！", sec:3.5 },
+
+  { type:"telop",    text:"たいけんかいで\nあたらしい なかまが きてくれた！", sec:4.5 },
+  { type:"highlight",text:"なかまが ふえて…\nやきゅうが できる！！", sec:6 },
+  { type:"divider",  text:"夏", emoji:"☀️", sec:2.5 },
+
+{ type:"photo", file:"junbi/01.jpg", caption:"まるくなって… れんしゅう スタート！", sec:3.5 },
+{ type:"photo", file:"junbi/02.jpg", caption:"うでを のばして じゅんび たいそう", sec:3.5 },
+{ type:"photo", file:"junbi/03.jpg", caption:"ぐるぐる うでまわし！ けがしないぞ", sec:3.5 },
+
+{ type:"photo", file:"dash/01.jpg", caption:"よーい ドン！ ぜんりょく ダッシュ！", sec:3.5 },
+{ type:"photo", file:"dash/02.jpg", caption:"スライディング！ プロやきゅうせんしゅ みたい！", sec:3.5 },
+{ type:"photo", file:"dash/03.jpg", caption:"すべるの たのしい〜！ いい えがお！", sec:3.5 },
+{ type:"photo", file:"dash/04.jpg", caption:"これは アウト？ それとも セーフ！？", sec:3.5 },
+
+{ type:"photo", file:"catch/01.jpg", caption:"せいれつ！ これから キャッチボール", sec:3.5 },
+{ type:"photo", file:"catch/02.jpg", caption:"そうちゃん かっこいい！", sec:3.5 },
+{ type:"photo", file:"catch/03.jpg", caption:"3にん いるけど… ボールは どこだ！？", sec:3.5 },
+{ type:"photo", file:"catch/04.jpg", caption:"えまちゃん とっても かっこいい！", sec:3.5 },
+{ type:"photo", file:"catch/05.jpg", caption:"たけちゃん とおくまで なげるぞ！", sec:3.5 },
+
+{ type:"photo", file:"fun/01.jpg", caption:"こばやしコーチの ぐるぐる〜！ たのしい！", sec:3.5 },
+{ type:"photo", file:"fun/02.jpg", caption:"つぎは ぼく！ わたしも やって〜！", sec:3.5 },
+{ type:"photo", file:"fun/03.jpg", caption:"いしもとコーチが きてくれた！", sec:3.5 },
+{ type:"photo", file:"fun/04.jpg", caption:"アイスの さしいれ！ みんなで たべると おいしい！", sec:3.5 },
+
+{ type:"photo", file:"hoshoku/01.jpg", caption:"ほしょくタイム！ もぐもぐ", sec:3.5 },
+{ type:"photo", file:"hoshoku/02.jpg", caption:"いっぱい たべて パワー チャージ！", sec:3.5 },
+{ type:"photo", file:"hoshoku/03.jpg", caption:"なにを おはなし してるのかな？", sec:3.5 },
+
+{ type:"photo", file:"shidou/01.jpg", caption:"まえかわかんとくに スライディングを おそわるぞ", sec:3.5 },
+{ type:"photo", file:"shidou/02.jpg", caption:"こばやしコーチ！ なげかたを おしえて！", sec:3.5 },
+{ type:"photo", file:"shidou/03.jpg", caption:"まえかわかんとく！ とりかたは どうやるの？", sec:3.5 },
+{ type:"photo", file:"shidou/04.jpg", caption:"うまく なるぞ！ もういっかい！", sec:3.5 },
+
+  /* ver006の例：ベースの集合写真。missing=写っていない人の背番号（不要なら missing:[] または行ごと削除） */
+  { type:"groupphoto", file:"team/02.jpg", missing:[7, 8,22,23,24,25], caption:"なつの オレンジチーム だいしゅうごう！", sec:8 }
+];
+const CH3_SCRIPT=[
+  /* 開会式 */
+  { type:"photos",   folder:"kaikai", caption:"かいかいしき！ いよいよ たいかいだ！", secPerPhoto:3.5 },
+  /* 円陣の掛け声（音もそのまま流れる） */
+  { type:"video",    file:"movies/enjin.mp4", caption:"しあいまえの えんじん！" },
+  /* ---- 第1戦（試合を増減するときは vs→photos→result の3行セットをコピー／削除） ---- */
+  { type:"vs",       no:1, vs:"日高レッツ", file:"game1/01.jpg", sec:4 },
+  { type:"photo", file:"game1/02.jpg", caption:"初めての　こうしきせん！", sec:3.5 },
+  { type:"photo", file:"game1/03.jpg", caption:"ないす　ゲ－ム！けっかは？", sec:3.5 },
+  { type:"photo", file:"game1/04.jpg", caption:"2てん　とれた！", sec:3.5 },
+  { type:"result",   vs:"日高レッツ", result:"●", sec:3.5 },
+  /* ---- 第2戦 ---- */
+  { type:"vs",       no:2, vs:"隼スカイボーイズ", file:"game2/01.jpg", sec:4 },
+  { type:"photo", file:"game2/02.jpg", caption:"たける　フルスイング！", sec:3.5 },
+  { type:"photo", file:"game2/03.jpg", caption:"ゆうひ　きあいまんてん！", sec:3.5 },
+  { type:"photo", file:"game2/04.jpg", caption:"かっとばせ　みなと！", sec:3.5 },
+  { type:"photo", file:"game2/05.jpg", caption:"つぎは どう うつ？ かんとくと さくせん！", sec:3.5 },
+  { type:"photo", file:"game2/06.jpg", caption:"かずし　いいあいさつ！", sec:3.5 },
+  { type:"photo", file:"game2/07.jpg", caption:"ボールを よく みて…", sec:3.5 },
+  { type:"photo", file:"game2/08.jpg", caption:"アウトに するぞ！", sec:3.5 },
+  { type:"photo", file:"game2/09.jpg", caption:"とき　きんちょうしてる？", sec:3.5 },
+  { type:"photo", file:"game2/10.jpg", caption:"ぜんそくりょくで　かけぬけろ！", sec:3.5 },
+  { type:"photo", file:"game2/11.jpg", caption:"けっかは？", sec:3.5 },
+  { type:"photo", file:"game2/12.jpg", caption:"7てんも　とれた！", sec:3.5 },
+  { type:"result",   vs:"隼スカイボーイズ", result:"○", sec:3.5 },
+  /* ---- 第3戦 ---- */
+ { type:"vs",       no:3, vs:"今川ビクトリー", file:"game3/01.jpg", sec:4 },
+ { type:"photo", file:"game3/01.jpg", caption:"だい3せん！ いまがわビクトリー！", sec:3.5 },
+ { type:"photo", file:"game3/02.jpg", caption:"ゆうき スイング！ いけ〜！", sec:3.5 },
+ { type:"photo", file:"game3/03.jpg", caption:"ゆうと「おねがいします！」", sec:3.5 },
+ { type:"photo", file:"game3/04.jpg", caption:"コーチ「つぎ いくぞ！」さくせん かくにん", sec:3.5 },
+ { type:"photo", file:"game3/05.jpg", caption:"ゆうと 3るいを まわって… ストップ！", sec:4 },
+ { type:"photo", file:"game3/06.jpg", caption:"コーチが たすくに うちかたを でんじゅ！", sec:3.5 },
+ { type:"photo", file:"game3/07.jpg", caption:"とき と たける なかよく じゅんばん まち", sec:3.5 },
+ { type:"photo", file:"game3/08.jpg", caption:"なぎとへ パス！ ランナーを みて… れんけい！", sec:4 },
+ { type:"photo", file:"game3/09.jpg", caption:"コーチ「がんばれよ！」やさしい こえかけ", sec:3.5 },
+ { type:"photo", file:"game3/10.jpg", caption:"えま、だいだで しゅつじょう！ いってこい！", sec:3.5 },
+ { type:"photo", file:"game3/11.jpg", caption:"えま おもいっきり スイング！", sec:3.5 },
+ { type:"photo", file:"game3/12.jpg", caption:"ありがとうございました！", sec:3.5 },
+ { type:"photo", file:"game3/13.jpg", caption:"けっかは…！", sec:3.5 },
+  { type:"result",   vs:"今川ビクトリー", result:"●", sec:3.5 },
+  /* ---- 第4戦 ---- */
+  { type:"vs",       no:4, vs:"刈谷ブルドッグ", file:"game4/01.jpg", sec:4 },
+ { type:"photo", file:"game4/01.jpg", caption:"だい4せん！ かりやブルドッグ！", sec:3.5 },
+ { type:"photo", file:"game4/02.jpg", caption:"コーチが たすくに アドバイス！ きくぞ", sec:3.5 },
+ { type:"photo", file:"game4/03.jpg", caption:"たすく フルスイング！", sec:3.5 },
+ { type:"photo", file:"game4/04.jpg", caption:"コーチが ゆうとに アドバイス！", sec:3.5 },
+ { type:"photo", file:"game4/05.jpg", caption:"ゆうと ねらいうち！", sec:3.5 },
+ { type:"photo", file:"game4/06.jpg", caption:"コーチが かずしに アドバイス！", sec:3.5 },
+ { type:"photo", file:"game4/07.jpg", caption:"かずし ちからづよく スイング！", sec:3.5 },
+ { type:"photo", file:"game4/08.jpg", caption:"なぎと ホームで タッチ アウト！ ナイス まもり！", sec:4.5 },
+ { type:"photo", file:"game4/09.jpg", caption:"えま せんたーから ちゅうけい！ ゆうとも カバー！", sec:4 },
+ { type:"photo", file:"game4/10.jpg", caption:"…ゆうひ！？ カメラめせん で へんがお！ 😆", sec:4 },
+ { type:"photo", file:"game4/11.jpg", caption:"ありがとうございました！", sec:3.5 },
+ { type:"photo", file:"game4/12.jpg", caption:"けっかは…！", sec:3.5 },
+  { type:"result",   vs:"刈谷ブルドッグ", result:"●", sec:3.5 },
+  /* ---- 第5戦（最終戦）：写真は挨拶(01)とスコアボード(02)のみの構成 ---- */
+  { type:"vs",       no:5, vs:"亀城ベースボールA", file:"game5/01.jpg", sec:4 },
+ { type:"photo", file:"game5/01.jpg", caption:"さいしゅうせん！ きじょうベースボールA！", sec:3.5 },
+ { type:"photo", file:"game5/02.jpg", caption:"ありがとうございました！ ぜんりょく だした！", sec:3.5 },
+ { type:"photo", file:"game5/03.jpg", caption:"けっかは…！", sec:3.5 },
+  { type:"result",   vs:"亀城ベースボールA", result:"●", sec:3.5 },   /* ←勝敗がちがったら ○ に直す */
+  /* 総括（文言はここで自由に。勝敗がきまったら書きかえる） */
+  { type:"telop",    text:"5しあい ぜんりょくで たたかった！\nかったのも まけたのも \n ぜんぶ たからもの", sec:5 },
+  /* 大会の締め（表彰への導線はエンディング後のENDING_SCRIPTに移動） */
+  { type:"highlight",text:"みんな よく たたかった！！", sec:5 }
+  /* 大会の集合写真を入れたいときは、こんな行を足す（missing=写っていない人の背番号）：
+  ,{ type:"groupphoto", file:"team/02.jpg", missing:[3, 12], caption:"たいかいの きねんに ぱしゃり！", sec:8 }
+  */
+];
+
+/* ===== ver009：おまけセクション（新メンバー紹介）＝大会の総括のあと・エンディングの前 =====
+   「大会のあと、あたらしい仲間が増えたよ」の場面。文言・秒数・写真はここで変更。
+   ・写真は photos/omake/ に置く（kaito1〜3.jpg＝かいと、sayo1〜3.jpg＝さよ。無い行はスキップ）
+   ・行を足せば写真が増える／行を消せば減る。全行消し（または OMAKE_SCRIPT=[]）でセクションごと消える */
+const OMAKE_SCRIPT=[
+  { type:"divider",  text:"あたらしい なかま！", emoji:"🌟", sec:2.5 },
+  { type:"telop",    text:"たいかいの あと…\nあたらしい なかまが ふえたよ！", sec:4.5 },
+  /* かいと（打席 → 岩田コーチの指導 → 守備） */
+  { type:"photo",    file:"omake/kaito1.jpg", caption:"かいと、はじめての だせき！", sec:3.5 },
+  { type:"photo",    file:"omake/kaito2.jpg", caption:"いわたコーチと れんしゅう！", sec:3.5 },
+  { type:"photo",    file:"omake/kaito3.jpg", caption:"しゅびも かっこいい！", sec:3.5 },
+  /* さよ（打席 → 岩田コーチの指導 → 守備） */
+  { type:"photo",    file:"omake/sayo1.jpg", caption:"さよも だせきに ちょうせん！", sec:3.5 },
+  { type:"photo",    file:"omake/sayo2.jpg", caption:"いわたコーチと れんしゅう！", sec:3.5 },
+  { type:"photo",    file:"omake/sayo3.jpg", caption:"ナイス しゅび！", sec:3.5 }
+];
+
+/* ===== ver006：エンディングのあとの締め（表彰式への導線） =====
+   「これからもつづく」のスライドの後に、この台本が流れる。文言・秒数はここで変更。 */
+/* ver007：エンディング全体の台本（この並び順で流れる。文言・秒数・写真はここで変更）
+   reveal  … 対比写真：front（子どもの集合写真）が全画面 → 引くように縮んで1枚の写真になり、
+   　　　　　 背後から back（撮っている親たちの写真）が現れる → captionの一言。
+   　　　　　 holdSec=frontを全画面で見せる秒数。front/backどちらか無ければこの行はスキップ。
+   closing … 「オレンジは これからも つづく」のスライド（文言はTEXTSのendingMsg/endingSub） */
+const ENDING_SCRIPT=[
+  { type:"reveal",   front:"ending/kids.jpg", back:"ending/parents.jpg",
+    caption:"みんなの えがおを、ずっと そばで", holdSec:3.5, sec:10 },
+  /* 背景の集合写真を変えたいときは file を足す（例：file:"ending/close.jpg"。無指定=team/02.jpg→無ければ01.jpg） */
+  { type:"closing",  sec:15, file:"team/03.jpg" },
+  { type:"telop",    text:"このあと いよいよ\nなげしあいが \n はじまるよ！", sec:4.5 },
+  { type:"highlight",text:"そのまえに…\nみんなの がんばりを \n ふりかえろう！ 🏆", sec:6 }
+];
+
+/* 写真フォルダ（連番の最大探索数） */
+const PHOTO = { members:"photos/members/", team:"photos/team/", MAX:40 };
+
+/* ============================================================
+   写真の自動検出（欠番は自然に詰める）
+   ============================================================ */
+function pad2(n){return String(n).padStart(2,"0");}
+function probe(src){return new Promise(res=>{const im=new Image();im.onload=()=>res(true);im.onerror=()=>res(false);im.src=src;});}
+async function probeFolder(dir){
+  const jobs=[];for(let i=1;i<=PHOTO.MAX;i++){const f=dir+pad2(i)+".jpg";jobs.push(probe(f).then(ok=>ok?f:null));}
+  return (await Promise.all(jobs)).filter(x=>x);
+}
+async function probeMembers(){
+  const map={};
+  await Promise.all(MEMBERS.map(m=>{const f=PHOTO.members+pad2(m.no)+".jpg";return probe(f).then(ok=>{if(ok)map[m.no]=f;});}));
+  return map;
+}
+/* ver005：動画の存在と長さ（秒）を調べる（MP4/H.264想定） */
+function probeVideo(src){
+  return new Promise(res=>{
+    const v=document.createElement("video");
+    v.preload="metadata";
+    v.onloadedmetadata=()=>res({ok:true,dur:(isFinite(v.duration)&&v.duration>0)?v.duration:8});
+    v.onerror=()=>res({ok:false});
+    v.src=src;
+  });
+}
+/* ver005：台本に出てくる写真フォルダ・単写真・動画をまとめて検出 */
+async function probeScripts(){
+  const all=CH2_SCRIPT.concat(CH3_SCRIPT).concat(OMAKE_SCRIPT).concat(ENDING_SCRIPT);   /* ver006：エンディング台本も対象／ver009：おまけも対象 */
+  const folders=new Set(), files=new Set();
+  all.forEach(e=>{
+    if(e.type==="photos"&&e.folder)folders.add(e.folder);
+    if(e.type==="photo"&&e.file)files.add(e.file);        /* 単写真（photos/からの相対パス） */
+    if(e.type==="vs"&&e.file)files.add(e.file);           /* 整列写真 */
+    if(e.type==="groupphoto"&&e.file)files.add(e.file);   /* ver006：集合写真 */
+    if(e.type==="reveal"){if(e.front)files.add(e.front);if(e.back)files.add(e.back);}   /* ver007：対比写真 */
+    if(e.type==="closing"&&e.file)files.add(e.file);   /* ver008：つづくスライドの背景差し替え */
+  });
+  const fp={};
+  await Promise.all([...folders].map(f=>probeFolder("photos/"+f+"/").then(list=>{fp[f]=list;})));
+  const pf={};
+  await Promise.all([...files].map(f=>probe("photos/"+f).then(ok=>{pf[f]=ok;})));
+  const vi={};
+  const vids=all.filter(e=>e.type==="video");
+  await Promise.all(vids.map(e=>probeVideo(e.file).then(r=>{vi[e.file]=r;})));
+  return {folders:fp, files:pf, videos:vi};
+}
+
+/* ============================================================
+   シーン一覧の組み立て（各章＝ブロック。ここが「台本」）
+   ============================================================ */
+let SCENES=[], MEMBER_PHOTO={}, FOLDER_PHOTOS={}, PHOTO_FILES={}, VIDEO_INFO={}, TEAM=[];
+/* ver005：台本（CH2_SCRIPT等）をシーン列に展開する共通処理 */
+function pushScript(s, ch, script){
+  script.forEach(e=>{
+    if(e.type==="divider"){
+      s.push({ch:ch, type:"divider", sec:e.sec||2.5, text:e.text, emoji:e.emoji||""});
+    }else if(e.type==="telop"){
+      s.push({ch:ch, type:"telop", sec:e.sec||4.5, text:e.text});
+    }else if(e.type==="highlight"){
+      s.push({ch:ch, type:"highlight", sec:e.sec||6, text:e.text});
+    }else if(e.type==="photos"){
+      let list=FOLDER_PHOTOS[e.folder]||[];
+      if(e.skipFirst)list=list.slice(1);   /* 01.jpg（整列写真など）を飛ばして流す */
+      list.forEach((f,i)=>s.push({ch:ch, type:"bigphoto", sec:e.secPerPhoto||4, src:f,
+        caption:e.caption||"", alt:i%2===1, fade:0.8}));
+      /* フォルダが空 → その行は自然にスキップ（枚数可変対応） */
+    }else if(e.type==="photo"){
+      /* 単写真＋個別キャプション。ファイルが無ければスキップ（止まらない） */
+      if(PHOTO_FILES[e.file]){
+        s.push({ch:ch, type:"bigphoto", sec:e.sec||4, src:"photos/"+e.file, caption:e.caption||"", fade:0.8});
+      }
+    }else if(e.type==="reveal"){
+      /* ver007：対比写真（front全画面→縮んでbackが現れる）。どちらか無ければスキップ */
+      if(e.front&&e.back&&PHOTO_FILES[e.front]&&PHOTO_FILES[e.back]){
+        s.push({ch:ch, type:"reveal", sec:e.sec||10, front:"photos/"+e.front, back:"photos/"+e.back,
+          caption:e.caption||"", hold:(e.holdSec!=null?e.holdSec:3.5)});
+      }
+    }else if(e.type==="closing"){
+      /* ver007：「これからもつづく」のスライド（従来のエンディング）
+         ver008：file:"◯◯/◯◯.jpg" を書けば背景の集合写真を差し替えられる（無指定=team/02.jpg→01.jpg） */
+      let src=TEAM[1]||TEAM[0]||null;
+      if(e.file&&PHOTO_FILES[e.file])src="photos/"+e.file;
+      s.push({ch:ch, type:"ending", sec:e.sec||CONFIG.ending.sec, src:src});
+    }else if(e.type==="groupphoto"){
+      /* ver006：集合写真＋写っていない人のオーバーレイ。写真が無ければ案内カード */
+      if(e.file&&PHOTO_FILES[e.file]){
+        s.push({ch:ch, type:"bigphoto", sec:e.sec||8, src:"photos/"+e.file, caption:e.caption||"", fade:0.8,
+          missing:(e.missing||[]).slice()});
+      }else{
+        s.push({ch:ch, type:"nophoto", sec:4, msg:"photos/"+(e.file||"？")+" を置くと ここに しゅうごうしゃしんが ながれます"});
+      }
+    }else if(e.type==="vs"){
+      /* 試合のはじまり：整列写真の上に「第N戦 vs 相手名」。写真が無くても文字だけで必ず出す */
+      const src=(e.file&&PHOTO_FILES[e.file])?("photos/"+e.file):null;
+      s.push({ch:ch, type:"vs", sec:e.sec||4, src:src, no:e.no||"", vs:e.vs||""});
+    }else if(e.type==="result"){
+      /* 試合のけっか：○=かち！／●=まけ…（textで上書き可） */
+      s.push({ch:ch, type:"result", sec:e.sec||3.5, vs:e.vs||"", result:e.result||"", text:e.text||""});
+    }else if(e.type==="video"){
+      const info=VIDEO_INFO[e.file];
+      if(info&&info.ok){
+        s.push({ch:ch, type:"video", sec:info.dur, file:e.file, caption:e.caption||""});
+      }else{
+        s.push({ch:ch, type:"nophoto", sec:4, msg:e.file+" を置くと ここで どうがが ながれます"});
+      }
+    }
+  });
+}
+function buildScenes(){
+  const s=[];
+  /* --- オープニング --- */
+  s.push({ch:"opening", type:"title", sec:CONFIG.opening.sec});
+  /* --- 第1章 --- */
+  s.push({ch:"ch1", type:"chapter", sec:CONFIG.chapterTitle.sec, label:TEXTS.ch1Label, title:TEXTS.ch1Title});
+  MEMBERS.forEach((m,i)=>s.push({ch:"ch1", type:"member", sec:CONFIG.member.sec, m:m, idx:i}));
+  /* しめの集合写真（未検出でも「完成！」のシーン自体は必ず出す）
+     ver006：CH1_GROUP_MISSINGに背番号を書くと「写っていない人」が上部に重なる */
+  if(TEAM[0])s.push({ch:"ch1", type:"bigphoto", sec:CONFIG.groupPhoto.sec, src:TEAM[0], done:true, caption:TEXTS.groupCaption,
+    missing:CH1_GROUP_MISSING.slice()});
+  else s.push({ch:"ch1", type:"nophoto", sec:CONFIG.groupPhoto.sec, msg:TEXTS.groupCaption+"（photos/team/01.jpg に集合写真を置いてください）"});
+  /* --- 第2章（ver005：台本CH2_SCRIPTで構成） --- */
+  s.push({ch:"ch2", type:"chapter", sec:CONFIG.chapterTitle.sec, label:TEXTS.ch2Label, title:TEXTS.ch2Title});
+  pushScript(s,"ch2",CH2_SCRIPT);
+  /* --- 第3章（ver005：台本CH3_SCRIPT。円陣動画→大会写真） --- */
+  s.push({ch:"ch3", type:"chapter", sec:CONFIG.chapterTitle.sec, label:TEXTS.ch3Label, title:TEXTS.ch3Title});
+  pushScript(s,"ch3",CH3_SCRIPT);
+  /* --- おまけ：新メンバー紹介（ver009。台本OMAKE_SCRIPT。大会の総括のあと・エンディングの前） --- */
+  pushScript(s,"omake",OMAKE_SCRIPT);
+  /* --- エンディング --- */
+  /* ver007：エンディングは ENDING_SCRIPT で全体を構成
+     （reveal=対比写真 → closing=つづく → telop=なげしあい → highlight=ふりかえろう） */
+  pushScript(s,"ending",ENDING_SCRIPT);
+  return s;
+}
+function totalSec(){return SCENES.reduce((a,x)=>a+x.sec,0);}
+function mmss(sec){const m=Math.floor(sec/60),s2=Math.round(sec%60);return m+"分"+pad2(s2)+"秒";}
+
+/* ============================================================
+   部品
+   ============================================================ */
+function esc(t){return String(t==null?"":t).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function nl2br(t){return esc(t).replace(/\n/g,"<br>");}   /* ver005：テロップの改行用 */
+
+/* 名前を1文字ずつポップさせる */
+function charSpans(name, baseDelay){
+  return Array.from(String(name)).map((c,i)=>
+    '<span class="ch" style="animation-delay:'+(baseDelay+i*0.07).toFixed(2)+'s">'+esc(c)+'</span>'
+  ).join('');
+}
+
+/* 紙ふぶき（お祝いシーン用） */
+const CONFETTI_COLORS=["#ffd166","#ffffff","#ffe9c9","#ff9a3d","#8fd3ff"];
+function confettiHtml(n){
+  let h='<div class="confetti">';
+  for(let i=0;i<n;i++){
+    const x=(Math.random()*100).toFixed(1)+"%";
+    const d=(2.6+Math.random()*2.4).toFixed(2)+"s";
+    const dl=(Math.random()*1.6).toFixed(2)+"s";
+    const r=(360+Math.random()*540).toFixed(0)+"deg";
+    const c=CONFETTI_COLORS[i%CONFETTI_COLORS.length];
+    h+='<i style="--x:'+x+';--d:'+d+';--dl:'+dl+';--r:'+r+';--c:'+c+'"></i>';
+  }
+  return h+'</div>';
+}
+
+/* ============================================================
+   ver004：溜まっていく○（トレイ）を画面の四辺に配置
+   ・選手＝上・左・右辺（左右対称を優先：左右=ceil(選手数÷3)、上=残り。14人→上4左5右5）
+   ・コーチ・監督（label持ち）＝下辺（チームを下支えするイメージ）
+   ・登場順＝加入順のまま、席は最初から固定（額縁が埋まっていく見え方）
+   ・人数可変：選手・コーチが増減しても自動で振り分け。
+   　○の大きさは基本92pxを維持し、収まらないときだけ4px刻みで縮小（下限64px）
+   ============================================================ */
+function computeTray(){
+  const players=[],coaches=[];
+  MEMBERS.forEach((m,i)=>{(m.label?coaches:players).push(i);});
+  const n=players.length;
+  let side=Math.ceil(n/3), top=n-2*side;
+  if(top<0){side=Math.floor(n/2);top=n-2*side;}   /* 人数がごく少ないときの保険 */
+  const EDGE=36, GAP=18, CORNER=320;               /* 縁からの余白・○同士の間隔・四隅の空き */
+  let size=92;
+  for(;size>=64;size-=4){
+    const wTop=Math.max(0,top*size+(top-1)*GAP);
+    const wBot=Math.max(0,coaches.length*size+(coaches.length-1)*GAP);
+    const hSide=Math.max(0,side*size+(side-1)*GAP);
+    const availW=1920-2*CORNER, availH=1080-2*(EDGE+size+GAP);
+    if(wTop<=availW && wBot<=availW && hSide<=availH)break;
+  }
+  const slots={}, cx=1920/2, cy=1080/2;
+  const wTop=Math.max(0,top*size+(top-1)*GAP);
+  players.slice(0,top).forEach((mi,k)=>{slots[mi]={x:cx-wTop/2+k*(size+GAP), y:EDGE};});            /* 上辺（左→右） */
+  const hSide=Math.max(0,side*size+(side-1)*GAP);
+  players.slice(top,top+side).forEach((mi,k)=>{slots[mi]={x:EDGE, y:cy-hSide/2+k*(size+GAP)};});     /* 左辺（上→下） */
+  players.slice(top+side).forEach((mi,k)=>{slots[mi]={x:1920-EDGE-size, y:cy-hSide/2+k*(size+GAP)};});/* 右辺（上→下） */
+  const wBot=Math.max(0,coaches.length*size+(coaches.length-1)*GAP);
+  coaches.forEach((mi,k)=>{slots[mi]={x:cx-wBot/2+k*(size+GAP), y:1080-EDGE-size};});                /* 下辺（コーチ） */
+  return {slots:slots, size:size, counts:{top:top,left:side,right:side,bottom:coaches.length}};
+}
+const TRAY=computeTray();   /* MEMBERSは固定なので起動時に1回だけ計算 */
+
+/* ============================================================
+   ver006：集合写真に「写っていない人」を上部一列で重ねる
+   ・nos＝背番号（写真番号）の配列。photos/members/の顔写真を流用
+   ・基本150px。人数が多くて収まらないときだけ6px刻みで縮小（下限90px）＝人数可変
+   ・写真が無い番号はトレイと同じバッジ（選手=背番号、コーチ=コ/監）
+   ============================================================ */
+function missRowHtml(nos){
+  const MAXW=1760, GAP=20;
+  let size=150;
+  for(;size>90;size-=6){if(nos.length*size+(nos.length-1)*GAP<=MAXW)break;}
+  let h='<div class="miss-row">';
+  nos.forEach((no,i)=>{
+    const m=MEMBERS.find(x=>x.no===no);
+    const f=MEMBER_PHOTO[no];
+    const ph=(m&&m.label)?esc(Array.from(m.label)[0]):no;
+    const st='width:'+size+'px;height:'+size+'px;animation-delay:'+(0.25+i*0.12).toFixed(2)+'s;';
+    h+=f?'<img class="miss-item" style="'+st+'" src="'+f+'" alt="">'
+        :'<div class="miss-item miss-ph" style="'+st+'">'+ph+'</div>';
+  });
+  return h+'</div>';
+}
+
+function trayHtml(uptoIdx){
+  let h='<div class="member-tray">';
+  for(let i=0;i<=uptoIdx;i++){
+    const m=MEMBERS[i];const f=MEMBER_PHOTO[m.no];const s=TRAY.slots[i];
+    if(!s)continue;
+    const latest=(i===uptoIdx)?" latest":"";
+    const style='left:'+s.x+'px;top:'+s.y+'px;width:'+TRAY.size+'px;height:'+TRAY.size+'px;';
+    /* 写真が無いとき：コーチ・監督はlabelの頭文字（コ/監）、選手は背番号 */
+    const ph=m.label?esc(Array.from(m.label)[0]):m.no;
+    h+=f?'<img class="tray-item'+latest+'" style="'+style+'" src="'+f+'" alt="">'
+        :'<div class="tray-item tray-ph'+latest+'" style="'+style+'">'+ph+'</div>';
+  }
+  return h+'</div>';
+}
+
+/* ============================================================
+   描画
+   ============================================================ */
+function renderScene(sc){
+  if(sc.type==="title"){          /* オープニング */
+    return '<section class="scene" data-ch="opening">'
+      +'<div class="chip yellow op-badge">'+esc(TEXTS.opBadge)+'</div>'
+      +'<div class="main-title pop-text">'+TEXTS.mainTitle+'</div>'
+      +'<div class="title-bar"></div>'
+      +'<div class="main-sub">'+esc(TEXTS.mainSub)+'</div>'
+      +'</section>';
+  }
+  if(sc.type==="chapter"){        /* 章扉 */
+    const num=(sc.label.match(/\d+/)||[""])[0];
+    return '<section class="scene" data-ch="'+sc.ch+'">'
+      +'<div class="chapter-num">'+num+'</div>'
+      +'<div class="chip chapter-label">'+esc(sc.label)+'</div>'
+      +'<div class="chapter-title pop-text">'+esc(sc.title)+'</div>'
+      +'<div class="chapter-bar"></div>'
+      +'</section>';
+  }
+  if(sc.type==="member"){         /* 第1章：選手（ver003：コーチ・監督はlabelで役職表示） */
+    const m=sc.m;const f=MEMBER_PHOTO[m.no];
+    const chip=TEXTS.memberChip.replace("{n}", sc.idx+1);
+    /* 長い名前は自動で文字を小さくして見切れを防ぐ（5文字までは132px） */
+    const len=Array.from(String(m.name)).length;
+    const nameSize=len>5?Math.max(72,Math.floor(132*5/len)):132;
+    /* 背番号エリア：labelがあれば役職（コーチ/監督）、なければ従来どおり背番号 */
+    const noHtml=m.label
+      ?'<div class="member-no"><b style="font-size:110px">'+esc(m.label)+'</b></div>'
+      :'<div class="member-no"><small>背番号</small><b>'+m.no+'</b></div>';
+    /* 写真が無いときの代替：labelがあれば役職文字、なければ背番号 */
+    const phHtml=m.label
+      ?'<div class="member-photo member-photo-ph" style="font-size:110px">'+esc(m.label)+'</div>'
+      :'<div class="member-photo member-photo-ph">'+m.no+'</div>';
+    return '<section class="scene member-scene" data-ch="ch1" style="--fade:'+(CONFIG.member.fade)+'s">'
+      +'<div class="member-count">'+(sc.idx+1)+' <small>/ '+MEMBERS.length+'</small></div>'
+      +'<div class="m-left">'
+      +'<div class="burst"></div>'
+      +'<div class="photo-tilt">'
+      +(f?'<img class="member-photo" src="'+f+'" alt="">':phHtml)
+      +'<div class="photo-tape"></div>'
+      +'</div>'
+      +'</div>'
+      +'<div class="m-right">'
+      +'<div class="chip yellow member-chip">'+esc(chip)+'</div>'
+      +'<div class="member-name pop-text" style="font-size:'+nameSize+'px">'+charSpans(m.name, .45)+'</div>'
+      +noHtml
+      +'</div>'
+      +trayHtml(sc.idx)
+      +'</section>';
+  }
+  if(sc.type==="bigphoto"){       /* 集合写真・練習/大会の写真 */
+    return '<section class="scene" data-ch="'+sc.ch+'"'+(sc.fade?' style="--fade:'+sc.fade+'s"':'')+'>'
+      +'<div class="big-photo-wrap"><img class="big-photo'+(sc.alt?' alt':'')+'" style="--zoom:'+(sc.sec+1)+'s" src="'+sc.src+'" alt=""><div class="photo-shade"></div></div>'
+      +((sc.missing&&sc.missing.length)?missRowHtml(sc.missing):'')   /* ver006：写っていない人を上部に重ねる */
+      +(sc.done?confettiHtml(36)+'<div class="done-caption pop-text">'+esc(sc.caption)+'</div>':'')
+      +(!sc.done&&sc.caption?'<div class="photo-caption">'+(sc.label?'<small>'+esc(sc.label)+'</small>':'')+esc(sc.caption)+'</div>':'')
+      +'</section>';
+  }
+  if(sc.type==="divider"){        /* ver005：区切り（「冬」「夏」を大きく） */
+    return '<section class="scene" data-ch="'+sc.ch+'">'
+      +'<div class="season-emoji">'+esc(sc.emoji||"")+'</div>'
+      +'<div class="season-word pop-text">'+esc(sc.text)+'</div>'
+      +'</section>';
+  }
+  if(sc.type==="telop"){          /* ver005：お話カード（白ボード） */
+    return '<section class="scene" data-ch="'+sc.ch+'">'
+      +'<div class="telop-board">'+nl2br(sc.text)+'</div>'
+      +'</section>';
+  }
+  if(sc.type==="highlight"){      /* ver005：山場（溜めてバーン＋紙吹雪） */
+    return '<section class="scene" data-ch="'+sc.ch+'">'
+      +confettiHtml(30)
+      +'<div class="burst" style="animation-delay:.9s"></div>'
+      +'<div class="highlight-text pop-text">'+nl2br(sc.text)+'</div>'
+      +'</section>';
+  }
+  if(sc.type==="video"){          /* ver005：動画（音付き自動再生→終わったら次へ） */
+    return '<section class="scene" data-ch="'+sc.ch+'">'
+      +'<div class="big-photo-wrap"><video id="sceneVideo" class="big-video" src="'+sc.file+'" playsinline></video><div class="photo-shade"></div></div>'
+      +(sc.caption?'<div class="photo-caption">'+esc(sc.caption)+'</div>':'')
+      +'</section>';
+  }
+  if(sc.type==="reveal"){         /* ver007：対比写真（子どもの集合写真→引いて撮っている親たちへ） */
+    return '<section class="scene" data-ch="'+sc.ch+'">'
+      +'<div class="big-photo-wrap"><img class="big-photo" style="--zoom:'+(sc.sec+1)+'s" src="'+sc.back+'" alt=""><div class="photo-shade"></div></div>'
+      +'<div class="reveal-front-wrap" style="animation-delay:'+sc.hold.toFixed(2)+'s"><img class="reveal-front" src="'+sc.front+'" alt=""></div>'
+      +(sc.caption?'<div class="photo-caption reveal-cap" style="animation-delay:'+(sc.hold+1.2).toFixed(2)+'s">'+esc(sc.caption)+'</div>':'')
+      +'</section>';
+  }
+  if(sc.type==="vs"){             /* ver005：試合のはじまり（整列写真＋第N戦 vs 相手名） */
+    return '<section class="scene" data-ch="'+sc.ch+'">'
+      +(sc.src?'<div class="big-photo-wrap"><img class="big-photo" style="--zoom:'+(sc.sec+1)+'s" src="'+sc.src+'" alt=""><div class="vs-shade"></div></div>':'')
+      +'<div class="vs-box">'
+      +(sc.no!==""?'<div class="chip yellow vs-chip">第'+esc(sc.no)+'戦</div>':'')
+      +'<div class="vs-name pop-text">vs '+esc(sc.vs)+'</div>'
+      +'</div>'
+      +'</section>';
+  }
+  if(sc.type==="result"){         /* ver005：試合のけっか（○=かち！／●=まけ…） */
+    const win=(sc.result==="○"||sc.result==="〇"||sc.result==="win");
+    const word=sc.text||(win?"かち！":"まけ…");
+    return '<section class="scene" data-ch="'+sc.ch+'">'
+      +(win?confettiHtml(26):'')
+      +'<div class="result-mark '+(win?"win":"lose")+'">'+(win?"○":"●")+'</div>'
+      +'<div class="result-word pop-text">'+esc(word)+'</div>'
+      +(sc.vs?'<div class="result-vs">vs '+esc(sc.vs)+'</div>':'')
+      +'</section>';
+  }
+  if(sc.type==="nophoto"){        /* 写真・動画未検出の案内カード（章の場所を確保する） */
+    return '<section class="scene" data-ch="'+sc.ch+'">'
+      +'<div class="main-sub" style="font-size:44px; line-height:2; animation-delay:.3s">📷<br>'+esc(sc.msg)+'</div>'
+      +'</section>';
+  }
+  if(sc.type==="ending"){         /* エンディング */
+    return '<section class="scene" data-ch="ending">'
+      +(sc.src?'<div class="big-photo-wrap"><img class="big-photo" style="--zoom:'+(sc.sec+1)+'s" src="'+sc.src+'" alt=""></div>':'')
+      +'<div class="ending-dim"></div>'
+      +confettiHtml(26)
+      +'<div class="ending-msg" style="position:relative">'+TEXTS.endingMsg+'</div>'
+      +'<div class="ending-sub" style="position:relative">'+esc(TEXTS.endingSub)+'</div>'
+      +'<div class="chip ending-badge" style="position:relative">'+esc(TEXTS.endingBadge)+'</div>'
+      +'</section>';
+  }
+  return "";
+}
+
+/* ============================================================
+   自動再生エンジン（時間経過でシーンを順送り）
+   ============================================================ */
+const stage=document.getElementById("stage");
+const scenesEl=document.getElementById("scenes");
+const wipeEl=document.getElementById("wipe");
+let si=-1, timer=null, playing=false;
+
+/* シーンの入れ替え：前のシーンをフェードアウトさせつつ新シーンを重ねる */
+function setScene(html){
+  const old=scenesEl.querySelector(".scene:not(.leave)");
+  if(old){old.classList.add("leave"); setTimeout(()=>old.remove(), 500);}
+  scenesEl.insertAdjacentHTML("beforeend", html);
+}
+/* 章の切り替えは斜めワイプで転換（ワイプが画面を覆った瞬間に中身を差し替え） */
+function setSceneWithWipe(html){
+  wipeEl.classList.remove("run");
+  void wipeEl.offsetWidth;               /* アニメ再スタート */
+  wipeEl.classList.add("run");
+  setTimeout(()=>{scenesEl.innerHTML=html;}, 380);
+  setTimeout(()=>{wipeEl.classList.remove("run");}, 1100);
+}
+
+/* ver005：再生中の動画を止める（シーン切替・やり直し時の後始末） */
+function stopVideo(){
+  const v=scenesEl.querySelector("video");
+  if(v){try{v.pause();v.onended=null;}catch(e){}}
+}
+
+function showScene(i){
+  stopVideo();
+  si=i;
+  const sc=SCENES[i];
+  const useWipe=(sc.type==="chapter"||sc.type==="ending"||sc.type==="title");
+  if(useWipe&&i>0) setSceneWithWipe(renderScene(sc));
+  else setScene(renderScene(sc));
+
+  /* ver005：動画シーンは「再生終了」で次へ進む（＋長さ+3秒の保険タイマー） */
+  if(sc.type==="video"){
+    const v=document.getElementById("sceneVideo");
+    let advanced=false;
+    const next=()=>{if(advanced)return;advanced=true;if(timer)clearTimeout(timer);
+      if(i<SCENES.length-1)showScene(i+1);};
+    if(v){
+      v.onended=next;
+      const p=v.play();   /* スタートのクリックで音声許可が解錠済み＝音付きで自動再生できる */
+      if(p&&p.catch)p.catch(()=>{v.muted=true;const p2=v.play();if(p2&&p2.catch)p2.catch(()=>{});}); /* 万一拒否されたら無音で流す（止めない） */
+    }
+    timer=setTimeout(next,(sc.sec+3)*1000);   /* 保険：終了イベントが来なくても進む */
+    return;
+  }
+
+  if(i<SCENES.length-1){
+    timer=setTimeout(()=>showScene(i+1), sc.sec*1000);
+  }else{
+    /* 最終シーンで静止（録画を止めやすいように小さく案内） */
+    timer=setTimeout(()=>{
+      const n=document.createElement("div");n.className="fin-note";n.textContent="— おしまい（R で最初から）—";
+      const last=scenesEl.querySelector(".scene:not(.leave)");
+      last&&last.appendChild(n);
+      playing=false;
+    }, sc.sec*1000);
+  }
+}
+
+function startScreen(){
+  playing=false;
+  const found=Object.keys(MEMBER_PHOTO).length;
+  const pr=Object.values(FOLDER_PHOTOS).reduce((a,l)=>a+l.length,0);   /* 台本の写真（練習・大会など）合計 */
+  const vids=Object.values(VIDEO_INFO).filter(v=>v.ok).length;
+  const vidsAll=Object.keys(VIDEO_INFO).length;
+  const warn=(found===0&&pr===0&&TEAM.length===0)
+    ?'<br><span style="color:#ffb0a0">⚠ 写真が1枚も見つかりません。このHTMLと同じ場所に photos フォルダがあるか確認してください。</span>':'';
+  scenesEl.innerHTML='<section class="scene">'
+    +'<div class="start-title pop-text">🎬 オレンジチームのあゆみ</div>'
+    +'<div class="start-info">クリックすると <b>3秒カウントダウン</b>のあと自動で再生します<br>'
+    +'推定の長さ：<b>'+mmss(totalSec())+'</b>（'+SCENES.length+'場面）<br>'
+    +'検出：選手 <b>'+found+'/'+MEMBERS.length+'</b>・台本の写真 <b>'+pr+'</b>枚・集合 <b>'+TEAM.length+'</b>・動画 <b>'+vids+'/'+vidsAll+'</b>本'
+    +warn
+    +'<br>R キー＝最初からやり直し／<b>F キー＝全画面</b>／再生中の操作は不要です</div>'
+    +'</section>';
+}
+function countdownThenPlay(){
+  playing=true;let n=3;
+  function tick(){
+    if(n>0){scenesEl.innerHTML='<section class="scene"><div class="countdown">'+n+'</div></section>';n--;timer=setTimeout(tick,1000);}
+    else showScene(0);
+  }
+  tick();
+}
+function restart(){if(timer)clearTimeout(timer);stopVideo();si=-1;startScreen();}   /* siを戻す＝終了後もクリック2回で再スタートできる */
+
+document.addEventListener("click",()=>{if(!playing&&si<0)countdownThenPlay();else if(!playing)restart();});
+document.addEventListener("keydown",e=>{
+  if(e.key==="r"||e.key==="R"){if(timer)clearTimeout(timer);stopVideo();si=-1;startScreen();}
+  else if(e.key==="f"||e.key==="F"){   /* ver005：全画面の切り替え（録画前にFを押す運用） */
+    if(document.fullscreenElement)document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  }
+});
+
+/* ===== 16:9ステージを画面に合わせてスケール ===== */
+function fitStage(){
+  const s=Math.min(innerWidth/1920, innerHeight/1080);
+  stage.style.transform="translate(-50%,-50%) scale("+s.toFixed(4)+")";
+}
+window.addEventListener("resize",fitStage);
+
+/* ===== 起動：写真・動画を検出してからスタート画面へ ===== */
+(async function init(){
+  fitStage();
+  scenesEl.innerHTML='<section class="scene"><div class="start-info">写真と動画を確認しています…</div></section>';
+  const [mp,tm,sp]=await Promise.all([probeMembers(),probeFolder(PHOTO.team),probeScripts()]);
+  MEMBER_PHOTO=mp;TEAM=tm;FOLDER_PHOTOS=sp.folders;PHOTO_FILES=sp.files;VIDEO_INFO=sp.videos;
+  SCENES=buildScenes();
+  startScreen();
+})();
+</script>
+</body>
+</html>
