@@ -12,7 +12,7 @@
 | **リンク集（トップ）** | https://oyama-baseball-1976.github.io/orange/ | **すべての入口。父母にはこのURLを配る** |
 | マニュアル | https://oyama-baseball-1976.github.io/orange/manual.html | 父母向けの使い方案内 |
 | 成績入力 | https://oyama-baseball-1976.github.io/orange/orange_Award_Production.html | 成績入力・表彰・スタンプ・年度成績 |
-| 試合記録 | https://oyama-baseball-1976.github.io/orange/index_Production.html | 協力ログ・試合結果の登録 |
+| オレンジライン 記録システム | index_Production.html | 協力ログ・試合記録の登録。幹事専用
 | 懇親会 会計 | https://oyama-baseball-1976.github.io/orange/accounting_Production.html | 注文入力・家庭別会計 |
 | 集金チェック | organizer_Production.html | 幹事専用。**URLは配らないこと** |
 
