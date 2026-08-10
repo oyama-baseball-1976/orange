@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- ver002（2026-08-11）：同じ日に2試合以上ある場合に対応。
+     ・試合日の選択肢は「8/15　vs A　第1試合」のように出ます（1試合の日は今までどおり）
+     ・入力確認タブに 相手チーム と 第N試合 を表示 -->
 <title>小山少年野球団オレンジ成績</title>
 <style>
   :root{
@@ -610,6 +613,15 @@ POSITIONS.forEach(p=>{
 document.querySelectorAll("#segStart .seg-btn").forEach(b=>{b.onclick=()=>{document.querySelectorAll("#segStart .seg-btn").forEach(x=>x.classList.remove("on"));b.classList.add("on");selStart=b.dataset.v;};});
 document.querySelectorAll("#segPlay .seg-btn").forEach(b=>{b.onclick=()=>{document.querySelectorAll("#segPlay .seg-btn").forEach(x=>x.classList.remove("on"));b.classList.add("on");selPlay=b.dataset.v;};});
 
+/* ver002：選ばれている試合（日付と試合No）を取り出す。
+   旧GAS・旧データで value が日付だけのときは 試合No=1 として扱う。 */
+function selectedGame(){
+  const v=dateSel.value||"";
+  const hit=GAME_DATES.find(g=>(g.key||g.date)===v);
+  if(hit)return {date:hit.date,no:hit.no||1};
+  const p=v.split("#");
+  return {date:p[0]||"",no:Number(p[1])||1};
+}
 function updateSubmit(){document.getElementById("submit").disabled=!(dateSel.value&&childSel.value);}
 dateSel.onchange=updateSubmit;childSel.onchange=updateSubmit;
 
@@ -647,9 +659,11 @@ document.querySelectorAll(".tab").forEach(t=>{
 document.getElementById("submit").onclick=async()=>{
   if(!dateSel.value||!childSel.value)return;
   const btn=document.getElementById("submit");btn.disabled=true;btn.textContent="送信中…";
+  const g=selectedGame();   /* ver002：選ばれた試合の日付と試合No */
   const payload={
     type:"teeball",
-    date:dateSel.value,
+    date:g.date,
+    gameNo:g.no,
     child:childSel.value,
     daseki:+document.getElementById("daseki").value,
     anda:+document.getElementById("anda").value,
@@ -698,7 +712,10 @@ function editTeeball(ts){
   const r=CHECK_CACHE.find(x=>String(x.ts)===String(ts));if(!r)return;
   editingTeeballTs=r.ts;
   document.querySelector('[data-panel="input"]').click();
-  dateSel.value=r.date; childSel.value=r.child;
+  /* ver002：同日2試合のときも、元の試合の選択肢に戻す */
+  dateSel.value=(r.date+"#"+(r.no||1));
+  if(!dateSel.value)dateSel.value=r.date;
+  childSel.value=r.child;
   document.getElementById("daseki").value=r.daseki||0;document.getElementById("anda").value=r.anda||0;
   document.getElementById("daten").value=r.daten||0;document.getElementById("tokuten").value=r.tokuten||0;
   document.getElementById("shutsurui").value=r.shutsurui||0;document.getElementById("daida").value=r.daida||0;
@@ -714,7 +731,7 @@ function editTeeball(ts){
   selPlay=r.play||"";
   document.querySelectorAll("#segPlay .seg-btn").forEach(b=>b.classList.toggle("on",b.dataset.v===selPlay));
   document.getElementById("submit").textContent="✓ この内容で修正保存";
-  const note=document.getElementById("tbEditNote");note.style.display="block";note.textContent="✏️ "+r.date+"　"+r.child+" の成績を修正中。直して「修正保存」を押してください。";
+  const note=document.getElementById("tbEditNote");note.style.display="block";note.textContent="✏️ "+r.date+(r.noLabel?("　"+r.noLabel):"")+(r.opp?("　vs "+r.opp):"")+"　"+r.child+" の成績を修正中。直して「修正保存」を押してください。";
   document.getElementById("tbEditCancel").style.display="block";
   updateSubmit();window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -746,7 +763,13 @@ async function init(){
 function fillDates(){
   dateSel.innerHTML="";
   if(!GAME_DATES.length){const o=document.createElement("option");o.value="";o.textContent="（先に試合を登録してください）";dateSel.appendChild(o);return;}
-  GAME_DATES.forEach(g=>{const o=document.createElement("option");o.value=g.date;o.textContent=g.date+"　vs "+g.opp;dateSel.appendChild(o);});
+  /* ver002：同じ日に2試合以上あるときのため、value は「日付#試合No」にする。
+     表示する文字は GAS が組み立てたもの（label）をそのまま出す。
+     1試合しかない日は今までどおり「8/15　vs A」の形になる。 */
+  GAME_DATES.forEach(g=>{const o=document.createElement("option");
+    o.value=g.key||g.date;                                  /* 旧GASなら日付のまま（保険） */
+    o.textContent=g.label||(g.date+"　vs "+g.opp);
+    dateSel.appendChild(o);});
 }
 
 /* ===== ver019：共通フィルタ（区分・試合種別）を成績データに適用する仕組み =====
@@ -796,9 +819,11 @@ function renderCheck(rows){
     +((gBunrui==="all"&&gKind==="all")?'この年度の入力データはまだありません。'
       :'この絞り込み（'+BUNRUI_LABEL[gBunrui]+'／'+KIND_LABEL[gKind]+'）に当てはまる入力データはありません。')+'</div>';return;}
   /* PC用：表（従来どおり。ver019で四球・死球・振り逃げの列を追加） */
-  let h='<div class="check-pc"><table><thead><tr><th>試合日</th><th>児童</th><th>打席</th><th>安打</th><th>打点</th><th>得点</th><th>出塁</th><th>代打</th><th>盗塁</th><th>四球</th><th>死球</th><th>振逃</th><th>本塁打</th><th>守備</th><th>出場</th><th>評価</th><th>操作</th></tr></thead><tbody>';
+  let h='<div class="check-pc"><table><thead><tr><th>試合日</th><th>相手</th><th>児童</th><th>打席</th><th>安打</th><th>打点</th><th>得点</th><th>出塁</th><th>代打</th><th>盗塁</th><th>四球</th><th>死球</th><th>振逃</th><th>本塁打</th><th>守備</th><th>出場</th><th>評価</th><th>操作</th></tr></thead><tbody>';
   rows.forEach(r=>{
-    h+=`<tr><td style="white-space:nowrap">${mmdd(r.date)}</td><td>${r.child}</td><td>${r.daseki}</td><td>${r.anda}</td><td>${r.daten}</td><td>${r.tokuten}</td><td>${r.shutsurui}</td><td>${r.daida}</td><td>${r.tourui||0}</td><td>${r.bb||0}</td><td>${r.hbp||0}</td><td>${r.furinige||0}</td><td>${r.hr||0}</td><td style="font-size:.72rem">${r.positions||""}</td><td style="font-size:.72rem">${r.start||""}</td><td>${r.play||""}</td>`+
+    /* ver002：同日2試合以上の日は「第N試合」も出す（誤って2回入力した重複と区別するため） */
+    const nl=r.noLabel?`<br><span style="font-size:.68rem;color:var(--orange);font-weight:700">${r.noLabel}</span>`:"";
+    h+=`<tr><td style="white-space:nowrap">${mmdd(r.date)}${nl}</td><td style="font-size:.78rem">${esc(r.opp||"")}</td><td>${r.child}</td><td>${r.daseki}</td><td>${r.anda}</td><td>${r.daten}</td><td>${r.tokuten}</td><td>${r.shutsurui}</td><td>${r.daida}</td><td>${r.tourui||0}</td><td>${r.bb||0}</td><td>${r.hbp||0}</td><td>${r.furinige||0}</td><td>${r.hr||0}</td><td style="font-size:.72rem">${r.positions||""}</td><td style="font-size:.72rem">${r.start||""}</td><td>${r.play||""}</td>`+
       `<td><div style="display:flex;flex-direction:column;gap:5px;align-items:stretch"><button class="rowbtn edit" style="margin:0" onclick="editTeeball('${r.ts}')">修正</button><button class="rowbtn del" style="margin:0" onclick="delTeeball('${r.ts}')">削除</button></div></td></tr>`;
   });
   h+='</tbody></table></div>';
@@ -807,7 +832,7 @@ function renderCheck(rows){
   rows.forEach(r=>{
     const it=(lbl,v)=>'<span class="chk-item">'+lbl+'<b>'+v+'</b></span>';
     h+='<div class="chk-card">'
-      +'<div class="chk-head"><span class="chk-date">'+mmdd(r.date)+'</span><span class="chk-name">'+esc(r.child)+'</span></div>'
+      +'<div class="chk-head"><span class="chk-date">'+mmdd(r.date)+(r.noLabel?'<span style="margin-left:6px;font-size:.68rem;color:var(--orange);font-weight:800">'+esc(r.noLabel)+'</span>':'')+(r.opp?'<span style="margin-left:6px;font-size:.7rem;color:var(--muted);font-weight:700">vs '+esc(r.opp)+'</span>':'')+'</span><span class="chk-name">'+esc(r.child)+'</span></div>'
       +'<div class="chk-items">'
       +it("打席",r.daseki||0)+it("安打",r.anda||0)+it("打点",r.daten||0)+it("得点",r.tokuten||0)
       +it("出塁",r.shutsurui||0)+it("代打",r.daida||0)+it("盗塁",r.tourui||0)
