@@ -4,9 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>オレンジライン 記録システム</title>
-<!-- ver002（2026-08-11）：同じ日に2試合以上ある場合に対応。
+<!-- ver003（2026-08-11）：同じ日に2試合以上ある場合に対応。
      ・試合記録タブ：試合Noは自動採番のため入力欄は増えていません
-     ・協力ログタブ：これまでどおり「1日1回」。選択肢も1日1つのままです -->
+     ・協力ログタブ：これまでどおり「1日1回」。選択肢も1日1つのままです
+       （ver003：同日2試合の日も相手チーム名が出るようになりました。
+         表示の文字はGASが組み立てたものをそのまま出しています） -->
 <style>
   :root{
     --ink:#1a2238;--orange:#f06a1e;--orange-soft:#ffe9dc;--line:#e3e6ee;
@@ -353,7 +355,10 @@ function fillDateSelect(){
   const sel=document.getElementById("coopDate");sel.innerHTML="";
   const list=COOP_DATES.length?COOP_DATES:GAME_DATES;   /* 旧GASでも動くように保険 */
   if(!list.length){const o=document.createElement("option");o.value="";o.textContent="（先に試合記録タブで試合日を登録）";sel.appendChild(o);return;}
-  list.forEach(g=>{const o=document.createElement("option");o.value=g.date;o.textContent=g.label||(g.date+"　vs "+g.opp);sel.appendChild(o);});
+  /* value は日付のまま（logシートのB列に日付だけを入れるため）。表示文字はGASの label をそのまま出す */
+  list.forEach(g=>{const o=document.createElement("option");o.value=g.date;
+    o.textContent=g.label||(g.date+(g.opp?("　vs "+g.opp):""));   /* 旧GASのときだけ使う保険 */
+    sel.appendChild(o);});
   sel.onchange=updateSelSum;
 }
 async function refreshDates(fresh){
