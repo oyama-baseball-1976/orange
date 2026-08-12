@@ -14,7 +14,7 @@
   ver006：しめの前にセレモニー3枚を追加
     ・はじめての記録②のあと：礼（監督・コーチへ ありがとうございました）
     　→ 小林コーチのひとこと → 前川監督のひとこと → しめ
-    ・文言・名前は DATA の下の CEREMONY 定数で変更（データ取込で消えない）
+    ・ver010：礼／監督・コーチのひとことスライドは廃止（7月のお疲れ様会専用だったため）
   ver005：チームのきせきを順次表示に変更
     ・最初はタイトルのみ→クリックごとにカード（せいせき→通算ヒット→総得点→勢い）を1枚ずつ発表
     ・←キーで1枚ずつ巻き戻し。全部出たら次のクリックで次のスライドへ
@@ -259,11 +259,30 @@
   .imp-box h2{margin:0 0 4px; font-size:1.05rem;}
   .imp-note{font-size:.78rem; color:var(--muted); line-height:1.7;}
   .imp-box label{font-size:.8rem; font-weight:800; display:block; margin-top:12px;}
-  .imp-box input{width:100%; padding:9px 10px; border:1px solid #d5d9e3; border-radius:8px; font-size:.85rem;}
+  .imp-box input,.imp-box select,.imp-box textarea{width:100%; padding:9px 10px; border:1px solid #d5d9e3; border-radius:8px; font-size:.85rem; font-family:inherit;}
+  /* ver010：フィルタ欄を横並びにする */
+  .imp-row{display:flex; gap:10px; flex-wrap:wrap;}
+  .imp-row>div{flex:1 1 150px;}
+  .imp-sec{margin-top:16px; padding-top:12px; border-top:2px dashed #e3e6ee;}
+  .imp-sec>b{font-size:.86rem; color:var(--orange);}
+  .imp-box textarea.imp-text{height:56px; resize:vertical;}
+  /* ver010修正：入力欄の下に出す小さな説明 */
+  .imp-help{font-size:.72rem; color:var(--muted); line-height:1.65; margin-top:6px;}
+  .imp-help b{color:#333;}
+  /* 手動賞など、読み飛ばしてほしくない注意 */
+  .imp-caution{margin-top:8px; padding:8px 10px; border-radius:8px;
+    background:#fff6ec; border:1px solid #f3d3b3; font-size:.74rem; line-height:1.7; color:#7a4a1a;}
+  /* 条件を入れたときだけ出る案内 */
+  .imp-hint{margin-top:8px; padding:8px 10px; border-radius:8px;
+    background:#eaf3ff; border:1px solid #c3ddf8; font-size:.74rem; line-height:1.7; color:#1c4e86; display:none;}
+  .imp-hint.on{display:block;}
   .imp-btn{margin-top:14px; margin-right:8px; padding:10px 20px; border-radius:10px; border:none;
     background:var(--orange); color:#fff; font-weight:800; font-size:.9rem; cursor:pointer;}
   .imp-btn.gray{background:#8a90a3;}
   .imp-btn:disabled{opacity:.5;}
+  /* ver010：表紙の下に「何を集計したか」を小さく出す */
+  .cover-filter{margin-top:10px; font-size:.62rem; letter-spacing:.04em; color:rgba(255,255,255,.82);
+    background:rgba(0,0,0,.16); border-radius:999px; padding:5px 14px; display:inline-block;}
   #impStatus{font-size:.84rem; margin-top:12px; white-space:pre-wrap; line-height:1.7;}
   #impOut{width:100%; height:210px; margin-top:10px; font-family:Consolas,monospace; font-size:11px;
     border:1px solid #d5d9e3; border-radius:8px; padding:8px;}
@@ -291,20 +310,85 @@
   <div class="imp-box">
     <h2>📥 データ取込（幹事用）</h2>
     <p class="imp-note">
-      集計システムのGASから確定データを取得し、このページに焼き込む「DATAブロック」を生成します。<br>
-      <b>ネット接続が必要なのはこの取込だけ</b>です。生成したテキストを
-      presentation_1b_sticker.html の <b>/* ==== DATA START ==== */ 〜 /* ==== DATA END ==== */</b> と丸ごと貼り替えれば、
-      当日はオフラインで動きます。賞の計算は既存の表彰画面と同じ「1人1賞」ロジックです。
+      集計システムのGASから確定データを取得し、このページに焼き込みます。<br>
+      <b>ネット接続が必要なのはこの取込だけ</b>です。取り込んだら
+      <b>「完成版HTMLをダウンロード」</b>を押すだけで、データが入ったファイルができます。<br>
+      賞の計算は既存の表彰画面と同じ「1人1賞」ロジックです。
     </p>
     <label>GASのウェブアプリURL（/exec まで）</label>
     <input id="impUrl" type="text" placeholder="https://script.google.com/macros/s/…/exec">
-    <label>年度（空欄＝今年度）</label>
-    <input id="impYear" type="text" placeholder="例：2026">
-    <button class="imp-btn" id="impRun">取得して生成</button>
-    <button class="imp-btn gray" id="impClose">閉じる（Dキーでも閉じます）</button>
-    <div id="impStatus"></div>
-    <textarea id="impOut" spellcheck="false" placeholder="ここに生成結果が出ます"></textarea>
-    <button class="imp-btn" id="impCopy" disabled>生成結果をコピー</button>
+
+    <!-- ver010：集計する範囲のしぼりこみ。すべて空欄／「すべて」なら今までと同じ結果になる -->
+    <div class="imp-sec">
+      <b>① どの試合を集計するか（空欄なら全部）</b>
+      <div class="imp-row">
+        <div><label>年度</label>
+          <select id="impYear">
+            <option value="">今年度</option>
+            <option value="all">すべての年度（合算）</option>
+          </select></div>
+        <div><label>試合種別</label>
+          <select id="impKind">
+            <option value="all">すべて</option>
+            <option value="ティー試合">ティー試合</option>
+            <option value="投げ試合">投げ試合</option>
+          </select></div>
+        <div><label>区分</label>
+          <select id="impBunrui">
+            <option value="all">すべて</option>
+            <option value="大会">大会</option>
+            <option value="練習試合">練習試合</option>
+          </select></div>
+      </div>
+      <div class="imp-row">
+        <div><label>期間（開始・空欄＝制限なし）</label><input id="impFrom" type="date"></div>
+        <div><label>期間（終了・空欄＝制限なし）</label><input id="impTo" type="date"></div>
+      </div>
+
+      <div class="imp-help">
+        4つの条件は<b>「すべてに当てはまる試合だけ」</b>が対象になります（どれか1つでも外れると除外）。<br>
+        たとえば <b>年度＝今年度</b> と <b>期間＝4月〜7月</b> を両方入れると、
+        <b>今年度の4月〜7月の試合だけ</b>になります。<br>
+        期間だけで絞りたいときは、年度を <b>「すべての年度（合算）」</b> にしてください。
+      </div>
+
+      <div class="imp-hint" id="impYearHint">
+        📅 <b>指定した期間が年度をまたいでいます。</b>
+        いまの設定では「選んだ年度」と「期間」の<b>両方に当てはまる試合だけ</b>になるため、
+        期間の一部が対象から外れます。<br>
+        期間のとおりに集計したいときは、年度を <b>「すべての年度（合算）」</b> に変えてください。
+      </div>
+
+      <div class="imp-caution">
+        ⚠️ <b>手動で決めた賞は「年度」でしか絞れません。</b>
+        試合種別・区分・期間を指定しても、<b>その年度の手動賞はすべて入ります</b>
+        （手動賞は試合と結びついていないためです）。<br>
+        会が終わったら手動賞を消しておくと、次の会で混ざりません。
+      </div>
+    </div>
+
+    <!-- ver010：表紙・しめの文言もここで直せる（これまではHTMLを直接編集するしかなかった） -->
+    <div class="imp-sec">
+      <b>② 表紙・しめの文言（空欄なら今の文言のまま）</b>
+      <label>タイトル（改行できます）</label>
+      <textarea id="impTitle" class="imp-text" spellcheck="false"></textarea>
+      <label>サブタイトル</label>
+      <input id="impSubtitle" type="text">
+      <label>しめの言葉（改行できます）</label>
+      <textarea id="impClosing" class="imp-text" spellcheck="false"></textarea>
+      <label>しめの補足（1行）</label>
+      <input id="impClosingNote" type="text">
+    </div>
+
+    <div class="imp-sec">
+      <b>③ 取り込む</b>
+      <button class="imp-btn" id="impRun">取得して生成</button>
+      <button class="imp-btn gray" id="impClose">閉じる（Dキーでも閉じます）</button>
+      <div id="impStatus"></div>
+      <button class="imp-btn" id="impDownload" disabled>💾 完成版HTMLをダウンロード</button>
+      <button class="imp-btn gray" id="impCopy" disabled>生成結果をコピー（上級者向け）</button>
+      <textarea id="impOut" spellcheck="false" placeholder="ここに生成結果が出ます"></textarea>
+    </div>
   </div>
 </div>
 
@@ -319,6 +403,10 @@ const DATA = {
   /* 表紙 */
   title: "2026 ティーボール大会\nお疲れ様会",
   subtitle: "小山少年野球団 オレンジ",
+
+  /* ver010：どの範囲を集計したか（Dキーの取込で自動で入る。表紙の下に小さく出る） */
+  filter: null,
+  filterLabel: "",
 
   /* チーム振り返り（大きな数字で見せる） */
   team: {
@@ -398,24 +486,8 @@ const DATA = {
 };
 /* ==== DATA END ==== */
 
-/* ===== ver006：しめ前のセレモニー（礼＋監督・コーチのひとこと） =====
-   文言・名前・順番はここを直す。DATAブロックの外にあるので、
-   Dキーのデータ取込で貼り替えても消えない。 */
-const CEREMONY = {
-  thanks: {                                   /* 子どもたちから監督・コーチへの礼 */
-    label: "THANK YOU",
-    emoji: "🙇",
-    title: "監督・コーチへ",
-    message: "ありがとうございます",
-    sub: "みんなで れい！"
-  },
-  speechLabel: "MESSAGE",
-  speechTitle: "投げ試合に挑む子供達にむけて ひとこと",
-  speeches: [                                 /* この順番で1人1枚（先＝小林コーチ、後＝前川監督） */
-    { name: "小林コーチ", emoji: "🎤" },
-    { name: "前川監督",   emoji: "🎤" }
-  ]
-};
+/* ver010：CEREMONY 定数（礼＋監督・コーチのひとこと）は削除した。
+   → 上記スライドを廃止したため。必要になったら ver009 から戻せる。 */
 
 /* ===== ver007：個人表彰の導入スライド＆チームのきせきのしめ文言 =====
    文言はここを直す（DATAの外＝データ取込で消えない） */
@@ -493,9 +565,10 @@ function buildSlides(){
   }else if(fl.length){
     s.push({type:"firsts", items:fl, page:""});
   }
-  /* ver006：しめの前にセレモニー（礼→監督・コーチのひとこと） */
-  s.push({type:"thanks"});
-  CEREMONY.speeches.forEach(sp=>s.push({type:"speech", sp:sp}));
+  /* ver010：「礼」「監督・コーチのひとこと」の3枚は削除した。
+     2026年7月のお疲れ様会だけの内容（ひとことの題は「投げ試合に挑む子供達にむけて」、
+     話し手はコーチ・監督の実名が固定）だったため、汎用の表彰スライドからは外している。
+     当日の記録は 20260725_表彰html/ にそのまま残してある。 */
   s.push({type:"closing"});
   return s;
 }
@@ -723,6 +796,7 @@ function renderSlide(sl,i){
       +'<div class="cover-emoji">🏆⚾🏆</div>'
       +'<div class="cover-title">'+nl2br(DATA.title)+'</div>'
       +'<div class="cover-team">'+esc(DATA.subtitle||"")+'</div>'
+      +(DATA.filterLabel?('<div class="cover-filter">集計：'+esc(DATA.filterLabel)+'</div>'):'')
       +'</div>'
       +'<div class="cover-hint">クリック / → で進む　・　← で戻る<br>F = 全画面　・　M = 音ON/OFF　・　B = BGMのON/OFF</div>'
       +'</div>';
@@ -825,24 +899,7 @@ function renderSlide(sl,i){
       +'<div class="award-wait">'+esc(AWARD_INTRO.sub)+'</div>'
       +'</div>';
   }
-  if(sl.type==="thanks"){         /* ver006：子どもたちから監督・コーチへの礼 */
-    const c=CEREMONY.thanks;
-    return '<div class="inner"><div class="s-label">'+esc(c.label)+'</div>'
-      +'<div class="award-emoji">'+esc(c.emoji)+'</div>'
-      +'<div class="award-name">'+esc(c.title)+'</div>'
-      +'<div class="winner-name" style="font-size:clamp(40px,6.5vw,110px)">'+esc(c.message)+'</div>'
-      +(c.sub?'<div class="winner-value">'+esc(c.sub)+'</div>':'')
-      +'</div>';
-  }
-  if(sl.type==="speech"){         /* ver006：監督・コーチから投げ試合にむけてひとこと */
-    const sp=sl.sp;
-    return '<div class="inner"><div class="s-label">'+esc(CEREMONY.speechLabel)+'</div>'
-      +'<div class="award-emoji">'+esc(sp.emoji||"🎤")+'</div>'
-      +'<div class="award-name">'+esc(CEREMONY.speechTitle)+'</div>'
-      +'<div class="winner-name">'+esc(sp.name)+'</div>'
-      +'<div class="winner-value">おねがいします！</div>'
-      +'</div>';
-  }
+  /* ver010：thanks（礼）と speech（監督・コーチのひとこと）の描画は削除した（上記のとおり） */
   if(sl.type==="closing"){
     return '<div class="inner">'
       +'<div class="cover-emoji">🎉👏🎉</div>'
@@ -858,8 +915,6 @@ function slideBg(sl){
   if(sl.type==="award")return sl.meta.grad;
   if(sl.type==="posmvp")return sl.grad;
   if(sl.type==="awardIntro")return "#E89A00";   /* ver007：個人表彰の導入＝あかるい山吹色 */
-  if(sl.type==="thanks")return "#2C9E6B";   /* ver006：礼＝緑 */
-  if(sl.type==="speech")return "#3D7DD8";   /* ver006：ひとこと＝青 */
   if(sl.type==="closing")return CLOSING_GRAD;
   return "";
 }
@@ -914,12 +969,65 @@ const IMPORT_STAMPS={
   onbase: {metric:"shutsurui", tiers:[{emoji:"👟",n:1},{emoji:"🚀",n:10},{emoji:"🏰",n:20}]}
 };
 
+/* ver010修正：GASへ送るときは英字の記号に直す。
+   理由：古いGAS（ver13以前）は 'tee'/'throw'/'taikai'/'renshu' しか解釈せず、
+   日本語で送ると「知らない値」として黙って無視され、絞り込みが効かないまま全件が返ってくるため。
+   新しいGAS（ver14以降）は英字・日本語のどちらも受け付ける。 */
+const KIND_CODE={"ティー試合":"tee","投げ試合":"throw"};
+const BUNRUI_CODE={"大会":"taikai","練習試合":"renshu"};
+
+/* ver010修正：GASから年度の一覧を取って、年度の選択肢を作り直す */
+async function loadYears(){
+  const sel=document.getElementById("impYear");
+  const url=(document.getElementById("impUrl").value||"").trim();
+  if(!url)return;
+  try{
+    const d=await fetch(url+"?view=dates&fresh=1").then(r=>r.json());
+    if(d.startMonth)START_MONTH=Number(d.startMonth)||4;   /* ver015以降が返す。無いときは4月のまま */
+    const keep=sel.value;
+    const years=d.years||[];
+    sel.innerHTML='<option value="">今年度'+(d.currentYear?("（"+d.currentYear+"）"):"")+'</option>'
+      +'<option value="all">すべての年度（合算）</option>'
+      +years.map(y=>'<option value="'+y+'">'+y+'</option>').join("");
+    sel.value=keep;                     /* 選び直しの手間をなくす */
+    if(sel.selectedIndex<0)sel.value="";
+    updateYearHint();
+  }catch(e){ /* つながらないときは今の選択肢のままにする */ }
+}
+
+/* ver010修正：年度の区切り月（GASのconfig「年度開始月」。取れないうちは4月として扱う） */
+let START_MONTH=4;
+/* yyyy-mm-dd → 年度（2026年度 など）。年度開始月より前の月は前の年の年度になる */
+function fiscalOf(dstr){
+  const m=String(dstr||"").match(/^(\d{4})-(\d{2})/);
+  if(!m)return null;
+  const y=Number(m[1]), mo=Number(m[2]);
+  return (mo>=START_MONTH?y:y-1)+"年度";
+}
+/* 指定した期間が年度をまたいでいたら案内を出す */
+function updateYearHint(){
+  const from=document.getElementById("impFrom").value;
+  const to=document.getElementById("impTo").value;
+  const year=document.getElementById("impYear").value;
+  const hint=document.getElementById("impYearHint");
+  const cross=(from&&to&&fiscalOf(from)&&fiscalOf(to)&&fiscalOf(from)!==fiscalOf(to));
+  hint.classList.toggle("on", !!(cross && year!=="all"));
+}
+
 function isImportOpen(){return document.getElementById("importOverlay").classList.contains("open");}
 function importToggle(){
   const ov=document.getElementById("importOverlay");
   if(ov.classList.contains("open")){ov.classList.remove("open");}
   else{
     if(!document.getElementById("impUrl").value)document.getElementById("impUrl").value=GAS_URL_DEFAULT;
+    loadYears();   /* ver010修正：GASから年度の一覧を取って選択肢を作る（過去年度も選べるように） */
+    updateYearHint();
+    /* ver010：いまの文言を入力欄に出す（毎回ゼロから打ち直さずに済むように） */
+    const cl=DATA.closing||{};
+    document.getElementById("impTitle").value=DATA.title||"";
+    document.getElementById("impSubtitle").value=DATA.subtitle||"";
+    document.getElementById("impClosing").value=cl.message||"";
+    document.getElementById("impClosingNote").value=cl.note||"";
     ov.classList.add("open");
   }
 }
@@ -942,7 +1050,18 @@ function assignOnePerChild(totals,MIN_DASEKI,TOTAL_GAMES){
 }
 
 /* 取得データ → DATAオブジェクトの生成 */
-function genData(aw,stt,tb){
+/* ver010：しぼりこみ条件を「2026年度 ティー試合」のような1行の文にする（表紙の下に出す） */
+function filterLabel(f){
+  if(!f)return "";
+  const p=[];
+  if(f.year==="all")p.push("全年度");
+  else if(f.year)p.push(String(f.year).replace(/年度$/,"")+"年度");
+  if(f.kind&&f.kind!=="all")p.push(f.kind);
+  if(f.bunrui&&f.bunrui!=="all")p.push(f.bunrui);
+  if(f.from||f.to)p.push((f.from||"")+"〜"+(f.to||""));
+  return p.join("　");
+}
+function genData(aw,stt,tb,filt,texts){
   const a=aw.awards||{};
   const roster=aw.roster||[];
   const totals=a.totals||[];
@@ -982,17 +1101,22 @@ function genData(aw,stt,tb){
   });
   const noAward=roster.filter(nm=>!awardBy[nm]);
 
+  /* ver010：入力欄に文字があればそれを使い、空欄なら今の値を引き継ぐ */
+  const T=texts||{};
+  const curCl=DATA.closing||{};
   const data={
-    title:DATA.title, subtitle:DATA.subtitle,   // タイトル・しめの文言は現在の値を引き継ぐ
+    title:(T.title||DATA.title), subtitle:(T.subtitle!=null&&T.subtitle!==""?T.subtitle:DATA.subtitle),
+    filter:filt||null, filterLabel:filterLabel(filt),   // ver010：何を集計したかを残す
     team:{win:stt.win||0, lose:stt.lose||0, draw:stt.draw||0, gf:stt.gf||0, ga:stt.ga||0,
       teamHits:teamHits, totalGames:games.length, streak:streak, recent:recent},
     awards:assignList.concat(manual),
     posAwards:(a.posAwards||[]).map(p=>({position:p.position,winners:p.winners||[],value:p.value||""})),
     firsts:(a.firsts||[]).map(f=>({child:f.child,firstHit:f.firstHit||"",firstRbi:f.firstRbi||"",firstReach:f.firstReach||"",firstRun:f.firstRun||""})),
     children:children,
-    closing:DATA.closing
+    closing:{message:(T.closing||curCl.message||""), note:(T.closingNote!=null&&T.closingNote!==""?T.closingNote:(curCl.note||""))}
   };
-  const summary="データ賞 "+assignList.length+"件（1人1賞）／ 手動賞 "+manual.length+"件 ／ ポジションMVP "+(a.posAwards||[]).length+"件 ／ 名簿 "+roster.length+"人 ／ 対象試合 "+(a.totalGames||0)+"試合"
+  const summary=(filterLabel(filt)?("しぼりこみ："+filterLabel(filt)+"\n"):"しぼりこみ：なし（全部）\n")
+    +"データ賞 "+assignList.length+"件（1人1賞）／ 手動賞 "+manual.length+"件 ／ ポジションMVP "+(a.posAwards||[]).length+"件 ／ 名簿 "+roster.length+"人 ／ 対象試合 "+(a.totalGames||0)+"試合"
     +(noAward.length
       ?"\n⚠ まだ賞のない子："+noAward.join("、")+"\n（集計システムで手動賞を入れてから取り込み直すのがおすすめ。DATAのawardsとchildrenに直接書き足してもOK）"
       :"\n🎊 全員に賞が行き渡っています")
@@ -1001,33 +1125,154 @@ function genData(aw,stt,tb){
   return {data:data, summary:summary};
 }
 
+let GENERATED_DATA=null;   /* ver010：取り込んだDATA（ダウンロード時に埋め込む） */
+
 async function runImport(){
-  const url=(document.getElementById("impUrl").value||"").trim();
-  const year=(document.getElementById("impYear").value||"").trim();
+  const v=id=>(document.getElementById(id).value||"").trim();
+  const url=v("impUrl");
   const st=document.getElementById("impStatus");
   const btn=document.getElementById("impRun");
   if(!url){st.textContent="GASのURLを入れてください。";return;}
+  /* ver010：しぼりこみ条件。空欄・「すべて」は送らない＝GAS側で全件扱い */
+  const filt={year:v("impYear"), kind:v("impKind"), bunrui:v("impBunrui"), from:v("impFrom"), to:v("impTo")};
+  /* ver010修正：古いGASでも通じる英字の記号にしてから送る */
+  const qs=[];
+  if(filt.year)                    qs.push("year="+encodeURIComponent(filt.year));
+  if(filt.kind&&filt.kind!=="all") qs.push("kind="+encodeURIComponent(KIND_CODE[filt.kind]||filt.kind));
+  if(filt.bunrui&&filt.bunrui!=="all")qs.push("bunrui="+encodeURIComponent(BUNRUI_CODE[filt.bunrui]||filt.bunrui));
+  if(filt.from)                    qs.push("from="+encodeURIComponent(filt.from));
+  if(filt.to)                      qs.push("to="+encodeURIComponent(filt.to));
+  const q=qs.length?("&"+qs.join("&")):"";
   btn.disabled=true;st.textContent="取得中…（10秒ほどかかることがあります）";
-  document.getElementById("impOut").value="";document.getElementById("impCopy").disabled=true;
+  document.getElementById("impOut").value="";
+  document.getElementById("impCopy").disabled=true;
+  document.getElementById("impDownload").disabled=true;
   try{
-    const q=year?("&year="+encodeURIComponent(year)):"";
-    /* fresh=1 でサーバーキャッシュも飛ばして確定データを取得 */
+    /* fresh=1 でサーバーキャッシュも飛ばして確定データを取得。
+       ver010：3つのビュー全部に同じしぼりこみを渡す（賞だけ絞れても意味がないため） */
     const [aw,stt,tb]=await Promise.all([
-      fetch(url+"?view=awards&kind=all&bunrui=all&fresh=1"+q).then(r=>r.json()),
+      fetch(url+"?view=awards&fresh=1"+q).then(r=>r.json()),
       fetch(url+"?view=stats&fresh=1"+q).then(r=>r.json()),
       fetch(url+"?view=teeball&fresh=1"+q).then(r=>r.json())
     ]);
+    /* ver010修正：GAS側がエラーを返してきたら、その理由をそのまま出す（ver15以降） */
+    [aw,stt,tb].forEach(function(r){ if(r&&r.error)throw new Error("GASからのエラー：\n"+r.error); });
     if(!aw||!aw.awards)throw new Error("awardsが取得できません（URL・GASのデプロイを確認してください）");
-    const g=genData(aw,stt,tb);
-    const text="/* ==== DATA START ==== */\nconst DATA = "+JSON.stringify(g.data,null,2)+";\n/* ==== DATA END ==== */";
-    document.getElementById("impOut").value=text;
+
+    /* ver010修正①：GASが古くないかを確かめる。
+       ver14以降は、実際に使った絞り込み条件を filter として返す。
+       これが無いGAS（ver13以前）は「チームのきせき」と「スタンプ」を絞り込めないため、
+       絞り込みを指定しているのに全期間の数字が入った資料ができてしまう。だから止める。 */
+    const hasFilterAny=(filt.kind&&filt.kind!=="all")||(filt.bunrui&&filt.bunrui!=="all")||filt.from||filt.to||filt.year==="all";
+    if(!aw.filter && hasFilterAny){
+      throw new Error("このGASは絞り込みに対応していません（ver13以前）。\n"
+        +"GASのコードを ver14 以降に貼り替えて、［デプロイを管理 → 既存を新しいバージョンで再デプロイ］してください。\n"
+        +"※このまま作ると、絞り込んだつもりでも全期間の成績が入ったスライドができてしまいます。");
+    }
+    const used=aw.filter||{year:filt.year||aw.currentYear,kind:"all",bunrui:"all",from:"",to:""};
+
+    /* ver010修正②：送った条件とGASが実際に使った条件が食い違っていないか確かめる */
+    const wantKind=(filt.kind&&filt.kind!=="all")?filt.kind:"all";
+    const wantBunrui=(filt.bunrui&&filt.bunrui!=="all")?filt.bunrui:"all";
+    if(aw.filter&&(used.kind!==wantKind||used.bunrui!==wantBunrui)){
+      throw new Error("指定した条件がGASに伝わっていません（送信："+wantKind+"／"+wantBunrui
+        +"　GAS側："+used.kind+"／"+used.bunrui+"）。GASのバージョンをご確認ください。");
+    }
+
+    /* ver010修正③：条件に当てはまる試合が1件も無いときは、作らずに止める。
+       0件のまま作ると「勝敗なし・賞なし」の資料ができてしまい、
+       条件の間違いに気づかないまま当日を迎えることになるため。 */
+    const nGames=(stt.games||[]).length;
+    const nRec=(tb.teeball||[]).length;
+    if(nGames===0&&nRec===0){
+      throw new Error("この条件に当てはまる試合が1件もありませんでした。\n"
+        +"（"+(filterLabel(used)||"絞り込みなし")+"）\n"
+        +"年度・試合種別・区分・期間を見直してください。スライドは作っていません。");
+    }
+    const texts={title:v("impTitle"),subtitle:v("impSubtitle"),closing:v("impClosing"),closingNote:v("impClosingNote")};
+    const g=genData(aw,stt,tb,used,texts);
+    GENERATED_DATA=g.data;
+    document.getElementById("impOut").value=dataBlockText(g.data);
     document.getElementById("impCopy").disabled=false;
-    st.textContent="✅ 生成できました（年度 "+(year||aw.currentYear||"?")+"）\n"+g.summary
-      +"\n\n① 下のテキストをコピー\n② presentation_1b_sticker.html をメモ帳等で開く\n③ /* ==== DATA START ==== */ 〜 /* ==== DATA END ==== */ を丸ごと貼り替えて保存";
+    document.getElementById("impDownload").disabled=false;
+    st.textContent="✅ 生成できました\n"+g.summary
+      +"\n\n👉 このまま「💾 完成版HTMLをダウンロード」を押してください。";
   }catch(e){
-    st.textContent="❌ 失敗："+(e&&e.message?e.message:e)+"\n（ネット接続と、GASのURL（/execまで）を確認してください）";
+    GENERATED_DATA=null;                                   /* ver010修正：前回の結果を残さない */
+    document.getElementById("impOut").value="";
+    document.getElementById("impCopy").disabled=true;
+    document.getElementById("impDownload").disabled=true;   /* 作らせない */
+    st.innerHTML='<span style="color:#c0392b;font-weight:800">❌ 中止しました</span>\n'
+      +esc(e&&e.message?e.message:String(e))
+      +'\n\n（ネット接続と、GASのURL（/exec まで）もあわせてご確認ください）';
   }
   btn.disabled=false;
+}
+
+/* ver010：DATAブロックの文字列を作る（コピー用・ダウンロード用で共通） */
+function dataBlockText(d){
+  return "/* ==== DATA START ==== */\nconst DATA = "+JSON.stringify(d,null,2)+";\n/* ==== DATA END ==== */";
+}
+
+/* ver010：データを埋め込んだ完成版HTMLをダウンロードする。
+   fetch(location.href) は file:// だとブラウザにブロックされることがあるため、
+   ネットワークを使わない document.documentElement.outerHTML から作る。 */
+function downloadHtml(){
+  const st=document.getElementById("impStatus");
+  if(!GENERATED_DATA){st.textContent="先に「取得して生成」を押してください。";return;}
+  try{
+    /* --- 実行中の状態が焼き付かないように、いったん初期状態へ戻す --- */
+    const ov=document.getElementById("importOverlay");
+    const wasOpen=ov.classList.contains("open");
+    ov.classList.remove("open");                       /* 取込パネルを閉じる */
+    const stage=document.getElementById("stage");
+    const stageHtml=stage.innerHTML;
+    stage.innerHTML="";                                /* 描画済みスライドを消す */
+    const body=document.body, bodyStyle=body.getAttribute("style");
+    body.removeAttribute("style");                     /* スライドごとに変わる背景色を戻す */
+    const conf=document.getElementById("confetti");
+    const confHtml=conf?conf.innerHTML:null;
+    if(conf)conf.innerHTML="";                         /* 紙吹雪の残りを消す */
+    const out=document.getElementById("impOut"), outVal=out.value;
+    out.value="";                                      /* 生成結果のテキストも消す */
+    const stTxt=st.textContent; st.textContent="";
+
+    let html="<!DOCTYPE html>\n"+document.documentElement.outerHTML;
+
+    /* --- 画面を元に戻す --- */
+    out.value=outVal; st.textContent=stTxt;
+    if(conf&&confHtml!=null)conf.innerHTML=confHtml;
+    if(bodyStyle!=null)body.setAttribute("style",bodyStyle);
+    stage.innerHTML=stageHtml;
+    if(wasOpen)ov.classList.add("open");
+
+    /* --- DATAブロックを差し替える ---
+       目印はファイル内に4回出てくるので、"DATA START"＋改行＋"const DATA =" で一意に特定する --- */
+    const head="/* ==== DATA START ==== */\nconst DATA =";
+    const tail="/* ==== DATA END ==== */";
+    const i=html.indexOf(head);
+    if(i<0)throw new Error("DATAブロックが見つかりません");
+    const j=html.indexOf(tail,i);
+    if(j<0)throw new Error("DATAブロックの終わりが見つかりません");
+    html=html.slice(0,i)+dataBlockText(GENERATED_DATA)+html.slice(j+tail.length);
+
+    /* --- ファイル名に日付を入れる（何度作っても上書きされない） --- */
+    const n=new Date(), pz=x=>("0"+x).slice(-2);
+    const fname="presentation_"+n.getFullYear()+pz(n.getMonth()+1)+pz(n.getDate())+".html";
+    const blob=new Blob([html],{type:"text/html;charset=utf-8"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download=fname;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},1500);
+
+    st.textContent="💾 ダウンロードしました： "+fname
+      +"\n\nダウンロードしたファイルを、sounds フォルダと photos フォルダがある場所に置いてください。"
+      +"\nそのファイルをダブルクリックすれば表彰スライドが開きます。"
+      +"\n（音と写真を使わないなら、ファイルだけでも開けます）";
+  }catch(e){
+    st.textContent="❌ ダウンロードに失敗："+(e&&e.message?e.message:e)
+      +"\n（下のテキストをコピーして、HTMLの DATA START〜END を貼り替える方法でも作れます）";
+  }
 }
 
 function copyImport(){
@@ -1041,6 +1286,14 @@ function copyImport(){
 }
 
 document.getElementById("impRun").onclick=runImport;
+document.getElementById("impDownload").onclick=downloadHtml;
+/* ver010修正：URLを直したときも年度の一覧を読み直す */
+document.getElementById("impUrl").addEventListener("change",loadYears);
+document.getElementById("impUrl").addEventListener("blur",loadYears);
+/* ver010修正：期間・年度を変えたら「年度をまたいでいます」の案内を出し入れする */
+["impFrom","impTo","impYear"].forEach(function(id){
+  document.getElementById(id).addEventListener("change",updateYearHint);
+});
 document.getElementById("impClose").onclick=importToggle;
 document.getElementById("impCopy").onclick=copyImport;
 
