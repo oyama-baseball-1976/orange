@@ -9,16 +9,27 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
 <!--
   ============================================================
-  成績入力マニュアル（父母向け・ver003）
-  ・静的な1ページ。データ連携なし。LINEでURLを送って見てもらう。
+  成績入力マニュアル（父母向け・ver005）
+  ・静的な1ページ。データ連携なし。トップページ（リンク集）から開いてもらう。
   ・スマホ縦で読みやすいことが最優先。
-  ・このあと Claude Design でデザインを整える前提の素直な構造：
+  ・素直な構造を維持：
       - 色は :root のCSS変数に集約（--orange など）
       - セクションは <section id> ブロック（日本語コメントで区切り）
       - 手順は .step の繰り返し（番号バッジ＋見出し＋説明＋画像）
-  ・画像は images/ フォルダの 01〜17。**png → jpg → jpeg の順に自動で探す**。
+  ・画像は images/ フォルダ。**png → jpg → jpeg の順に自動で探す**。
     どれも無ければ「準備中」の枠に《どんな画像が必要か》の説明文が出る（レイアウトは崩れない）。
     → 枠の説明を見ながらスクリーンショットを撮って、images/01.jpg のように置けばそのまま表示される。
+
+  【ver005（2026-08-13）での変更】
+  ・チームの入口を「トップページ（リンク集）」1本に統一した。
+    URLを手で持ち回る説明（ver004の「共通の準備」の前半・後半）は、すべて無くしている。
+    → ver004 の画像 18-1〜18-3 と 19-1〜19-3 の6枚は、この説明にしか使っていなかったので
+      ver005 では削除した（必要になったら ver004 のフォルダに残っている）。
+  ・冒頭に #entrance「まずはここから」を新設。ここだけ読めば入口が分かるようにしている。
+  ・ホーム画面のアイコンは「成績入力ページ」ではなく「トップページ」を置く方針に変更。
+    アイコンが1つで済み、成績入力もマニュアルも懇親会もそこから開けるため。
+  ・撮り直しが必要な画像：00（トップページ）／18-4（LINEの「ブラウザで開く」）／
+    20-1〜20-3・21（Chromeでトップページを開いた状態）。※22〜24 は以前から未撮影
   ============================================================
 -->
 <style>
@@ -191,6 +202,15 @@ header .lead{font-size:.92rem; margin-top:8px; opacity:.96;}
   border-radius:16px; box-shadow:0 3px 0 var(--orange-dark); text-decoration:none;
 }
 
+/* ===== トップページの場所（ボタンの下に小さく添える。長いので折り返して出す） ===== */
+.url-note{font-size:.8rem; color:var(--sub); margin:8px 0 0; text-align:center; line-height:1.7;}
+.url-line{
+  display:inline-block; margin-top:2px; padding:3px 10px;
+  background:var(--orange-soft); border:1px solid var(--orange-line); border-radius:8px;
+  color:var(--orange-dark); font-weight:800; text-decoration:none;
+  word-break:break-all; overflow-wrap:anywhere; max-width:100%;
+}
+
 /* ===== フッター ===== */
 footer{text-align:center; font-size:.8rem; color:var(--sub); padding:20px 16px 36px;}
 
@@ -220,6 +240,49 @@ body{padding-bottom:74px;}
 </header>
 
 <div class="wrap">
+
+  <!-- ■ 入口はここだけ（ver005で新設：リンク集をチームの唯一の入口にする） -->
+  <section id="entrance">
+    <div class="h2"><span class="emoji">🏠</span><h2>まずはここから ─ チームのページの入口</h2></div>
+    <p>チームで使うページの入口は <strong>1つだけ</strong> です。<strong>「トップページ」</strong>とよびます。</p>
+
+    <div class="card plain">
+      <p style="font-weight:800;margin-bottom:2px;">⚾ オレンジ リンク集（トップページ）</p>
+      <p class="note" style="margin:0;">成績入力も、このマニュアルも、懇親会の注文も、<strong>ぜんぶここから開けます。</strong></p>
+      <a class="btn" href="https://oyama-baseball-1976.github.io/orange/" target="_blank" rel="noopener">🏠 トップページを開く</a>
+      <p class="url-note">↑ このボタンで開けます（下は同じ場所です）<br>
+        <a class="url-line" href="https://oyama-baseball-1976.github.io/orange/" target="_blank" rel="noopener">oyama-baseball-1976.github.io/orange/</a>
+      </p>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <p style="margin:0;">🔖 <strong>このページを、おきにいり（ブックマーク）に入れておいてください。</strong>次からは、そこを押すだけで開けます。<br>
+      <span class="note">もっとラクにしたい方は、あとに出てくる「<strong>ホーム画面にアイコンを置く</strong>」もどうぞ。</span></p>
+    </div>
+
+    <p style="margin-top:12px;">トップページを開くと、こんなふうに並んでいます。</p>
+    <table class="tbl">
+      <tr><th>成績入力・<br>表彰・スタンプ</th><td>お子さんの成績を入れる／スタンプを見る。<strong>このマニュアルで説明するのは、このページです。</strong></td></tr>
+      <tr><th>懇親会<br>注文・会計</th><td>お疲れ様会・忘年会のお弁当を注文する</td></tr>
+      <tr><th>父母向け<br>マニュアル</th><td><strong>このページ（いま読んでいるマニュアル）</strong></td></tr>
+      <tr><th>練習・試合<br>スケジュール</th><td>予定を見る</td></tr>
+    </table>
+
+    <figure class="shot">
+      <img data-shot-img src="images/00.png" alt="トップページ（リンク集）">
+      <div class="ph" data-ph>🖼️ 画像00（準備中）
+        <span class="ph-desc">トップページ（リンク集）を開いた画面。<strong>「成績入力・表彰・スタンプ」「父母向けマニュアル」が並んで見えている</strong>ところ</span>
+      </div>
+      <figcaption class="shot-cap">▲ ここから、行きたいページを押します</figcaption>
+    </figure>
+
+    <div class="warn">
+      <div class="warn-title">💬 LINEで届くのは、このリンク1本だけです</div>
+      <ul style="margin:0;">
+        <li style="margin:0;">ページごとにちがうリンクが配られることはありません。<strong>このトップページさえ開ければ、どこへでも行けます。</strong>探すのは「いちばん最近のリンク」ではなく、<strong>いつも同じこの1本</strong>です。</li>
+      </ul>
+    </div>
+  </section>
 
   <!-- ■ はじめに -->
   <section id="intro">
@@ -274,76 +337,49 @@ body{padding-bottom:74px;}
       <div class="step-head">
         <span class="step-no">1</span>
         <div class="step-body">
-          <div class="step-title">🔗 リンクを開く</div>
-          <p>LINEで届いたリンクを、スマホでそのまま開きます（このページと同じように開けます）。</p>
+          <div class="step-title">🏠 トップページから「成績入力・表彰・スタンプ」を押す</div>
+          <p><strong>トップページ</strong>を開いて、<strong>「成績入力・表彰・スタンプ」</strong>を押します。</p>
+          <p class="note">👉 トップページの開きかたは、いちばん上の <strong>「まずはここから」</strong> を見てください。</p>
         </div>
       </div>
       <figure class="shot">
-        <img data-shot-img src="images/02.png" alt="ページを開いた直後の画面">
+        <img data-shot-img src="images/02.png" alt="成績入力ページを開いた直後の画面">
         <div class="ph" data-ph>🖼️ 画像02（準備中）
-          <span class="ph-desc">リンクを開いた直後の画面（いちばん上から見えている状態）</span>
+          <span class="ph-desc">「成績入力・表彰・スタンプ」を押して開いた直後の画面（いちばん上から見えている状態）</span>
         </div>
+        <figcaption class="shot-cap">▲ この画面が出れば、開けています</figcaption>
       </figure>
     </div>
 
     <!-- ■ ホーム画面ショートカット（手順1の直後・手順2の前。手順の番号はずらさない別枠） -->
     <section id="shortcut">
-      <div class="h2"><span class="emoji">📲</span><h2>ホーム画面にショートカットを作っておくと便利</h2></div>
-      <p>毎回LINEをさかのぼってリンクを探すのは大変です。スマホの<strong>ホーム画面にアイコンを置いておく</strong>と、次からは<strong>ワンタップで開けます</strong>。</p>
+      <div class="h2"><span class="emoji">📲</span><h2>ホーム画面にアイコンを置いておくと便利</h2></div>
+      <p>毎回LINEをさかのぼってリンクを探すのは大変です。<strong>トップページ</strong>のアイコンをスマホの<strong>ホーム画面に置いておく</strong>と、次からは<strong>ワンタップで開けます</strong>。</p>
       <div class="card">
         <p style="margin:0;">😊 <strong>最初に一度だけ設定しておくと、あとがラクです。</strong>（設定しなくても入力はできます。あとからでもOK）</p>
       </div>
+      <div class="card plain" style="margin-top:12px;">
+        <p style="margin:0;">🏠 <strong>置くのは「トップページ」のアイコン1つだけでOKです。</strong>そこから成績入力もマニュアルも開けるので、いくつも並べる必要はありません。</p>
+      </div>
 
-      <!-- 共通の準備（アドレスバーからURLをコピー → ブラウザで開き直す） -->
+      <!-- 共通の準備（LINEの中の画面 → ブラウザで開き直す） -->
       <div class="card plain" style="margin-top:12px;">
         <p style="font-weight:800;margin-bottom:2px;">🔧 まずは共通の準備（AndroidもiPhoneも同じ）</p>
-        <p class="note" style="margin:0 0 4px;">👉 LINEのメッセージを長押しする方法だと「部分コピー」でURLだけを選ぶ必要があって大変です。<strong>いったんリンクを開いてから、アドレスバーでコピー</strong>するほうがかんたんです。</p>
+        <p class="note" style="margin:0 0 4px;">👉 <strong>LINEの中で開いた画面からは、アイコンを作れません。</strong>いったん<strong>ブラウザ（Chrome や Safari）で開き直します</strong>。</p>
         <ol class="mini-steps">
-          <li>LINEで届いた<strong>リンクをタップして開きます</strong></li>
-          <li>開いた画面の<strong>上部にあるアドレスバー（URLが出ているところ）を長押し</strong>します</li>
-          <li>出てきたメニューから <strong>「リンクのコピー」</strong>（または「コピー」）を選びます</li>
+          <li>LINEで届いた<strong>トップページのリンクをタップして開きます</strong></li>
+          <li>開いた画面の<strong>すみにある「︙」（または「…」）</strong>を押します</li>
+          <li>出てきたメニューから <strong>「ブラウザで開く」</strong> を選びます</li>
         </ol>
+        <p class="note" style="margin:8px 0 0;">👉 メニューの言葉は機種によって
+          <strong>「ブラウザで開く」</strong>／<strong>「他のアプリで開く」</strong>／<strong>「Chromeで開く」</strong>／<strong>「Safariで開く」</strong>
+          などと変わります。<strong>似た名前のものを選べば大丈夫</strong>です。</p>
         <figure class="shot">
-          <img data-shot-img src="images/18-3.png" alt="アドレスバーを長押しして「リンクのコピー」">
-          <div class="ph" data-ph>🖼️ 画像18-3（準備中）
-            <span class="ph-desc">上部のアドレスバーを長押しして <strong>「リンクのコピー」</strong> が出ている画面</span>
+          <img data-shot-img src="images/18-4.png" alt="LINEの画面から「ブラウザで開く」を選ぶ">
+          <div class="ph" data-ph>🖼️ 画像18-4（準備中）
+            <span class="ph-desc">LINEの中でトップページを開いた画面で、<strong>「ブラウザで開く」（または「他のアプリで開く」）のメニューが出ている</strong>ところ</span>
           </div>
-          <figcaption class="shot-cap">▲ アドレスバーを長押しすると「リンクのコピー」が出ます</figcaption>
-        </figure>
-        <figure class="shot">
-          <img data-shot-img src="images/18-2.png" alt="アドレスバーを長押ししてコピー（別の機種の例）">
-          <div class="ph" data-ph>🖼️ 画像18-2（準備中）
-            <span class="ph-desc">アドレスバーを長押しして、URLが選ばれて <strong>「コピー」</strong> が出ている画面（別の機種の例）</span>
-          </div>
-          <figcaption class="shot-cap">▲ 機種によっては、URLが選ばれて「コピー」と出ます（どちらでもOK）</figcaption>
-        </figure>
-
-        <p style="font-weight:800;margin:14px 0 2px;">つづいて、コピーしたURLをブラウザで開きます</p>
-        <ol class="mini-steps">
-          <li>ホーム画面から <strong>Chrome</strong>（iPhoneの方は Safari）を開きます</li>
-          <li>上の<strong>アドレス欄（「Google で検索または URL」のところ）をタップ</strong>します</li>
-          <li><strong>長押しして「貼り付け」</strong>を選び、開きます</li>
-        </ol>
-        <figure class="shot">
-          <img data-shot-img src="images/19-1.png" alt="Chromeのアイコン">
-          <div class="ph" data-ph>🖼️ 画像19-1（準備中）
-            <span class="ph-desc">ホーム画面の <strong>Chrome のアイコン</strong></span>
-          </div>
-          <figcaption class="shot-cap">▲ このアイコンが Chrome です</figcaption>
-        </figure>
-        <figure class="shot">
-          <img data-shot-img src="images/19-2.png" alt="Chromeを開いた画面">
-          <div class="ph" data-ph>🖼️ 画像19-2（準備中）
-            <span class="ph-desc">Chrome を開いた画面（「Google で検索または URL」のアドレス欄が見えている）</span>
-          </div>
-          <figcaption class="shot-cap">▲ ここをタップします</figcaption>
-        </figure>
-        <figure class="shot">
-          <img data-shot-img src="images/19-3.png" alt="アドレス欄に貼り付け">
-          <div class="ph" data-ph>🖼️ 画像19-3（準備中）
-            <span class="ph-desc">アドレス欄を長押しして <strong>「貼り付け」</strong> が出ている画面</span>
-          </div>
-          <figcaption class="shot-cap">▲ 「貼り付け」を選んで開けば準備おわり！</figcaption>
+          <figcaption class="shot-cap">▲ これでブラウザに移れば、準備おわりです</figcaption>
         </figure>
       </div>
 
@@ -351,7 +387,7 @@ body{padding-bottom:74px;}
       <div class="warn">
         <div class="warn-title">⚠️ ここがいちばん大事です</div>
         <ul style="margin:0;">
-          <li style="margin:0;"><strong>LINEの中で開いた画面からは、ショートカットを作れません。</strong>かならず<strong>ブラウザ（Chrome または Safari）で開き直して</strong>から、下の手順に進んでください。</li>
+          <li style="margin:0;"><strong>LINEの中で開いた画面からは、ホーム画面のアイコンを作れません。</strong>かならず<strong>ブラウザ（Chrome または Safari）で開き直して</strong>から、下の手順に進んでください。</li>
         </ul>
       </div>
 
@@ -359,7 +395,7 @@ body{padding-bottom:74px;}
       <div class="os-card android">
         <div class="os-title">🤖 Android（Chrome）</div>
         <ol class="mini-steps">
-          <li><strong>Chrome</strong> で成績入力ページを開きます（上の「共通の準備」で開けています）</li>
+          <li><strong>Chrome</strong> でトップページを開きます（上の「共通の準備」で開けています）</li>
           <li>画面<strong>右上の三点リーダー（︙）</strong>を探します</li>
           <li>三点リーダー（︙）を<strong>タップ</strong>すると、メニューが開きます</li>
           <li>メニューを<strong>下にスクロール</strong>して <strong>「インストールしてショートカットを作成」</strong> を選びます</li>
@@ -369,7 +405,7 @@ body{padding-bottom:74px;}
         <figure class="shot">
           <img data-shot-img src="images/20-1.png" alt="三点リーダーの位置">
           <div class="ph" data-ph>🖼️ 画像20-1（準備中）
-            <span class="ph-desc">Chrome で成績入力ページを開いた画面。<strong>右上の三点リーダー（︙）の位置</strong>が分かるところ</span>
+            <span class="ph-desc">Chrome でトップページを開いた画面。<strong>右上の三点リーダー（︙）の位置</strong>が分かるところ</span>
           </div>
           <figcaption class="shot-cap">▲ 画面のいちばん右上にある「︙」が三点リーダーです</figcaption>
         </figure>
@@ -415,7 +451,7 @@ body{padding-bottom:74px;}
 
         <div class="os-sub">▼ Safari の場合</div>
         <ol class="mini-steps">
-          <li><strong>Safari</strong> で成績入力ページを開きます</li>
+          <li><strong>Safari</strong> でトップページを開きます</li>
           <li>画面<strong>下の共有ボタン（□に↑）</strong>をタップします</li>
           <li>メニューを<strong>下にスクロール</strong>して <strong>「ホーム画面に追加」</strong> を選びます</li>
           <li><strong>「追加」</strong> をタップします 🎉</li>
@@ -423,7 +459,7 @@ body{padding-bottom:74px;}
         <figure class="shot">
           <img data-shot-img src="images/22.png" alt="iPhone Safariの共有ボタン">
           <div class="ph" data-ph>🖼️ 画像22（準備中）
-            <span class="ph-desc">iPhone の Safari で<strong>画面下の共有ボタン（□に↑）の位置が分かる</strong>画面</span>
+            <span class="ph-desc">iPhone の Safari でトップページを開き、<strong>画面下の共有ボタン（□に↑）の位置が分かる</strong>画面</span>
           </div>
         </figure>
         <figure class="shot">
@@ -435,7 +471,7 @@ body{padding-bottom:74px;}
 
         <div class="os-sub">▼ Chrome の場合</div>
         <ol class="mini-steps">
-          <li><strong>Chrome</strong> で成績入力ページを開きます</li>
+          <li><strong>Chrome</strong> でトップページを開きます</li>
           <li>画面<strong>右上の共有ボタン</strong>（または三点リーダー）をタップします</li>
           <li><strong>「ホーム画面に追加」</strong> を選びます 🎉</li>
         </ol>
@@ -445,7 +481,7 @@ body{padding-bottom:74px;}
       <figure class="shot">
         <img data-shot-img src="images/24.png" alt="ホーム画面にアイコンができた状態（準備中）">
         <div class="ph" data-ph>🖼️ 画像24（準備中）
-          <span class="ph-desc"><strong>ホーム画面にアイコンができた状態</strong>（他のアプリと並んでいるところ）</span>
+          <span class="ph-desc"><strong>ホーム画面にトップページのアイコンができた状態</strong>（他のアプリと並んでいるところ）</span>
         </div>
       </figure>
 
@@ -721,12 +757,18 @@ body{padding-bottom:74px;}
     <div class="card">
       <ul>
         <li>🤔 入力がうまくいかない</li>
-        <li>🚪 ページにアクセスできない</li>
+        <li>🚪 ページが開けない</li>
         <li>🔢 スコアの見方が分からない</li>
         <li>😵 どこに何を入れるか迷った</li>
       </ul>
       <p style="margin-top:10px;text-align:center;">そんなときは、<strong>グループラインでお問い合わせください</strong> 🙆</p>
+      <a class="btn" href="https://oyama-baseball-1976.github.io/orange/" target="_blank" rel="noopener">🏠 トップページを開く</a>
       <a class="btn" href="https://oyama-baseball-1976.github.io/orange/orange_Award_Production.html" target="_blank" rel="noopener">⚾ 成績入力ページを開く</a>
+    </div>
+
+    <div class="card plain" style="margin-top:12px;">
+      <p style="font-weight:800;margin-bottom:2px;">📖 このマニュアルの開きかた</p>
+      <p style="margin:0;">このマニュアルは、<strong>トップページの「父母向けマニュアル」</strong>から、いつでも開けます。<strong>LINEをさかのぼって探す必要はありません。</strong></p>
     </div>
   </section>
 
