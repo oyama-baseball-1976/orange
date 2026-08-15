@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オレンジライン 名簿編集（幹事用）</title>
+<!-- ver001（2026-08-15）：児童名簿（roster）と指導者名簿（staff）を画面から編集するページ（幹事用）。
+     ・スプレッドシートを直接さわらずに、スマホから追加・並べかえ・非表示ができる
+     ・消さずに「非表示」にする（links シートと同じ考え方）。打ちまちがえても戻せる
+     ・シートは「見出し行なし・A列＝名前・B列＝非表示」。⚠️ 見出し行は足さないこと
+       （足すと、見出しの文字が子どもの名前として読まれてしまう）
+     ・GAS ver17 の rosterLoad / rosterSave を使う
+     ・父母が使う画面（成績入力・注文）には手を入れていない -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#f06a1e; --orange-dark:#d4530a; --orange-soft:#fff4ec; --orange-line:#ffe3ce;
+    --green:#1f9d63;  --green-soft:#eef8f1;  --green-line:#cdecdb;
+    --blue:#2f7cc4;   --blue-soft:#eff5fc;   --blue-line:#cfe2f6;
+    --red:#c94a4a;    --red-soft:#fff1f1;    --red-line:#f5cccc;
+    --warn:#8a5a00;   --warn-soft:#fff8e6;   --warn-line:#ffdf9e;
+    --text:#333333; --sub:#6b6b6b; --line:#f0d9c8; --bg:#fffdfa; --card:#ffffff;
+    --radius:20px; --round:'M PLUS Rounded 1c',sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; font-family:var(--round),"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.7; font-size:15px;}
+  .wrap{max-width:640px; margin:0 auto; padding:0 16px 60px;}
+
+  header{position:relative; background:linear-gradient(135deg,#ff8a3d,#f06a1e 60%,#e35b13);
+    color:#fff; text-align:center; padding:24px 20px 28px; border-radius:0 0 28px 28px;}
+  header .ball{font-size:1.7rem;}
+  header .team{display:inline-block; font-size:.78rem; font-weight:700;
+    background:rgba(255,255,255,.22); padding:5px 14px; border-radius:999px;}
+  header h1{font-weight:800; font-size:1.45rem; margin:10px 0 6px; line-height:1.3;}
+  header .lead{font-size:.85rem; opacity:.95;}
+
+  .h2{display:flex; align-items:center; gap:8px; margin:26px 0 10px;}
+  .h2 h2{font-weight:800; font-size:1.12rem; color:var(--orange); margin:0;}
+  .card{background:var(--card); border:2px solid var(--orange-line); border-radius:var(--radius);
+    padding:14px; box-shadow:0 3px 0 var(--orange-line);}
+  label{display:block; font-weight:800; font-size:.84rem; margin-bottom:5px;}
+  .hint{font-size:.76rem; color:var(--sub); line-height:1.65; margin-top:6px;}
+
+  input{width:100%; min-height:46px; padding:8px 12px; font-family:inherit; font-size:1rem;
+    border:2px solid var(--orange-line); border-radius:12px; background:#fff; color:var(--text);}
+  input:focus{outline:none; border-color:var(--orange);}
+
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    min-height:48px; padding:0 18px; background:var(--orange); color:#fff;
+    font-family:inherit; font-weight:800; font-size:.98rem; border:none; border-radius:14px;
+    box-shadow:0 3px 0 var(--orange-dark); cursor:pointer;}
+  .btn:active{transform:translateY(1px); box-shadow:0 2px 0 var(--orange-dark);}
+  .btn:disabled{opacity:.45; box-shadow:0 3px 0 #ccc;}
+  .btn.wide{width:100%;}
+  .btn.ghost{background:#fff; color:var(--orange); border:2px solid var(--orange-line); box-shadow:0 3px 0 var(--orange-line);}
+  .btn.sub{background:#f4f2f0; color:var(--sub); box-shadow:0 3px 0 #ddd8d3;}
+  .btn.green{background:var(--green); box-shadow:0 3px 0 #17784b;}
+  /* スマホでの押しやすさを優先し、小さいボタンでも高さ40px・角丸を大きめにとる */
+  .btn.small{min-height:40px; font-size:.84rem; padding:0 12px; border-radius:999px;}
+
+  /* ===== どちらの名簿を編集するかのタブ ===== */
+  .tabs{display:flex; gap:8px; margin:22px 0 0;}
+  .tabs button{flex:1 1 0; min-height:50px; font-family:inherit; font-weight:800; font-size:.98rem;
+    background:#fff; color:var(--sub); border:2px solid var(--orange-line); border-radius:14px;
+    box-shadow:0 3px 0 var(--orange-line); cursor:pointer;}
+  .tabs button.on{background:var(--orange); color:#fff; border-color:var(--orange); box-shadow:0 3px 0 var(--orange-dark);}
+
+  /* ===== 名前1件のカード ===== */
+  .person{background:var(--orange-soft); border:2px solid var(--orange-line); border-radius:16px;
+    padding:12px; margin-bottom:10px;}
+  .person.hidden{background:#f4f2f0; border-color:#e2ddd8;}
+  .person .top{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+  .person .no{flex:0 0 auto; font-size:.74rem; font-weight:800; color:var(--sub);
+    background:#fff; border:1px solid var(--orange-line); border-radius:999px; padding:2px 9px;}
+  .person.hidden .no{border-color:#e2ddd8;}
+  .person .badge{flex:0 0 auto; font-size:.72rem; font-weight:800; padding:3px 10px; border-radius:999px;
+    background:#e9e5e1; color:var(--sub);}
+  .person input{background:#fff;}
+  .person.hidden input{color:var(--sub); text-decoration:line-through;}
+  .person .ops{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
+  .person .ops button{flex:0 0 auto;}
+  .person .dupwarn{font-size:.76rem; font-weight:800; color:#8f2f2f; margin-top:7px;
+    background:var(--red-soft); border:2px solid var(--red-line); border-radius:10px; padding:7px 10px;}
+
+  .note{border-radius:14px; padding:11px 13px; font-size:.82rem; line-height:1.75; margin-top:10px;}
+  .note.warn{background:var(--warn-soft); border:2px solid var(--warn-line); color:var(--warn);}
+  .note.info{background:var(--blue-soft); border:2px solid var(--blue-line); color:#1c4e86;}
+  .note.ok{background:var(--green-soft); border:2px solid var(--green-line); color:#15633f;}
+  .note.err{background:var(--red-soft); border:2px solid var(--red-line); color:#8f2f2f;}
+  .note b{font-weight:800;}
+  .note ul{margin:6px 0 0; padding-left:1.2em;}
+  .note li{margin-bottom:3px;}
+
+  .count{display:inline-block; font-size:.8rem; font-weight:800; padding:5px 12px; border-radius:999px;
+    background:var(--green-soft); border:2px solid var(--green-line); color:#15633f;}
+
+  .row2col{display:flex; gap:8px;}
+  .row2col>*{flex:1 1 0;}
+
+  .toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px);
+    background:#333; color:#fff; padding:12px 20px; border-radius:999px; font-size:.9rem; font-weight:700;
+    opacity:0; pointer-events:none; transition:.25s; z-index:60; max-width:92vw; text-align:center;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .toast.err{background:var(--red);}
+
+  .overlay{position:fixed; inset:0; background:rgba(20,25,45,.55); display:none;
+    align-items:center; justify-content:center; padding:16px; z-index:50;}
+  .overlay.open{display:flex;}
+  .modal{background:#fff; border-radius:20px; padding:18px; width:100%; max-width:460px;
+    max-height:88vh; overflow-y:auto;}
+  .modal h3{font-weight:800; font-size:1.06rem; color:var(--orange); margin:0 0 10px;}
+  .modal .btns{display:flex; gap:8px; margin-top:14px;}
+  .modal .btns>*{flex:1 1 0;}
+
+  .loading{color:var(--sub); font-size:.9rem; text-align:center; padding:18px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="ball">📇</div>
+  <div class="team">小山少年野球団 オレンジ</div>
+  <h1>📇 名簿編集</h1>
+  <div class="lead">児童名簿と指導者名簿を、ここで直せます（幹事用）</div>
+</header>
+
+<div class="wrap">
+
+  <!-- ===== どちらの名簿を編集するか ===== -->
+  <div class="tabs">
+    <button id="tabRoster" class="on">🧒 児童名簿</button>
+    <button id="tabStaff">🧑 指導者名簿</button>
+  </div>
+
+  <!-- ===== 1. 名簿 ===== -->
+  <div class="h2"><h2 id="listTitle">① 児童名簿</h2></div>
+  <div class="card">
+    <div id="countBox" style="margin-bottom:10px;"></div>
+    <div id="list"><div class="loading">読み込み中…</div></div>
+    <button class="btn ghost wide" id="btnAdd" style="margin-top:4px;">＋ 名前を追加</button>
+    <div class="hint" id="orderHint">
+      並んでいる順が、そのまま<b>入力画面のプルダウンの順</b>になります。<br>
+      「↑」「↓」で入れかえてください。
+    </div>
+  </div>
+
+  <!-- ===== 2. 保存 ===== -->
+  <div class="h2"><h2>② 保存する</h2></div>
+  <div class="card">
+    <button class="btn wide" id="btnSave">💾 この内容で保存する</button>
+    <div id="saveMsg"></div>
+    <div class="note info" style="margin-top:12px;">
+      保存したあと、<b>入力画面や注文画面を開いたままの人には、すぐには反映されません。</b><br>
+      その人が<b>画面を開き直す（再読込する）と</b>新しい名簿になります。
+    </div>
+  </div>
+
+  <!-- ===== 3. 知っておくこと ===== -->
+  <div class="h2"><h2>③ 知っておくこと</h2></div>
+  <div class="card">
+    <div class="note warn">
+      <b>🙈 「非表示」にすると、こうなります</b>
+      <ul>
+        <li>成績入力・スタンプ・協力ログ・注文画面の<b>プルダウンに出なくなります</b></li>
+        <li><b>賞の対象から外れます</b>（データ賞・皆勤賞・ポジションMVP）</li>
+        <li><b>過去の成績は消えません。</b>スプレッドシートの `teeball` に残ったままです</li>
+        <li>いつでも<b>「戻す」で元どおり</b>にできます</li>
+      </ul>
+    </div>
+    <div class="note warn">
+      <b>✏️ 名前を直すときは気をつけてください</b><br>
+      過去の成績・協力ログは<b>名前の文字でつながっています。</b>
+      名前を変えると、<b>その子の過去の記録とつながらなくなります。</b><br>
+      <b>打ちまちがえた直後の訂正</b>に使ってください。在籍中の子の名前は、むやみに変えないでください。
+    </div>
+    <div class="note info" id="photoNote">
+      <b>📷 並び順は、表彰スライドの写真番号に対応しています</b><br>
+      上から順に <b>01.jpg / 02.jpg …</b> です。<b>並べかえたり非表示にすると、番号がずれます。</b><br>
+      スライドを作るときは、取り込み画面に出る<b>対応表</b>を見ながら写真を入れ直してください。
+    </div>
+    <div class="note info">
+      <b>🗑 「消す」ボタンはありません</b><br>
+      まちがえて消してしまうと元に戻せないため、<b>非表示にする方式</b>にしています。
+      卒業した子も、非表示にすれば画面から消えます。
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">保存しました</div>
+
+<!-- 名前を追加 -->
+<div class="overlay" id="ovAdd">
+  <div class="modal">
+    <h3>＋ 名前を追加</h3>
+    <label for="newName">名前</label>
+    <input id="newName" type="text" placeholder="例：おれんじ たろう">
+    <div class="hint">
+      <b>末尾に追加されます。</b>背番号は入団順なので、新しく入った子は末尾でかまいません。<br>
+      前後の空白は自動で取り除きます。
+    </div>
+    <div id="addMsg"></div>
+    <div class="btns">
+      <button class="btn sub" id="addCancel">やめる</button>
+      <button class="btn" id="addOk">追加する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 名前を直す -->
+<div class="overlay" id="ovEdit">
+  <div class="modal">
+    <h3>✏️ 名前を直す</h3>
+    <div class="note warn" style="margin-top:0;">
+      <b>過去の成績とつながらなくなります。</b><br>
+      成績・協力ログは名前の文字でつながっているため、名前を変えると
+      <b>その子のこれまでの記録が別人あつかい</b>になります。<br>
+      <b>打ちまちがえの訂正だけ</b>に使ってください。
+    </div>
+    <label for="editName" style="margin-top:12px;">新しい名前</label>
+    <input id="editName" type="text">
+    <div id="editMsg"></div>
+    <div class="btns">
+      <button class="btn sub" id="editCancel">やめる</button>
+      <button class="btn" id="editOk">この名前にする</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 設定：GASデプロイ後のURLをここに貼る ===== */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxGKwfIE-zp_1FUdBZrDb_ZQ3Fl12dmjDevVNfOEBRuPOTAl2vFtcullzjjXtONFi_Dqg/exec";
+
+/* このページは幹事ページ（リンク集の合言葉の先）からだけリンクします。
+   集金チェック・メニュー編集と同じ扱いで、ここでは合言葉を求めていません。 */
+
+let KIND="roster";                 /* いま編集している名簿（roster / staff） */
+let DATA={roster:[],staff:[]};     /* 画面の状態。[{name,hidden}] */
+let DIRTY=false;                   /* 保存していない変更があるか */
+let EDIT_INDEX=-1;                 /* 「名前を直す」で開いている行 */
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const escAttr=esc;
+function toast(msg,isErr){const t=$("toast");t.textContent=msg;t.className="toast show"+(isErr?" err":"");setTimeout(()=>t.className="toast",2200);}
+function msgBox(id,html,cls){$(id).innerHTML=html?'<div class="note '+(cls||"err")+'">'+html+'</div>':"";}
+function openOv(id){$(id).classList.add("open");}
+function closeOv(id){$(id).classList.remove("open");}
+
+/* 名簿ごとの呼び名（画面の文言を1か所にまとめる） */
+const LABEL={
+  roster:{title:"① 児童名簿", one:"子ども", list:"児童名簿", ph:"例：おれんじ たろう"},
+  staff: {title:"① 指導者名簿", one:"監督・コーチ", list:"指導者名簿", ph:"例：おれんじ かんとく"}
+};
+
+async function api(body){
+  const r=await fetch(GAS_URL,{method:"POST",body:JSON.stringify(body)});
+  return await r.json();
+}
+
+/* ===== 読み込み ===== */
+async function load(){
+  $("list").innerHTML='<div class="loading">読み込み中…</div>';
+  try{
+    const r=await api({action:"rosterLoad"});
+    if(!r.ok){ $("list").innerHTML='<div class="note err">'+esc(r.error||"読み込めませんでした")+'</div>'; return; }
+    DATA.roster=(r.roster||[]).map(x=>({name:x.name,hidden:!!x.hidden}));
+    DATA.staff =(r.staff ||[]).map(x=>({name:x.name,hidden:!!x.hidden}));
+    DIRTY=false;
+    render();
+  }catch(e){
+    $("list").innerHTML='<div class="note err">取得できませんでした。GAS_URLを確認してください。</div>';
+  }
+}
+
+/* ===== 同じ名前があるか（非表示の人も対象にする） ===== */
+function dupCount(name,exceptIndex){
+  const n=String(name||"").trim();
+  if(!n)return 0;
+  let c=0;
+  DATA[KIND].forEach((p,i)=>{ if(i!==exceptIndex && String(p.name||"").trim()===n)c++; });
+  return c;
+}
+
+/* ===== 描画 ===== */
+function render(){
+  const items=DATA[KIND];
+  const L=LABEL[KIND];
+  $("listTitle").textContent=L.title;
+  $("newName").placeholder=L.ph;
+  /* 写真番号の案内は児童名簿だけの話 */
+  $("photoNote").style.display=(KIND==="roster")?"block":"none";
+  $("orderHint").innerHTML=(KIND==="roster")
+    ? '並んでいる順が、そのまま<b>入力画面のプルダウンの順</b>と<b>表彰スライドの写真番号</b>になります。<br>「↑」「↓」で入れかえてください。'
+    : '並んでいる順が、そのまま<b>注文画面のプルダウンの順</b>になります。<br>「↑」「↓」で入れかえてください。';
+
+  const shown=items.filter(p=>!p.hidden).length;
+  const hid=items.length-shown;
+  $("countBox").innerHTML='<span class="count">表示中 '+shown+'人'+(hid?'　／　非表示 '+hid+'人':'')+'</span>';
+
+  if(!items.length){
+    $("list").innerHTML='<div class="note info">まだ登録がありません。下の「＋ 名前を追加」から登録してください。</div>';
+    return;
+  }
+  /* 表示中の子だけに通し番号をふる（＝写真番号と同じ数えかた） */
+  let seq=0;
+  $("list").innerHTML=items.map((p,i)=>{
+    const dup=dupCount(p.name,i);
+    let no;
+    if(p.hidden){ no='—'; }
+    else { seq++; no=(KIND==="roster"?String(seq).padStart(2,"0"):String(seq)); }
+    return '<div class="person'+(p.hidden?' hidden':'')+'">'
+      +'<div class="top">'
+        +'<span class="no">'+no+'</span>'
+        +(p.hidden?'<span class="badge">🙈 非表示</span>':'')
+      +'</div>'
+      +'<input type="text" value="'+escAttr(p.name)+'" readonly data-i="'+i+'">'
+      +(dup?'<div class="dupwarn">⚠️ 同じ名前が'+(dup+1)+'人 登録されています。成績が合算されてしまうので、区別できる書き方にしてください</div>':'')
+      +'<div class="ops">'
+        +'<button class="btn ghost small" data-op="up" data-i="'+i+'"'+(i===0?" disabled":"")+'>↑ 上へ</button>'
+        +'<button class="btn ghost small" data-op="down" data-i="'+i+'"'+(i===items.length-1?" disabled":"")+'>↓ 下へ</button>'
+        +'<button class="btn ghost small" data-op="edit" data-i="'+i+'">✏️ 名前を直す</button>'
+        +(p.hidden
+          ? '<button class="btn green small" data-op="show" data-i="'+i+'">↩️ 戻す</button>'
+          : '<button class="btn sub small" data-op="hide" data-i="'+i+'">🙈 非表示にする</button>')
+      +'</div>'
+      +'</div>';
+  }).join("");
+}
+
+/* ===== タブ ===== */
+function setKind(k){
+  KIND=k;
+  $("tabRoster").className=(k==="roster")?"on":"";
+  $("tabStaff").className =(k==="staff") ?"on":"";
+  render();
+}
+$("tabRoster").onclick=()=>setKind("roster");
+$("tabStaff").onclick =()=>setKind("staff");
+
+/* ===== 一覧の操作（上へ／下へ／名前を直す／非表示／戻す） ===== */
+$("list").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-op]"); if(!b)return;
+  const i=Number(b.dataset.i), op=b.dataset.op, items=DATA[KIND];
+  if(op==="up"&&i>0){ const t=items[i-1];items[i-1]=items[i];items[i]=t; DIRTY=true; }
+  else if(op==="down"&&i<items.length-1){ const t=items[i+1];items[i+1]=items[i];items[i]=t; DIRTY=true; }
+  else if(op==="hide"){
+    if(!confirm("「"+items[i].name+"」を非表示にしますか？\n\n・プルダウンに出なくなります\n・賞の対象から外れます\n・過去の成績は残ります（あとで戻せます）"))return;
+    items[i].hidden=true; DIRTY=true;
+  }
+  else if(op==="show"){ items[i].hidden=false; DIRTY=true; }
+  else if(op==="edit"){ openEdit(i); return; }
+  render();
+});
+
+/* ===== 名前を追加 ===== */
+$("btnAdd").onclick=()=>{ $("newName").value=""; msgBox("addMsg",""); openOv("ovAdd"); $("newName").focus(); };
+$("addCancel").onclick=()=>closeOv("ovAdd");
+$("newName").addEventListener("input",()=>{
+  const n=$("newName").value.trim();
+  const d=dupCount(n,-1);
+  if(d)msgBox("addMsg","⚠️ <b>同じ名前が登録されています。</b>同姓同名の場合は、区別できる書き方にしてください（例：名字を足す）。<br>このまま追加することもできますが、<b>成績が合算されて2人を見分けられなくなります。</b>","err");
+  else msgBox("addMsg","");
+});
+$("addOk").onclick=()=>{
+  const n=$("newName").value.trim();          /* 前後の空白はここで取り除く */
+  if(!n){ msgBox("addMsg","名前を入れてください","err"); $("newName").focus(); return; }
+  DATA[KIND].push({name:n,hidden:false});      /* 末尾に追加 */
+  DIRTY=true; closeOv("ovAdd"); render();
+  toast("「"+n+"」を追加しました（まだ保存していません）");
+  window.scrollTo(0,document.body.scrollHeight);
+};
+
+/* ===== 名前を直す ===== */
+function openEdit(i){
+  EDIT_INDEX=i;
+  $("editName").value=DATA[KIND][i].name;
+  msgBox("editMsg","");
+  openOv("ovEdit");
+  $("editName").focus();
+}
+$("editCancel").onclick=()=>closeOv("ovEdit");
+$("editName").addEventListener("input",()=>{
+  const n=$("editName").value.trim();
+  const d=dupCount(n,EDIT_INDEX);
+  if(d)msgBox("editMsg","⚠️ <b>同じ名前が登録されています。</b>区別できる書き方にしてください。","err");
+  else msgBox("editMsg","");
+});
+$("editOk").onclick=()=>{
+  const n=$("editName").value.trim();
+  if(!n){ msgBox("editMsg","名前を入れてください","err"); $("editName").focus(); return; }
+  const before=DATA[KIND][EDIT_INDEX].name;
+  if(n!==before && !confirm("「"+before+"」を「"+n+"」に変えますか？\n\n⚠️ 過去の成績・協力ログとつながらなくなります。\n打ちまちがえの訂正のときだけ使ってください。"))return;
+  DATA[KIND][EDIT_INDEX].name=n;
+  DIRTY=true; closeOv("ovEdit"); render();
+  toast("名前を直しました（まだ保存していません）");
+};
+
+/* ===== 保存 ===== */
+$("btnSave").onclick=async()=>{
+  const items=DATA[KIND].map(p=>({name:String(p.name||"").trim(),hidden:!!p.hidden})).filter(p=>p.name);
+  if(!items.length){ msgBox("saveMsg","名簿が空のままでは保存できません（1人以上必要です）","err"); return; }
+  const L=LABEL[KIND];
+  const b=$("btnSave"); b.disabled=true; b.textContent="保存中…";
+  msgBox("saveMsg","");
+  try{
+    const r=await api({action:"rosterSave", kind:KIND, items:items});
+    if(r.ok){
+      DATA[KIND]=items;
+      DIRTY=false; render();
+      msgBox("saveMsg","✅ <b>"+esc(L.list)+"を保存しました</b>（表示中 "+(r.count-r.hidden)+"人／非表示 "+r.hidden+"人）<br>"
+        +"入力画面などを開いたままの人は、<b>画面を開き直すと</b>新しい名簿になります。","ok");
+      toast("保存しました ✓");
+    }else{
+      msgBox("saveMsg",esc(r.error||"保存できませんでした"),"err");
+      toast("保存できませんでした",true);
+    }
+  }catch(e){
+    msgBox("saveMsg","通信に失敗しました。電波の良いところでもう一度お試しください。","err");
+    toast("保存できませんでした",true);
+  }
+  b.disabled=false; b.textContent="💾 この内容で保存する";
+};
+
+/* 保存していない変更があるまま閉じようとしたら止める */
+window.addEventListener("beforeunload",e=>{ if(DIRTY){ e.preventDefault(); e.returnValue=""; } });
+
+load();
+</script>
+
+</body>
+</html>
