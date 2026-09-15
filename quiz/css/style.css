@@ -1,0 +1,180 @@
+/* ============================================================
+   style.css  画面のスタイル
+   ------------------------------------------------------------
+   既存のオレンジのシステムに合わせたシンプルなトーン。スマホ縦持ち前提。
+   ダイヤモンドの中（SVG）は固定色で、ここのテーマ変数は使わない。
+   文字サイズ：問題文 17px、解説 15px、11px 未満は使わない。
+   ============================================================ */
+
+:root {
+  --ink: #1a2238;
+  --orange: #f06a1e;
+  --orange-soft: #ffe9dc;
+  --line: #e3e6ee;
+  --bg: #f7f8fb;
+  --card: #ffffff;
+  --green: #1f9d63;
+  --green-soft: #e8f7ef;
+  --red: #d64545;
+  --red-soft: #fdecec;
+  --muted: #6b7280;
+  --chip: #f2f4f8;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #ecebe6;
+    --orange: #f5813a;
+    --orange-soft: #3a2416;
+    --line: #3a3a3a;
+    --bg: #151515;
+    --card: #222222;
+    --green: #3fcf85;
+    --green-soft: #1d3a2a;
+    --red: #ff7a7a;
+    --red-soft: #3f2222;
+    --muted: #a3a3a3;
+    --chip: #2b2b2b;
+  }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+  padding-bottom: 40px;
+}
+
+header {
+  background: var(--orange);
+  color: #fff;
+  padding: 14px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+}
+header h1 { margin: 0; font-size: 1.1rem; letter-spacing: .02em; }
+header p { margin: 2px 0 0; font-size: 13px; opacity: .92; }
+
+.wrap { max-width: 520px; margin: 0 auto; padding: 14px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.title { font-size: 18px; font-weight: 800; margin: 0 0 10px; }
+.note { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
+
+/* ---------- ボタン ---------- */
+.btn {
+  display: block;
+  width: 100%;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 16px;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+.btn.primary { background: var(--orange); border-color: var(--orange); color: #fff; }
+.btn.small { font-size: 15px; padding: 10px 14px; width: auto; display: inline-block; margin: 0 8px 8px 0; }
+.link {
+  color: var(--orange);
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* ---------- 入力 ---------- */
+label { display: block; font-size: 14px; font-weight: 700; margin: 0 0 6px; }
+input[type=text], select {
+  width: 100%;
+  padding: 14px 12px;
+  font-size: 17px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+}
+.field { margin-bottom: 14px; }
+.error { color: var(--red); font-size: 14px; font-weight: 700; margin: 6px 0 0; }
+
+/* ---------- 出題 ---------- */
+.progress { font-size: 14px; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
+.progress b { color: var(--orange); font-size: 17px; }
+.diamond-svg { display: block; width: 100%; height: auto; border-radius: 14px; }
+.playrow { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
+.play {
+  font-size: 16px;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: none;
+  background: var(--orange);
+  color: #fff;
+  cursor: pointer;
+}
+.lockmsg { color: var(--red); font-size: 14px; font-weight: 700; }
+.question { font-size: 17px; font-weight: 700; margin: 12px 0; }
+.choices { display: flex; flex-direction: column; gap: 8px; }
+.choice {
+  font-size: 17px;
+  padding: 14px;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.choice.correct { border-color: var(--green); background: var(--green-soft); }
+.choice.wrong { border-color: var(--red); background: var(--red-soft); }
+.choice:disabled { cursor: default; }
+.tapguide { font-size: 15px; color: var(--muted); }
+.hintbtn {
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  margin-top: 10px;
+  cursor: pointer;
+}
+.hintbtn:disabled { opacity: .5; }
+.hinttext { font-size: 14px; color: var(--muted); margin: 6px 0 0; }
+.result { font-size: 15px; margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--chip); }
+.result.ok { background: var(--green-soft); }
+.result.ng { background: var(--red-soft); }
+.result b { display: block; font-size: 19px; margin-bottom: 4px; }
+
+/* ---------- 結果 ---------- */
+.score { font-size: 42px; font-weight: 900; color: var(--orange); text-align: center; margin: 6px 0; line-height: 1.2; }
+.score small { font-size: 18px; color: var(--muted); font-weight: 700; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.stat { background: var(--chip); border-radius: 10px; padding: 10px; text-align: center; }
+.stat .v { font-size: 22px; font-weight: 800; }
+.stat .k { font-size: 12px; color: var(--muted); }
+.sendmsg { font-size: 12px; color: var(--muted); text-align: center; margin: 6px 0 10px; min-height: 18px; }
+
+/* ---------- ランキング ---------- */
+table.rank { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.rank th, table.rank td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+table.rank th { font-size: 12px; color: var(--muted); font-weight: 700; }
+table.rank td.num { text-align: right; }
+table.rank tr.me td { background: var(--orange-soft); font-weight: 800; }
+.rankmsg { font-size: 14px; color: var(--muted); }
