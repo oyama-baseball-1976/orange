@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>オレンジ ルールクイズ</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <h1>オレンジ ルールクイズ</h1>
+  <p id="hdrSub">やきゅうの ルールを おぼえよう</p>
+</header>
+
+<main class="wrap">
+
+  <!-- [1] レベル選択 -->
+  <section id="scr-level" class="screen">
+    <div class="card">
+      <p class="title">レベルを えらんでね</p>
+      <button class="btn primary" id="btnLow"></button>
+      <button class="btn primary" id="btnHigh"></button>
+      <p class="note" id="levelNote"></p>
+      <button class="link" id="changeName" hidden>なまえを かえる</button>
+    </div>
+  </section>
+
+  <!-- [2] ニックネーム登録 -->
+  <section id="scr-name" class="screen" hidden>
+    <div class="card">
+      <p class="title">なまえを おしえてね</p>
+      <div class="field">
+        <label for="nickname">ニックネームで いれてね（ほんみょうは つかわない）</label>
+        <input type="text" id="nickname" maxlength="12" placeholder="れい：オレンジくん" autocomplete="off">
+        <p class="error" id="errName" hidden></p>
+      </div>
+      <div class="field">
+        <label for="grade">がくねん</label>
+        <select id="grade"></select>
+        <p class="error" id="errGrade" hidden></p>
+      </div>
+      <button class="btn primary" id="btnSaveName">これで はじめる</button>
+    </div>
+  </section>
+
+  <!-- [3] 出題 -->
+  <section id="scr-quiz" class="screen" hidden>
+    <div class="card">
+      <div class="progress" id="progress"></div>
+      <div id="diagramWrap"><div id="diagram"></div></div>
+      <div class="playrow" id="playrow" hidden>
+        <button class="play" id="btnPlay">さいせい</button>
+        <span class="lockmsg" id="lockmsg"></span>
+      </div>
+      <div class="question" id="question"></div>
+      <div class="choices" id="choices"></div>
+      <div id="hintrow" hidden>
+        <button class="hintbtn" id="btnHint">ヒント</button>
+        <div class="hinttext" id="hinttext"></div>
+      </div>
+      <div id="answerBox"></div>
+      <button class="btn primary" id="btnNext" hidden style="margin-top:12px">つぎへ</button>
+    </div>
+  </section>
+
+  <!-- [4] 結果 -->
+  <section id="scr-result" class="screen" hidden>
+    <div class="card">
+      <p class="title">けっか</p>
+      <div class="score" id="score"></div>
+      <div class="stats">
+        <div class="stat"><div class="v" id="stTotal"></div><div class="k">るいけい せいかい</div></div>
+        <div class="stat"><div class="v" id="stPlays"></div><div class="k">プレイ かいすう</div></div>
+        <div class="stat"><div class="v" id="stClear"></div><div class="k">せいはりつ</div></div>
+        <div class="stat"><div class="v" id="stBest"></div><div class="k">じこベスト</div></div>
+      </div>
+      <p class="sendmsg" id="sendmsg"></p>
+      <button class="btn primary" id="btnAgain">もういっかい</button>
+      <button class="btn" id="btnRank">ランキングを みる</button>
+      <button class="btn" id="btnLevel">レベルを えらびなおす</button>
+    </div>
+  </section>
+
+  <!-- [5] ランキング -->
+  <section id="scr-rank" class="screen" hidden>
+    <div class="card">
+      <p class="title">ランキング（しょきゅう）</p>
+      <div id="rankLow"></div>
+    </div>
+    <div class="card">
+      <p class="title">ランキング（ちゅうきゅう）</p>
+      <div id="rankHigh"></div>
+    </div>
+    <button class="btn primary" id="btnRankBack">もどる</button>
+  </section>
+
+</main>
+
+<!-- 読み込み順：config → diamond → quiz → templates → fixed-questions → storage → api → main -->
+<script src="js/config.js"></script>
+<script src="js/diamond.js"></script>
+<script src="js/quiz.js"></script>
+<script src="js/templates/force-or-tag.js"></script>
+<script src="js/templates/dropped-third-strike.js"></script>
+<script src="js/templates/tag-up.js"></script>
+<script src="js/templates/where-to-throw.js"></script>
+<script src="js/fixed-questions.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
