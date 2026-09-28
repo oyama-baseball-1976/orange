@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f06a1e">
+<meta name="description" content="オレンジの こどもむけ やきゅう ルール クイズ。ダイヤモンドを 1しゅう して ホームインしよう。">
+<title>ルールで ホームイン！ | オレンジ</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23ff9a2e'/%3E%3Cpath d='M18 14 q8 18 0 36 M46 14 q-8 18 0 36' stroke='%23c8433c' stroke-width='3' fill='none'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   quiz_beta.html  ルールで ホームイン！（ベータ版）
+   ------------------------------------------------------------
+   外部ファイルなし。CSS・JS・SVG・問題データをすべてこの1ファイルに持つ。
+   文字：問題文 20px、ボタン 18px 以上、12px 未満は使わない。
+   ============================================================ */
+:root {
+  --bg: #fff6ec;
+  --bg-2: #ffe9d4;
+  --card: #ffffff;
+  --ink: #2a2233;
+  --muted: #6b6275;
+  --line: #f0dccb;
+  --orange: #f06a1e;
+  --orange-dark: #c24f0c;
+  --orange-soft: #ffe3cc;
+  --green: #1e9a5f;
+  --green-dark: #137046;
+  --green-soft: #dff5e9;
+  --red: #dc3f45;
+  --red-soft: #fde6e6;
+  --blue: #2f79d0;
+  --blue-dark: #1f5aa3;
+  --blue-soft: #e2eeff;
+  --gold: #f5b400;
+  --locked: #c9c1cf;
+  --shadow: rgba(60, 30, 10, .12);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1720;
+    --bg-2: #241d2b;
+    --card: #2a2331;
+    --ink: #f5efe9;
+    --muted: #bcb1c6;
+    --line: #43384d;
+    --orange: #ff8a3d;
+    --orange-dark: #d8641d;
+    --orange-soft: #4a2c1a;
+    --green: #3fce8a;
+    --green-dark: #23945d;
+    --green-soft: #183a2a;
+    --red: #ff7a7f;
+    --red-soft: #46232a;
+    --blue: #6aa8f5;
+    --blue-dark: #3d7bc6;
+    --blue-soft: #1c2c45;
+    --gold: #ffcb3d;
+    --locked: #5b5264;
+    --shadow: rgba(0, 0, 0, .35);
+  }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", "Yu Gothic", "Meiryo", sans-serif;
+  background: var(--bg);
+  background-image: radial-gradient(circle at 20% 0%, var(--bg-2), transparent 55%);
+  background-attachment: fixed;
+  color: var(--ink);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+button { font-family: inherit; color: inherit; cursor: pointer; }
+ruby rt { font-size: 12px; }
+
+/* ---------- ヘッダー ---------- */
+.top {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; padding-top: max(10px, env(safe-area-inset-top));
+  background: var(--orange); color: #fff;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+.top h1 { margin: 0; font-size: 18px; font-weight: 900; letter-spacing: .03em; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.icon-btn {
+  min-width: 48px; height: 44px; padding: 0 10px;
+  border: 0; border-radius: 12px;
+  background: rgba(255, 255, 255, .22); color: #fff;
+  font-size: 16px; font-weight: 800;
+}
+.icon-btn:active { transform: translateY(1px); }
+
+.wrap { max-width: 520px; margin: 0 auto; padding: 14px 16px 40px; }
+.screen { animation: fadein .25s ease-out; }
+@keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.card {
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 0 var(--line);
+}
+.sec-title { font-size: 18px; font-weight: 900; margin: 0 0 10px; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+
+/* ---------- ボタン ---------- */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; min-height: 56px; margin: 10px 0 0; padding: 10px 16px;
+  border: 0; border-radius: 16px;
+  font-size: 19px; font-weight: 900; letter-spacing: .02em;
+  background: var(--card); color: var(--ink);
+  box-shadow: 0 5px 0 var(--line), 0 0 0 2px var(--line) inset;
+  transition: transform .06s;
+}
+.btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--line), 0 0 0 2px var(--line) inset; }
+.btn.primary { background: var(--orange); color: #fff; box-shadow: 0 5px 0 var(--orange-dark); }
+.btn.primary:active { box-shadow: 0 1px 0 var(--orange-dark); }
+.btn.green { background: var(--green); color: #fff; box-shadow: 0 5px 0 var(--green-dark); }
+.btn.green:active { box-shadow: 0 1px 0 var(--green-dark); }
+.btn.blue { background: var(--blue); color: #fff; box-shadow: 0 5px 0 var(--blue-dark); }
+.btn.blue:active { box-shadow: 0 1px 0 var(--blue-dark); }
+.btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn-row .btn { margin-top: 10px; font-size: 17px; }
+
+/* ---------- マスコット ---------- */
+.hero { display: flex; align-items: center; gap: 12px; }
+.mascot { width: 88px; height: 88px; flex: 0 0 auto; }
+.mascot svg { width: 100%; height: 100%; display: block; }
+.mascot.bounce { animation: bounce .6s ease-out; }
+@keyframes bounce { 0% { transform: scale(1); } 30% { transform: scale(1.15) rotate(-6deg); } 60% { transform: scale(.95) rotate(4deg); } 100% { transform: scale(1); } }
+.bubble {
+  position: relative; flex: 1;
+  background: var(--orange-soft); border-radius: 16px;
+  padding: 10px 14px; font-size: 17px; font-weight: 800;
+}
+.bubble::before {
+  content: ""; position: absolute; left: -10px; top: 50%; margin-top: -8px;
+  border: 8px solid transparent; border-right: 10px solid var(--orange-soft); border-left: 0;
+}
+
+/* ---------- ランク ---------- */
+.rank-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.rank-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--gold); color: #3a2a00; font-weight: 900; font-size: 16px; white-space: nowrap;
+}
+.meter { flex: 1; min-width: 0; }
+.meter-bar { height: 14px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.meter-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--orange), var(--gold)); transition: width .6s ease-out; }
+.meter-text { font-size: 14px; color: var(--muted); margin-top: 2px; font-weight: 700; }
+
+/* ---------- ダイヤモンドのマップ ---------- */
+.map { position: relative; width: 100%; max-width: 360px; margin: 0 auto; aspect-ratio: 320 / 290; }
+.map > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.node {
+  position: absolute; transform: translate(-50%, -50%);
+  width: 96px; padding: 6px 4px 5px;
+  border: 3px solid #fff; border-radius: 18px;
+  background: var(--card); color: var(--ink);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .22);
+  text-align: center; line-height: 1.25;
+}
+.node:active { transform: translate(-50%, -46%); }
+.node .n-icon { font-size: 26px; display: block; }
+.node .n-name { font-size: 14px; font-weight: 900; display: block; }
+.node .n-stars { font-size: 15px; color: var(--gold); letter-spacing: 1px; display: block; }
+.node .n-stars .off { color: var(--locked); }
+.node.locked { background: var(--locked); color: #5a5260; border-color: rgba(255, 255, 255, .6); }
+.node.locked .n-icon { filter: grayscale(1); opacity: .6; }
+.node.next { border-color: var(--orange); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 4px 0 rgba(0, 0, 0, .22), 0 0 0 0 rgba(240, 106, 30, .55); } 50% { box-shadow: 0 4px 0 rgba(0, 0, 0, .22), 0 0 0 10px rgba(240, 106, 30, 0); } }
+.next-tag {
+  position: absolute; left: 50%; top: -14px; transform: translateX(-50%);
+  background: var(--orange); color: #fff; font-size: 12px; font-weight: 900;
+  padding: 1px 8px; border-radius: 999px; white-space: nowrap;
+}
+.extra-modes { display: grid; gap: 0; }
+
+/* ---------- スタンプ ---------- */
+.stamps { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.stamp-day { font-size: 13px; font-weight: 800; color: var(--muted); }
+.stamp {
+  width: 38px; height: 38px; margin: 2px auto 0; border-radius: 50%;
+  border: 2px dashed var(--line); display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.stamp.on { border: 0; background: var(--orange-soft); }
+.stamp.today { outline: 3px solid var(--orange); outline-offset: 1px; }
+.streak { margin: 8px 0 0; font-weight: 900; color: var(--orange); font-size: 16px; }
+
+/* ---------- クイズ ---------- */
+.quiz-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.quiz-stage { font-size: 15px; font-weight: 900; color: var(--orange); flex: 1; min-width: 0; }
+.dots { display: flex; gap: 6px; }
+.dot { width: 20px; height: 20px; border-radius: 50%; background: var(--line); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; font-weight: 900; }
+.dot.cur { outline: 3px solid var(--orange); outline-offset: 1px; background: var(--card); }
+.dot.ok { background: var(--green); }
+.dot.ng { background: var(--red); }
+.retry-banner { background: var(--blue-soft); color: var(--blue-dark); border-radius: 12px; padding: 8px 12px; font-weight: 900; margin-bottom: 10px; font-size: 16px; }
+@media (prefers-color-scheme: dark) { .retry-banner { color: var(--blue); } }
+.combo { text-align: center; font-weight: 900; color: var(--orange); font-size: 16px; min-height: 26px; }
+.combo.pop { animation: pop .4s ease-out; }
+@keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+.q-card { position: relative; }
+.q-icon { font-size: 44px; text-align: center; line-height: 1.1; }
+.q-pic { margin: 6px auto 4px; max-width: 280px; }
+.q-pic svg { width: 100%; height: auto; display: block; }
+.q-text { font-size: 20px; font-weight: 800; line-height: 1.7; margin: 8px 0 4px; word-break: auto-phrase; }
+.speak { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 4px 12px; border-radius: 999px; border: 2px solid var(--line); background: var(--card); font-size: 15px; font-weight: 800; }
+
+.choices { display: grid; gap: 12px; margin-top: 12px; }
+.choice {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; min-height: 64px; padding: 10px 14px;
+  border: 3px solid var(--line); border-radius: 18px;
+  background: var(--card); box-shadow: 0 4px 0 var(--line);
+  font-size: 19px; font-weight: 800; text-align: left; line-height: 1.45;
+  transition: transform .06s, opacity .2s;
+}
+.choice:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+.choice .mark { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; background: var(--orange); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 900; }
+.choice:nth-child(2) .mark { background: var(--blue); }
+.choice:nth-child(3) .mark { background: var(--green); }
+.choices.ox { grid-template-columns: 1fr 1fr; }
+.choices.ox .choice { flex-direction: column; justify-content: center; min-height: 120px; text-align: center; font-size: 17px; gap: 2px; }
+.choices.ox .choice .ox-sym { font-size: 60px; line-height: 1; font-weight: 900; }
+.choices.ox .choice:nth-child(1) .ox-sym { color: var(--orange); }
+.choices.ox .choice:nth-child(2) .ox-sym { color: var(--blue); }
+.choice.correct { border-color: var(--green); background: var(--green-soft); box-shadow: 0 4px 0 var(--green); }
+.choice.wrong { border-color: var(--red); background: var(--red-soft); box-shadow: 0 4px 0 var(--red); }
+.choice.dim { opacity: .45; }
+.choice:disabled { cursor: default; }
+.choice.shake { animation: shake .4s; }
+@keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+
+.feedback { margin-top: 14px; border-radius: 20px; padding: 14px; animation: pop .35s ease-out; }
+.feedback.ok { background: var(--green-soft); border: 3px solid var(--green); }
+.feedback.ng { background: var(--red-soft); border: 3px solid var(--red); }
+.fb-head { display: flex; align-items: center; gap: 10px; }
+.fb-head .mascot { width: 64px; height: 64px; }
+.fb-title { font-size: 26px; font-weight: 900; }
+.feedback.ok .fb-title { color: var(--green); }
+.feedback.ng .fb-title { color: var(--red); }
+.fb-answer { font-size: 17px; font-weight: 800; margin: 8px 0 4px; }
+.fb-explain { font-size: 17px; line-height: 1.75; margin: 4px 0 0; }
+.get-card { margin-top: 12px; display: flex; align-items: center; gap: 10px; background: var(--card); border: 3px solid var(--gold); border-radius: 16px; padding: 10px; animation: getcard .6s ease-out; }
+@keyframes getcard { 0% { transform: rotateY(90deg) scale(.8); } 100% { transform: none; } }
+.get-card .gc-icon { font-size: 34px; }
+.get-card .gc-label { font-size: 13px; font-weight: 900; color: var(--orange); }
+.get-card .gc-name { font-size: 18px; font-weight: 900; }
+
+/* ---------- けっか ---------- */
+.result-title { font-size: 28px; font-weight: 900; text-align: center; margin: 4px 0 0; }
+.result-title.clear { color: var(--orange); }
+.big-stars { display: flex; justify-content: center; gap: 8px; margin: 10px 0; }
+.big-star { font-size: 54px; line-height: 1; color: var(--locked); }
+.big-star.on { color: var(--gold); animation: starin .5s ease-out both; text-shadow: 0 3px 0 rgba(0, 0, 0, .12); }
+.big-star.on:nth-child(2) { animation-delay: .25s; }
+.big-star.on:nth-child(3) { animation-delay: .5s; }
+@keyframes starin { 0% { transform: scale(0) rotate(-120deg); opacity: 0; } 70% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); } }
+.score-line { text-align: center; font-size: 20px; font-weight: 900; }
+.news { display: grid; gap: 10px; margin-top: 10px; }
+.news-item { border-radius: 16px; padding: 10px 14px; font-size: 17px; font-weight: 900; text-align: center; animation: pop .4s ease-out both; }
+.news-item.unlock { background: var(--blue-soft); color: var(--blue-dark); }
+.news-item.stamp { background: var(--orange-soft); color: var(--orange-dark); }
+.news-item.rank { background: #fff3c4; color: #6b4b00; }
+.news-item.homein { background: var(--orange); color: #fff; font-size: 22px; }
+@media (prefers-color-scheme: dark) {
+  .news-item.unlock { color: var(--blue); }
+  .news-item.stamp { color: var(--orange); }
+  .news-item.rank { background: #4a3d10; color: #ffe08a; }
+}
+.mini-cards { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
+.mini-card { width: 92px; padding: 8px 4px; border-radius: 14px; border: 3px solid var(--gold); background: var(--card); text-align: center; font-size: 13px; font-weight: 900; line-height: 1.3; }
+.mini-card .mc-icon { font-size: 28px; display: block; }
+
+/* ---------- ずかん ---------- */
+.zukan-stage { margin-top: 14px; }
+.zukan-stage h3 { margin: 0 0 8px; font-size: 17px; font-weight: 900; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.zcard {
+  aspect-ratio: 3 / 4; border-radius: 14px; padding: 6px 4px;
+  border: 3px solid var(--gold); background: var(--card);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  text-align: center; font-size: 13px; font-weight: 900; line-height: 1.3;
+  box-shadow: 0 3px 0 var(--line);
+}
+.zcard .z-icon { font-size: 30px; }
+.zcard.no { border: 3px dashed var(--line); background: transparent; color: var(--muted); box-shadow: none; }
+.zcard.no .z-icon { font-size: 26px; opacity: .5; }
+
+/* ---------- モーダル ---------- */
+.modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(20, 10, 30, .55); animation: fadein .2s; }
+.modal-box { width: 100%; max-width: 420px; max-height: 90vh; overflow: auto; background: var(--card); border-radius: 22px; padding: 18px; border: 4px solid var(--gold); }
+.modal-box.plain { border-color: var(--line); }
+.cd-icon { font-size: 64px; text-align: center; line-height: 1.2; }
+.cd-name { font-size: 24px; font-weight: 900; text-align: center; margin: 4px 0; }
+.cd-point { font-size: 19px; font-weight: 900; text-align: center; background: var(--orange-soft); border-radius: 12px; padding: 8px; }
+.cd-explain { font-size: 17px; line-height: 1.75; }
+.cd-rule { font-size: 14px; color: var(--muted); }
+
+/* ---------- おうちのかたへ ---------- */
+.parent p { font-size: 16px; line-height: 1.8; margin: 0 0 8px; }
+.ptable { width: 100%; border-collapse: collapse; font-size: 15px; }
+.ptable th, .ptable td { border-bottom: 1px solid var(--line); padding: 8px 4px; text-align: left; }
+.ptable td.num { text-align: right; white-space: nowrap; font-weight: 800; }
+.btn.danger { background: var(--card); color: var(--red); box-shadow: 0 5px 0 var(--red-soft), 0 0 0 2px var(--red) inset; }
+
+/* ---------- トースト・紙吹雪 ---------- */
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 60; max-width: calc(100% - 32px); background: #2a2233; color: #fff; padding: 12px 18px; border-radius: 14px; font-weight: 800; font-size: 16px; box-shadow: 0 6px 20px rgba(0, 0, 0, .3); animation: fadein .2s; }
+.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 70; overflow: hidden; }
+.confetti i { position: absolute; top: -20px; width: 10px; height: 14px; border-radius: 2px; animation: fall linear forwards; }
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .confetti { display: none; }
+}
+@media (max-width: 350px) {
+  .node { width: 84px; }
+  .node .n-name { font-size: 13px; }
+  .mascot { width: 72px; height: 72px; }
+  .stamp { width: 32px; height: 32px; font-size: 18px; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <button class="icon-btn" id="btnHome" hidden aria-label="ホームへ">🏠</button>
+  <h1 id="topTitle">ルールで ホームイン！</h1>
+  <button class="icon-btn" id="btnSound" aria-label="おと">🔊</button>
+</header>
+
+<main class="wrap">
+
+  <!-- ===== ホーム ===== -->
+  <section id="scr-home" class="screen">
+    <div class="card">
+      <div class="hero">
+        <div class="mascot" id="homeMascot"></div>
+        <div class="bubble" id="homeBubble"></div>
+      </div>
+      <div class="rank-row">
+        <span class="rank-badge" id="rankBadge"></span>
+        <div class="meter">
+          <div class="meter-bar"><div class="meter-fill" id="rankFill"></div></div>
+          <div class="meter-text" id="rankText"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="sec-title">ダイヤモンドを 1しゅう しよう</p>
+      <div class="map" id="map"></div>
+      <div class="extra-modes">
+        <button class="btn blue" id="btnMix" hidden>🎲 ミックス チャレンジ</button>
+        <button class="btn" id="btnNigate" hidden></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="sec-title">まいにち スタンプ</p>
+      <div class="stamps" id="stamps"></div>
+      <p class="streak" id="streak" hidden></p>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btnZukan">📖 ずかん</button>
+      <button class="btn" id="btnParent">👪 おうちの かたへ</button>
+    </div>
+  </section>
+
+  <!-- ===== クイズ ===== -->
+  <section id="scr-quiz" class="screen" hidden>
+    <div class="quiz-top">
+      <div class="quiz-stage" id="quizStage"></div>
+      <div class="dots" id="dots"></div>
+    </div>
+    <div class="retry-banner" id="retryBanner" hidden>🔁 まちがえた もんだいに もういちど チャレンジ！</div>
+    <div class="combo" id="combo" aria-live="polite"></div>
+    <div class="card q-card" id="qCard">
+      <div class="q-icon" id="qIcon" aria-hidden="true"></div>
+      <div class="q-pic" id="qPic" hidden></div>
+      <p class="q-text" id="qText"></p>
+      <button class="speak" id="btnSpeak" hidden>🔈 よんで もらう</button>
+      <div class="choices" id="choices"></div>
+    </div>
+    <div id="feedback" aria-live="polite"></div>
+  </section>
+
+  <!-- ===== けっか ===== -->
+  <section id="scr-result" class="screen" hidden>
+    <div class="card">
+      <div class="hero">
+        <div class="mascot" id="resultMascot"></div>
+        <div class="bubble" id="resultBubble"></div>
+      </div>
+      <p class="result-title" id="resultTitle"></p>
+      <div class="big-stars" id="bigStars"></div>
+      <p class="score-line" id="scoreLine"></p>
+      <div class="news" id="news"></div>
+      <div id="newCardsWrap" hidden>
+        <p class="sec-title" style="text-align:center;margin-top:14px">あたらしい カード</p>
+        <div class="mini-cards" id="newCards"></div>
+      </div>
+    </div>
+    <button class="btn primary" id="btnAgain">もう 1かい！</button>
+    <button class="btn green" id="btnNext" hidden></button>
+    <button class="btn" id="btnBack">🏠 ホームへ</button>
+  </section>
+
+  <!-- ===== ずかん ===== -->
+  <section id="scr-zukan" class="screen" hidden>
+    <div class="card">
+      <p class="sec-title">📖 ルールカード ずかん</p>
+      <div class="meter">
+        <div class="meter-bar"><div class="meter-fill" id="zukanFill"></div></div>
+        <div class="meter-text" id="zukanText"></div>
+      </div>
+      <p class="small muted" style="margin:8px 0 0">もんだいに せいかいすると カードが もらえるよ。カードを おすと せつめいが よめるよ。</p>
+      <div id="zukanList"></div>
+    </div>
+  </section>
+
+  <!-- ===== おうちのかたへ ===== -->
+  <section id="scr-parent" class="screen parent" hidden>
+    <div class="card">
+      <p class="sec-title">👪 おうちの かたへ</p>
+      <p>やきゅうの ルールを、クイズで たのしく おぼえる アプリです。1かい 5もん、3〜5ふんで おわります。</p>
+      <p>ダイヤモンドの 4つの ステージ（ファースト → セカンド → サード → ホーム）を じゅんばんに クリアして、「ホームイン」を めざします。せいかいした もんだいは「ルールカード」に なって、ずかんに たまります。</p>
+      <p>なまえなどの こじん じょうほうは つかいません。きろくは この たんまつの なか（ブラウザ）だけに ほぞんされ、どこにも おくられません。</p>
+      <p>もんだいは <ruby>公認野球規則<rt>こうにんやきゅうきそく</rt></ruby> を もとに つくっています。たいかいや ちいきの ルール（がくどう やきゅうの とくべつな きまり など）で、あつかいが ちがう ことが あります。</p>
+      <p>「🔈 よんで もらう」は、たんまつに にほんごの よみあげ おんせいが ある ときだけ でます。</p>
+    </div>
+    <div class="card">
+      <p class="sec-title">きろく</p>
+      <table class="ptable" id="parentTable"></table>
+    </div>
+    <button class="btn danger" id="btnReset">🗑 きろくを ぜんぶ けす</button>
+  </section>
+
+</main>
+
+<!-- ===== カードの せつめい ===== -->
+<div class="modal" id="cardModal" hidden role="dialog" aria-modal="true" aria-labelledby="cdName">
+  <div class="modal-box">
+    <div class="cd-icon" id="cdIcon"></div>
+    <p class="cd-name" id="cdName"></p>
+    <p class="cd-point" id="cdPoint"></p>
+    <p class="cd-explain" id="cdExplain"></p>
+    <p class="cd-rule" id="cdRule"></p>
+    <button class="speak" id="cdSpeak" hidden>🔈 よんで もらう</button>
+    <button class="btn primary" id="cdClose">とじる</button>
+  </div>
+</div>
+
+<!-- ===== きろくを けす かくにん ===== -->
+<div class="modal" id="confirmModal" hidden role="dialog" aria-modal="true" aria-labelledby="cfTitle">
+  <div class="modal-box plain">
+    <p class="sec-title" id="cfTitle">ほんとうに けしますか？</p>
+    <p>カード・ほし・スタンプが ぜんぶ きえて、もとに もどせません。</p>
+    <div class="btn-row">
+      <button class="btn" id="cfNo">やめる</button>
+      <button class="btn danger" id="cfYes">けす</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<!-- ============================================================
+     core：問題データと判定ロジック（DOM に触れない）
+     自動テスト（_dev/tests）はこのブロックだけを取り出して読み込む。
+     ============================================================ -->
+<script id="core">
+const Core = (function () {
+
+  /* ---------- 設定 ---------- */
+  const ROUND_SIZE = 5;          // 1ラウンドの問題数
+  const STORAGE_KEY = 'orange_beta_progress';
+  const DAYS_KEEP = 60;          // 遊んだ日を何日分おぼえるか
+
+  // ステージ＝ダイヤモンドの塁。ホームから出発して、ファースト→セカンド→サード→ホームの順にまわる
+  const STAGES = [
+    { id: 1, base: 'ファースト', title: 'ストライクと ボール', icon: '⚾' },
+    { id: 2, base: 'セカンド',   title: 'うつ ときの ルール', icon: '🏏' },
+    { id: 3, base: 'サード',     title: 'はしる ときの ルール', icon: '🏃' },
+    { id: 4, base: 'ホーム',     title: 'アウトと まもり',     icon: '🧤' }
+  ];
+
+  // ランク：持っているカードの枚数で決まる
+  const RANKS = [
+    { min: 0,  name: 'ルーキー',     icon: '🌱' },
+    { min: 10, name: 'レギュラー',   icon: '⭐' },
+    { min: 20, name: 'エース',       icon: '🔥' },
+    { min: 30, name: 'キャプテン',   icon: '👑' },
+    { min: 40, name: 'ルールはかせ', icon: '🎓' }
+  ];
+
+  /* ------------------------------------------------------------
+     問題データ
+     type: 'choice'（3たく） / 'ox'（○×。choices は ['○','×'] 固定）
+     answer: choices の なんばんめが せいかいか（0から）
+     rule: 公認野球規則の条文（2016年以降の番号）
+     pic: { runners: [1,2,3] } …… ダイヤモンド図にランナーを置く
+     文字はひらがな・カタカナ・数字だけ（漢字を使うなら ruby 必須）
+     ------------------------------------------------------------ */
+  const OX = ['○', '×'];
+  const QUESTIONS = [
+
+    /* ===== ステージ1 ファースト：ストライクと ボール ===== */
+    {
+      id: 's1-01', stage: 1, type: 'choice',
+      q: 'ボールが いくつに なると フォアボール？',
+      choices: ['3つ', '4つ', '5つ'], answer: 1,
+      explain: 'ボールが 4つで フォアボール。バッターは ファーストへ すすめるよ。「フォア」は えいごで「4」の ことだよ。',
+      card: { name: 'フォアボール', icon: '🚶', point: 'ボール 4つで ファーストへ' },
+      rule: '5.05(b)(1)'
+    },
+    {
+      id: 's1-02', stage: 1, type: 'choice',
+      q: 'ストライクが いくつに なると さんしん？',
+      choices: ['2つ', '3つ', '4つ'], answer: 1,
+      explain: 'ストライクが 3つに なると さんしん。「スリー ストライク」だよ。',
+      card: { name: 'さんしん', icon: '🔥', point: 'ストライク 3つで さんしん' },
+      rule: '5.09(a)(2)'
+    },
+    {
+      id: 's1-03', stage: 1, type: 'ox',
+      q: '2ストライクから ファールを うった。これで さんしんに なる？',
+      choices: OX, answer: 1,
+      explain: '2ストライクからの ファールは、ストライクが ふえないよ。なんかい うっても さんしんには ならない。（バントの ファールと、キャッチャーが そのまま とった ファールチップは べつ）',
+      card: { name: 'ねばる ファール', icon: '💪', point: '2ストライクからの ファールは そのまま' },
+      rule: '定義「ストライク」'
+    },
+    {
+      id: 's1-04', stage: 1, type: 'choice',
+      q: 'バットを ふったけど、ボールに あたらなかった。これは？',
+      choices: ['ストライク', 'ボール', 'ファール'], answer: 0,
+      explain: 'ふって あたらなければ、どんな ボールでも ストライク。「からぶり」と いうよ。',
+      card: { name: 'からぶり', icon: '🌪️', point: 'ふって あたらなければ ストライク' },
+      rule: '定義「ストライク」'
+    },
+    {
+      id: 's1-05', stage: 1, type: 'choice',
+      q: 'ストライクゾーンを とおった ボールを、バッターが ふらずに みおくった。これは？',
+      choices: ['ストライク', 'ボール', 'やりなおし'], answer: 0,
+      explain: 'ストライクゾーンを とおれば、ふらなくても ストライク。「みのがし」と いうよ。',
+      card: { name: 'みのがし', icon: '👀', point: 'ゾーンを とおれば ふらなくても ストライク' },
+      rule: '定義「ストライク」'
+    },
+    {
+      id: 's1-06', stage: 1, type: 'ox',
+      q: 'じめんで ワンバウンドした ボールを、バッターが ふらずに みおくった。これは「ボール」？',
+      choices: OX, answer: 0,
+      explain: 'じめんに ついた ボールを みおくったら ボール。でも、ふったら ストライクに なるよ。',
+      card: { name: 'ワンバウンド', icon: '🏀', point: 'バウンドした ボールは みおくれば ボール' },
+      rule: '定義「ボール」'
+    },
+    {
+      id: 's1-07', stage: 1, type: 'choice',
+      q: '2ストライクから、バットに かすった ボールを キャッチャーが そのまま しっかり とった（ファールチップ）。バッターは？',
+      choices: ['さんしんで アウト', 'ファールで そのまま', 'ボール'], answer: 0,
+      explain: 'ファールチップは ストライク。2ストライクからなら さんしんで アウト。キャッチャーが おとしたら、ただの ファールだよ。',
+      card: { name: 'ファールチップ', icon: '🧤', point: 'かすって そのまま とったら ストライク' },
+      rule: '定義「ファウルチップ」、5.09(a)(2)'
+    },
+    {
+      id: 's1-08', stage: 1, type: 'choice',
+      q: 'ストライクゾーンから はずれた ボールが、よけようと した バッターの からだに あたった。バッターは？',
+      choices: ['ファーストへ すすめる', 'ストライク', 'もういちど うつ'], answer: 0,
+      explain: '「デッドボール」だよ。バットを ふっていなくて、よけようと したなら、ファーストへ すすめる。',
+      card: { name: 'デッドボール', icon: '🩹', point: 'よけようと して あたったら ファーストへ' },
+      rule: '5.05(b)(2)'
+    },
+    {
+      id: 's1-09', stage: 1, type: 'choice',
+      q: '3ボール 2ストライク。つぎの ボールを みおくって「ボール」。バッターは？',
+      choices: ['ファーストへ すすめる', 'さんしん', 'そのまま つづける'], answer: 0,
+      explain: 'ボールが 4つめなので フォアボール。3ボール 2ストライクは「フルカウント」と いうよ。',
+      card: { name: 'フルカウント', icon: '🖐️', point: '3ボール 2ストライクは フルカウント' },
+      rule: '5.05(b)(1)'
+    },
+    {
+      id: 's1-10', stage: 1, type: 'ox',
+      q: '2ストライクから バントを して、ファールに なった。バッターは アウト？',
+      choices: OX, answer: 0,
+      explain: '2ストライクからの バントの ファールは アウト（スリーバント しっぱい）。ふつうの ファールとは ちがうよ。',
+      card: { name: 'スリーバント', icon: '🏏', point: '2ストライクから バントの ファールは アウト' },
+      rule: '5.09(a)(4)'
+    },
+
+    /* ===== ステージ2 セカンド：うつ ときの ルール ===== */
+    {
+      id: 's2-01', stage: 2, type: 'choice',
+      q: 'うった ボールが ファーストの ベースに あたって、ファールゾーンへ とんでいった。これは？',
+      choices: ['フェア', 'ファール', 'やりなおし'], answer: 0,
+      explain: 'ファーストや サードの ベースに あたった ボールは フェア。ベースは フェアの なかまだよ。',
+      card: { name: 'ベースに あたる', icon: '💎', point: 'ベースに あたれば フェア' },
+      rule: '定義「フェアボール」'
+    },
+    {
+      id: 's2-02', stage: 2, type: 'ox',
+      q: 'うった ボールが、ファーストの ベースより とおく（がいやがわ）で、ファールラインの うえに おちた。これは フェア？',
+      choices: OX, answer: 0,
+      explain: 'ベースより とおくでは、おちた ところで きまる。しろい ラインの うえは フェアの なかまだよ。（ベースより てまえは、とまった ところで きまる）',
+      card: { name: 'ラインの うえ', icon: '📏', point: 'ベースより とおくで ラインの うえに おちたら フェア' },
+      rule: '定義「フェアボール」'
+    },
+    {
+      id: 's2-03', stage: 2, type: 'choice',
+      q: 'ゴロが フェアゾーンを ころがって、ファーストの ベースより てまえで ファールゾーンへ でて とまった。これは？',
+      choices: ['ファール', 'フェア', 'ホームラン'], answer: 0,
+      explain: 'ファーストや サードの ベースより てまえ（ホームがわ）では、ボールが とまった ところ、または やしゅが さわった ところで きまる。ファールゾーンで とまったら ファールだよ。',
+      card: { name: 'ころがる ゴロ', icon: '🌀', point: 'ベースの てまえは とまった ところで きまる' },
+      rule: '定義「ファウルボール」'
+    },
+    {
+      id: 's2-04', stage: 2, type: 'choice',
+      q: 'うった ボールが、フェアの まま とんで フェンスを こえた。これは？',
+      choices: ['ホームラン', 'ファール', 'アウト'], answer: 0,
+      explain: 'フェアの まま とんで フェンスを こえたら ホームラン！ ベースを ぜんぶ ふんで かえってこよう。',
+      card: { name: 'ホームラン', icon: '🎆', point: 'フェアで フェンスを こえたら ホームラン' },
+      rule: '5.05(a)(5)'
+    },
+    {
+      id: 's2-05', stage: 2, type: 'ox',
+      q: 'ホームランの ときは、ベースを ふまないで ホームへ かえって いい？',
+      choices: OX, answer: 1,
+      explain: 'ホームランでも、ファースト・セカンド・サード・ホームを じゅんばんに ふむよ。ふみわすれると アウトに されることが ある。',
+      card: { name: 'ベースを ふむ', icon: '👣', point: 'ホームランでも ベースは ぜんぶ ふむ' },
+      rule: '5.06(b)(1)、5.09(c)(2)'
+    },
+    {
+      id: 's2-06', stage: 2, type: 'choice',
+      q: 'うった ボールが、フェアゾーンで バウンドしてから フェンスを こえた。これは？',
+      choices: ['2つ すすめる（ツーベース）', 'ホームラン', 'ファール'], answer: 0,
+      explain: 'バウンドしてから こえたら ホームランでは ない。バッターも ランナーも 2つ すすめるよ（エンタイトル ツーベース）。',
+      card: { name: 'エンタイトル ツーベース', icon: '✌️', point: 'バウンドして こえたら 2つ すすむ' },
+      rule: '5.05(a)(6)'
+    },
+    {
+      id: 's2-07', stage: 2, type: 'choice',
+      q: 'フェアの ボールを うった！ バッターは まず どこへ はしる？',
+      choices: ['ファースト', 'サード', 'セカンド'], answer: 0,
+      explain: 'うったら ファーストへ ダッシュ！ ベースは ファースト → セカンド → サード → ホームの じゅんばんだよ。',
+      card: { name: 'ファーストへ ダッシュ', icon: '💨', point: 'うったら まず ファーストへ' },
+      rule: '5.05(a)(1)、5.06(b)(1)'
+    },
+    {
+      id: 's2-08', stage: 2, type: 'ox',
+      q: 'ファーストを かけぬけて、ベースを とおりすぎた。すぐ もどれば、タッチされても アウトに ならない？',
+      choices: OX, answer: 0,
+      explain: 'ファーストだけは かけぬけて いい。すぐ もどれば、タッチされても アウトに ならないよ。でも セカンドへ いこうと したら、タッチで アウトに なる。',
+      card: { name: 'かけぬけ', icon: '🏁', point: 'ファーストは かけぬけて いい' },
+      rule: '5.09(b)(4)、5.09(b)(11)'
+    },
+    {
+      id: 's2-09', stage: 2, type: 'choice',
+      q: 'ファールゾーンに あがった フライを、やしゅが じめんに おちる まえに とった。バッターは？',
+      choices: ['アウト', 'ファールで そのまま', 'セーフ'], answer: 0,
+      explain: 'フライは、ファールゾーンでも とられたら アウトだよ。',
+      card: { name: 'ファールフライ', icon: '🎈', point: 'ファールでも フライを とられたら アウト' },
+      rule: '5.09(a)(1)'
+    },
+    {
+      id: 's2-10', stage: 2, type: 'choice',
+      q: 'バッターが うつ じゅんばんは、どう きまる？',
+      choices: ['しあいの まえに きめた じゅんばん', 'うちたい ひとから', 'じゃんけんで きめる'], answer: 0,
+      explain: 'しあいの まえに きめた じゅんばん（だじゅん）で うつよ。まちがえると アウトに なることが ある。',
+      card: { name: 'だじゅん', icon: '🔢', point: 'きめた じゅんばんで うつ' },
+      rule: '5.04(a)(1)、6.03(b)'
+    },
+
+    /* ===== ステージ3 サード：はしる ときの ルール ===== */
+    {
+      id: 's3-01', stage: 3, type: 'choice',
+      q: 'ランナーが ベースから はなれている ときに、ボールを もった やしゅに タッチされた。ランナーは？',
+      choices: ['アウト', 'セーフ', 'ひとつ すすむ'], answer: 0,
+      explain: 'ベースから はなれている ときに タッチされたら アウトだよ。',
+      card: { name: 'タッチアウト', icon: '👆', point: 'ベースから はなれて タッチされたら アウト' },
+      rule: '5.09(b)(4)',
+      pic: { runners: [1] }
+    },
+    {
+      id: 's3-02', stage: 3, type: 'ox',
+      q: 'ランナーは セカンドだけ。ピッチャーが セカンドへ けんせいして、ベースに ついている ランナーに タッチした。これで アウト？',
+      choices: OX, answer: 1,
+      explain: 'ベースに ついていれば あんぜん。タッチされても アウトに ならないよ。（うった あと、うしろから ランナーが きて すすむしか ない とき〈フォース〉は べつ）',
+      card: { name: 'ベースは あんぜん', icon: '🛡️', point: 'けんせいの とき ベースに ついていれば セーフ' },
+      rule: '5.09(b)(4)',
+      pic: { runners: [2] }
+    },
+    {
+      id: 's3-03', stage: 3, type: 'choice',
+      q: 'フライが とられた。ランナーが つぎの ベースへ すすむには？',
+      choices: ['もとの ベースに ふれてから すすむ', 'そのまま すすんで いい', 'すすんでは いけない'], answer: 0,
+      explain: 'フライが とられたら、いちど もとの ベースに ふれて（もどって）から すすむよ。これを「タッチアップ」と いうよ。',
+      card: { name: 'タッチアップ', icon: '🔁', point: 'フライが とられたら もどってから すすむ' },
+      rule: '5.09(b)(5)、5.09(c)(1)'
+    },
+    {
+      id: 's3-04', stage: 3, type: 'ox',
+      q: 'まえを はしる ランナーを、うしろの ランナーが おいこした。おいこした ランナーは アウト？',
+      choices: OX, answer: 0,
+      explain: 'まえの ランナーを おいこしたら アウト。じゅんばんを まもって はしろう。',
+      card: { name: 'おいこし きんし', icon: '🚫', point: 'まえの ランナーを おいこすと アウト' },
+      rule: '5.09(b)(9)'
+    },
+    {
+      id: 's3-05', stage: 3, type: 'choice',
+      q: 'うった ボールが、ないやしゅを とおりすぎる まえに（やしゅが さわる まえに）、フェアゾーンで ランナーに あたった。ランナーは？',
+      choices: ['アウト', 'セーフ', 'ひとつ すすむ'], answer: 0,
+      explain: 'ないやしゅより まえで、うった ボールに あたった ランナーは アウト。バッターは ファーストへ すすめるよ。',
+      card: { name: 'だきゅうに あたる', icon: '⚠️', point: 'ないやしゅより まえで だきゅうに あたると アウト' },
+      rule: '5.09(b)(7)'
+    },
+    {
+      id: 's3-06', stage: 3, type: 'choice',
+      q: 'ゴロを とろうと している やしゅに、ランナーが ぶつかって じゃまを した。どうなる？',
+      choices: ['ランナーが アウト', 'やしゅの しっぱい', 'なにも おこらない'], answer: 0,
+      explain: 'ゴロを とる やしゅが ゆうせん。ランナーは よけて はしらないと いけない。じゃまを したら アウトだよ。',
+      card: { name: 'やしゅが ゆうせん', icon: '🙅', point: 'ゴロを とる やしゅの じゃまは アウト' },
+      rule: '6.01(a)(10)、5.09(b)(3)'
+    },
+    {
+      id: 's3-07', stage: 3, type: 'choice',
+      q: 'タッチから にげようとして、ランナーが はしる みちから よこへ 3フィート（やく 90センチ）より おおきく はなれた。どうなる？',
+      choices: ['アウト', 'セーフ', 'やりなおし'], answer: 0,
+      explain: 'タッチから にげるために、はしる みちから よこへ おおきく はなれると アウトだよ。',
+      card: { name: 'はしる みち', icon: '🛤️', point: 'タッチから にげて みちを はずれると アウト' },
+      rule: '5.09(b)(1)'
+    },
+    {
+      id: 's3-08', stage: 3, type: 'choice',
+      q: 'ランナーが まんるい（ファースト・セカンド・サード）。バッターが フォアボール。サードの ランナーは？',
+      choices: ['ホームへ すすんで 1てん', 'サードに いる', 'アウト'], answer: 0,
+      explain: 'バッターが ファーストへ いくので、みんな 1つずつ おされて すすむ。サードの ランナーは ホームへ（おしだし）。',
+      card: { name: 'おしだし', icon: '➡️', point: 'まんるいで フォアボールは 1てん' },
+      rule: '5.05(b)(1)、5.06(b)(3)(B)',
+      pic: { runners: [1, 2, 3] }
+    },
+    {
+      id: 's3-09', stage: 3, type: 'choice',
+      q: 'ランナーが いる とき、ピッチャーが「ボーク」を した。ランナーは？',
+      choices: ['1つ すすめる', 'アウト', 'うごけない'], answer: 0,
+      explain: 'ボークは、ランナーを だますような ピッチャーの はんそく。ランナーは みんな 1つ すすめるよ。',
+      card: { name: 'ボーク', icon: '🙈', point: 'ボークで ランナーは 1つ すすむ' },
+      rule: '6.02(a)、5.06(b)(3)(A)'
+    },
+    {
+      id: 's3-10', stage: 3, type: 'ox',
+      q: 'ショートが ファーストへ なげた ボールが それて、ベンチの なかに はいった。ランナーは すすめる？',
+      choices: OX, answer: 0,
+      explain: 'やしゅが なげた ボールが ベンチに はいったら、ランナーは あんぜんに 2つ すすめるよ。（ピッチャーの けんせいが はいった ときは 1つ）',
+      card: { name: 'ボールが ベンチへ', icon: '🪑', point: 'やしゅの そうきゅうが ベンチに はいったら 2つ すすむ' },
+      rule: '5.06(b)(4)(G)、5.06(b)(4)(H)'
+    },
+
+    /* ===== ステージ4 ホーム：アウトと まもり ===== */
+    {
+      id: 's4-01', stage: 4, type: 'choice',
+      q: 'アウトが 3つに なったら？',
+      choices: ['せめと まもりが こうたい', '1てん はいる', 'アウトが 0に もどって つづける'], answer: 0,
+      explain: '3アウトで こうたい。こんどは まもる ばんだよ。',
+      card: { name: 'スリーアウト', icon: '🔄', point: 'アウト 3つで こうたい' },
+      rule: '定義「イニング」'
+    },
+    {
+      id: 's4-02', stage: 4, type: 'choice',
+      q: 'フェアゾーンに あがった フライを、やしゅが じめんに おちる まえに とった。バッターは？',
+      choices: ['アウト', 'セーフ', 'ファーストへ すすめる'], answer: 0,
+      explain: 'フライを じめんに おちる まえに とったら アウトだよ。',
+      card: { name: 'フライアウト', icon: '🪁', point: 'フライを とられたら アウト' },
+      rule: '5.09(a)(1)'
+    },
+    {
+      id: 's4-03', stage: 4, type: 'choice',
+      q: 'フライを グラブに いれたけど、すぐに おとして しまった。これは？',
+      choices: ['とったことに ならない', 'アウト', 'ファール'], answer: 0,
+      explain: 'しっかり にぎって いないと、とったことに ならない。さいごまで ボールを はなさないのが だいじ。',
+      card: { name: 'しっかり キャッチ', icon: '🤲', point: 'すぐ おとしたら とったことに ならない' },
+      rule: '定義「キャッチ」'
+    },
+    {
+      id: 's4-04', stage: 4, type: 'choice',
+      q: 'ランナーに タッチする ときは、どう する？',
+      choices: ['ボールを もった てか、ボールの はいった グラブで さわる', 'からの グラブで さわる', 'ボールを ランナーに なげて あてる'], answer: 0,
+      explain: 'ボールが ない てや グラブで さわっても タッチに ならない。ボールを なげて あてても アウトに ならないよ。',
+      card: { name: 'タッチの しかた', icon: '✋', point: 'ボールを もって タッチする' },
+      rule: '定義「タッグ」'
+    },
+    {
+      id: 's4-05', stage: 4, type: 'ox',
+      q: 'ランナーは ファーストだけ。ないやゴロ。ランナーが つく まえに、ボールを もって セカンドの ベースを ふんだ。ファーストから きた ランナーは アウト？',
+      choices: OX, answer: 0,
+      explain: 'バッターが ファーストへ くるので、ファーストの ランナーは セカンドへ すすむしか ない（フォース）。だから ランナーより さきに ベースを ふめば アウトだよ。',
+      card: { name: 'フォースアウト', icon: '👟', point: 'すすむしか ない ランナーは ベースを ふんで アウト' },
+      rule: '定義「フォースプレイ」、5.09(b)(6)',
+      pic: { runners: [1] }
+    },
+    {
+      id: 's4-06', stage: 4, type: 'ox',
+      q: 'ランナーは セカンドだけ。ないやゴロで ランナーが サードへ はしった。ボールを もって サードの ベースを ふむだけで アウト？',
+      choices: OX, answer: 1,
+      explain: 'ファーストが あいているので、セカンドの ランナーは すすまなくても よかった（フォースでは ない）。アウトに するには タッチが ひつようだよ。',
+      card: { name: 'タッチプレー', icon: '🎯', point: 'すすまなくて いい ランナーは タッチで アウト' },
+      rule: '定義「フォースプレイ」、5.09(b)(4)',
+      pic: { runners: [2] }
+    },
+    {
+      id: 's4-07', stage: 4, type: 'choice',
+      q: 'ゴロを とって ファーストへ なげた。バッターより さきに、ボールを もった ファーストが ベースを ふんだ。バッターは？',
+      choices: ['アウト', 'セーフ', 'もういちど うつ'], answer: 0,
+      explain: 'バッターが ファーストに つく まえに、ボールを もって ファーストの ベースを ふめば アウトだよ。',
+      card: { name: 'ファーストで アウト', icon: '🥇', point: 'バッターより さきに ファーストを ふめば アウト' },
+      rule: '5.09(a)(10)'
+    },
+    {
+      id: 's4-08', stage: 4, type: 'choice',
+      q: 'ノーアウトか ワンアウトで、ランナーが ファーストと セカンド。ないやに たかい フライが あがり、しんぱんが「インフィールドフライ」と いった。バッターは？',
+      choices: ['とられなくても アウト', 'とられたら アウト', 'セーフ'], answer: 0,
+      explain: 'わざと おとして ダブルプレーを ねらうのを ふせぐ ルール。しんぱんが いったら、フェアなら とられなくても バッターは アウトだよ。',
+      card: { name: 'インフィールドフライ', icon: '☝️', point: 'フェアなら とられなくても アウト' },
+      rule: '定義「インフィールドフライ」、5.09(a)(5)',
+      pic: { runners: [1, 2] }
+    },
+    {
+      id: 's4-09', stage: 4, type: 'ox',
+      q: 'プレーの とちゅうで、せんしゅが「タイム！」と さけんだ。これだけで プレーは とまる？',
+      choices: OX, answer: 1,
+      explain: 'せんしゅが いうだけでは とまらない。しんぱんが「タイム」を みとめるまで、さいごまで プレーを つづけよう。',
+      card: { name: 'タイム', icon: '⏱️', point: 'タイムは しんぱんが かける' },
+      rule: '定義「タイム」、5.12(a)'
+    },
+    {
+      id: 's4-10', stage: 4, type: 'choice',
+      q: 'しんぱんの はんてい（ストライクや アウト・セーフ）に なっとくが いかない。せんしゅは どうする？',
+      choices: ['もんくを いわずに プレーを つづける', 'しんぱんに おこる', 'しあいを やめる'], answer: 0,
+      explain: 'ストライクや アウト・セーフは しんぱんが きめる。もんくを いわないのが ルールで、マナーだよ。',
+      card: { name: 'しんぱんを だいじに', icon: '🤝', point: 'はんていに もんくを いわない' },
+      rule: '8.02(a)'
+    }
+  ];
+
+  const BY_ID = {};
+  QUESTIONS.forEach(function (q) { BY_ID[q.id] = q; });
+
+  /* ---------- 日付（端末の日付で「きょう」を決める） ---------- */
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function dateStr(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function parseDate(s) { const a = s.split('-'); return new Date(+a[0], +a[1] - 1, +a[2]); }
+  function addDays(s, k) { const d = parseDate(s); d.setDate(d.getDate() + k); return dateStr(d); }
+
+  // きょう（または きのう）から さかのぼって、つづけて あそんだ 日数
+  function streak(days, today) {
+    const set = {};
+    days.forEach(function (d) { set[d] = true; });
+    let cur = set[today] ? today : addDays(today, -1);
+    let n = 0;
+    while (set[cur]) { n++; cur = addDays(cur, -1); }
+    return n;
+  }
+
+  // きょうを さいごに した 直近 n 日
+  function lastDays(today, n) {
+    const out = [];
+    for (let i = n - 1; i >= 0; i--) out.push(addDays(today, -i));
+    return out;
+  }
+
+  /* ---------- 進みぐあい（localStorage に保存する形） ---------- */
+  function emptyProgress() {
+    return { v: 1, stages: {}, q: {}, cards: {}, days: [], rounds: 0, sound: true };
+  }
+
+  function isInt(n) { return typeof n === 'number' && isFinite(n) && Math.floor(n) === n; }
+
+  // 壊れたデータや古い形が入っていても、遊べる形に直して返す
+  function sanitize(raw) {
+    const p = emptyProgress();
+    if (!raw || typeof raw !== 'object') return p;
+    if (raw.stages && typeof raw.stages === 'object') {
+      STAGES.forEach(function (s) {
+        const st = raw.stages[s.id];
+        if (st && isInt(st.best) && isInt(st.plays)) {
+          p.stages[s.id] = { best: Math.max(0, Math.min(3, st.best)), plays: Math.max(0, st.plays) };
+        }
+      });
+    }
+    if (raw.q && typeof raw.q === 'object') {
+      Object.keys(raw.q).forEach(function (id) {
+        const r = raw.q[id];
+        if (BY_ID[id] && r && isInt(r.seen) && isInt(r.correct) && (r.last === 0 || r.last === 1)) {
+          p.q[id] = { seen: Math.max(0, r.seen), correct: Math.max(0, Math.min(r.seen, r.correct)), last: r.last };
+        }
+      });
+    }
+    if (raw.cards && typeof raw.cards === 'object') {
+      Object.keys(raw.cards).forEach(function (id) {
+        if (BY_ID[id] && typeof raw.cards[id] === 'string') p.cards[id] = raw.cards[id];
+      });
+    }
+    if (Array.isArray(raw.days)) {
+      p.days = raw.days.filter(function (d) { return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d); })
+        .sort().filter(function (d, i, a) { return a.indexOf(d) === i; }).slice(-DAYS_KEEP);
+    }
+    if (isInt(raw.rounds) && raw.rounds >= 0) p.rounds = raw.rounds;
+    if (typeof raw.sound === 'boolean') p.sound = raw.sound;
+    return p;
+  }
+
+  /* ---------- ステージ ---------- */
+  function stageOf(id) { return STAGES.filter(function (s) { return s.id === id; })[0] || null; }
+  function questionsOf(stageId) { return QUESTIONS.filter(function (q) { return q.stage === stageId; }); }
+  function bestStars(p, stageId) { return (p.stages[stageId] && p.stages[stageId].best) || 0; }
+
+  // ステージ1は はじめから。それ以外は ひとつ まえを ★1いじょうで クリアしたら ひらく
+  function isUnlocked(p, stageId) {
+    if (stageId === 1) return true;
+    return bestStars(p, stageId - 1) >= 1;
+  }
+  function allCleared(p) {
+    return STAGES.every(function (s) { return bestStars(p, s.id) >= 1; });
+  }
+  // つぎに あそぶと よい ステージ（まだ クリアしていない さいしょの ステージ）。ぜんぶ クリアなら null
+  function nextStage(p) {
+    for (let i = 0; i < STAGES.length; i++) {
+      if (bestStars(p, STAGES[i].id) < 1) return STAGES[i].id;
+    }
+    return null;
+  }
+
+  function starsFor(correct) {
+    if (correct >= 5) return 3;
+    if (correct >= 4) return 2;
+    if (correct >= 3) return 1;
+    return 0;
+  }
+
+  /* ---------- 出題 ---------- */
+  // まだ出ていない問題と、さいごに まちがえた問題を出やすくする
+  function weightOf(p, qid) {
+    const r = p.q[qid];
+    if (!r) return 3;
+    if (r.last === 0) return 4;
+    return 1;
+  }
+
+  function nigateIds(p) {
+    return QUESTIONS.filter(function (q) { return p.q[q.id] && p.q[q.id].last === 0; })
+      .map(function (q) { return q.id; });
+  }
+
+  // mode: { kind: 'stage', stage: 1 } / { kind: 'mix' } / { kind: 'nigate' }
+  function poolFor(p, mode) {
+    if (mode.kind === 'stage') return questionsOf(mode.stage);
+    if (mode.kind === 'nigate') return nigateIds(p).map(function (id) { return BY_ID[id]; });
+    return QUESTIONS.slice();
+  }
+
+  // 重みつきで、重複なしに n 問えらぶ
+  function pickRound(p, mode, rng) {
+    rng = rng || Math.random;
+    const items = poolFor(p, mode);
+    const n = Math.min(ROUND_SIZE, items.length);
+    const out = [];
+    while (out.length < n) {
+      let total = 0;
+      const ws = items.map(function (q) { const w = weightOf(p, q.id); total += w; return w; });
+      let r = rng() * total;
+      let k = 0;
+      for (; k < items.length - 1; k++) {
+        r -= ws[k];
+        if (r < 0) break;
+      }
+      out.push(items.splice(k, 1)[0]);
+    }
+    return out;
+  }
+
+  // えらぶ ボタンの ならびを きめる。○×は ならびを かえない
+  function arrangeChoices(q, rng) {
+    rng = rng || Math.random;
+    const list = q.choices.map(function (text, i) { return { text: text, idx: i, correct: i === q.answer }; });
+    if (q.type === 'ox') return list;
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      const t = list[i]; list[i] = list[j]; list[j] = t;
+    }
+    return list;
+  }
+
+  /* ---------- こたえを きろくする ---------- */
+  // 正解したら（はじめてなら）カードを わたす。戻り値 { newCard: true/false }
+  function recordAnswer(p, qid, ok, today) {
+    const r = p.q[qid] || { seen: 0, correct: 0, last: 0 };
+    r.seen += 1;
+    if (ok) r.correct += 1;
+    r.last = ok ? 1 : 0;
+    p.q[qid] = r;
+    let newCard = false;
+    if (ok && !p.cards[qid]) { p.cards[qid] = today; newCard = true; }
+    return { newCard: newCard };
+  }
+
+  // もういちど チャレンジ（ラウンドの さいご）は、点数にも「といた かず」にも いれない。
+  // 正解したら「さいごに まちがえた」を けし、カードは わたす
+  function recordRetry(p, qid, ok, today) {
+    let newCard = false;
+    if (ok) {
+      if (p.q[qid]) p.q[qid].last = 1;
+      if (!p.cards[qid]) { p.cards[qid] = today; newCard = true; }
+    }
+    return { newCard: newCard };
+  }
+
+  function cardCount(p) { return Object.keys(p.cards).length; }
+
+  function rankOf(count) {
+    let cur = RANKS[0];
+    let next = null;
+    for (let i = 0; i < RANKS.length; i++) {
+      if (count >= RANKS[i].min) { cur = RANKS[i]; next = RANKS[i + 1] || null; }
+    }
+    return { rank: cur, next: next };
+  }
+
+  // ラウンドの おわり。ステージの ★・ひらいた ステージ・スタンプ を まとめて返す
+  function finishRound(p, mode, correct, today) {
+    const res = { stars: 0, prevStars: 0, cleared: false, unlocked: null, allClearNow: false, stamp: false, streak: 0 };
+    if (mode.kind === 'stage') {
+      const id = mode.stage;
+      const wasAll = allCleared(p);
+      const nextWasOpen = id < STAGES.length ? isUnlocked(p, id + 1) : true;
+      const st = p.stages[id] || { best: 0, plays: 0 };
+      res.prevStars = st.best;
+      res.stars = starsFor(correct);
+      res.cleared = res.stars >= 1;
+      st.best = Math.max(st.best, res.stars);
+      st.plays += 1;
+      p.stages[id] = st;
+      if (id < STAGES.length && !nextWasOpen && isUnlocked(p, id + 1)) res.unlocked = id + 1;
+      if (!wasAll && allCleared(p)) res.allClearNow = true;
+    }
+    p.rounds += 1;
+    if (p.days.indexOf(today) < 0) {
+      p.days.push(today);
+      p.days.sort();
+      p.days = p.days.slice(-DAYS_KEEP);
+      res.stamp = true;
+    }
+    res.streak = streak(p.days, today);
+    return res;
+  }
+
+  return {
+    ROUND_SIZE: ROUND_SIZE, STORAGE_KEY: STORAGE_KEY,
+    STAGES: STAGES, RANKS: RANKS, QUESTIONS: QUESTIONS, BY_ID: BY_ID,
+    dateStr: dateStr, addDays: addDays, streak: streak, lastDays: lastDays,
+    emptyProgress: emptyProgress, sanitize: sanitize,
+    stageOf: stageOf, questionsOf: questionsOf, bestStars: bestStars,
+    isUnlocked: isUnlocked, allCleared: allCleared, nextStage: nextStage, starsFor: starsFor,
+    weightOf: weightOf, nigateIds: nigateIds, poolFor: poolFor, pickRound: pickRound, arrangeChoices: arrangeChoices,
+    recordAnswer: recordAnswer, recordRetry: recordRetry, cardCount: cardCount, rankOf: rankOf, finishRound: finishRound
+  };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = Core;
+</script>
+
+<!-- ============================================================
+     app：画面・音・読み上げ・保存
+     ============================================================ -->
+<script id="app">
+(function () {
+  'use strict';
+
+  const $ = function (id) { return document.getElementById(id); };
+  const WEEK = ['にち', 'げつ', 'か', 'すい', 'もく', 'きん', 'ど'];
+
+  function today() { return Core.dateStr(new Date()); }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  // 条文の「定義」だけは漢字なので、ふりがなを つける
+  function ruleHTML(rule) {
+    return esc(rule).replace(/定義/g, '<ruby>定義<rt>ていぎ</rt></ruby>');
+  }
+  function ruleSpeech(rule) { return rule.replace(/定義/g, 'ていぎ'); }
+
+  /* ---------- 保存（使えない端末でも遊べるように try で包む） ---------- */
+  const Store = {
+    load: function () {
+      try {
+        const s = localStorage.getItem(Core.STORAGE_KEY);
+        return Core.sanitize(s ? JSON.parse(s) : null);
+      } catch (e) { return Core.emptyProgress(); }
+    },
+    save: function (p) {
+      try { localStorage.setItem(Core.STORAGE_KEY, JSON.stringify(p)); } catch (e) { /* 保存できなくても続ける */ }
+    },
+    clear: function () {
+      try { localStorage.removeItem(Core.STORAGE_KEY); } catch (e) { /* なにもしない */ }
+    }
+  };
+
+  let P = Store.load();
+
+  /* ---------- 効果音（端末の中で合成する。音声ファイルは使わない） ---------- */
+  const Sound = {
+    ctx: null,
+    ensure: function () {
+      if (!P.sound) return null;
+      try {
+        if (!this.ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          this.ctx = new AC();
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        return this.ctx;
+      } catch (e) { return null; }
+    },
+    tone: function (freq, at, dur, type, vol) {
+      const c = this.ensure();
+      if (!c) return;
+      const t = c.currentTime + at;
+      const o = c.createOscillator();
+      const g = c.createGain();
+      o.type = type || 'sine';
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol || 0.18, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(c.destination);
+      o.start(t); o.stop(t + dur + 0.05);
+    },
+    correct: function () { this.tone(880, 0, 0.14, 'triangle'); this.tone(1320, 0.12, 0.28, 'triangle'); },
+    wrong: function () { this.tone(330, 0, 0.18, 'sine', 0.14); this.tone(262, 0.16, 0.3, 'sine', 0.14); },
+    card: function () { this.tone(1046, 0, 0.1, 'square', 0.06); this.tone(1568, 0.08, 0.2, 'square', 0.06); },
+    fanfare: function () {
+      const self = this;
+      [523, 659, 784, 1046].forEach(function (f, i) { self.tone(f, i * 0.13, 0.25, 'triangle', 0.16); });
+      this.tone(1046, 0.55, 0.6, 'triangle', 0.16);
+    },
+    tap: function () { this.tone(660, 0, 0.06, 'sine', 0.08); }
+  };
+
+  /* ---------- 読み上げ（端末の中の音声だけを使う） ---------- */
+  const Speech = {
+    voice: null,
+    init: function () {
+      if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return;
+      const self = this;
+      const pick = function () {
+        const vs = window.speechSynthesis.getVoices() || [];
+        self.voice = vs.filter(function (v) { return /^ja/i.test(v.lang) && v.localService; })[0] || null;
+        refreshSpeakButtons();
+      };
+      pick();
+      if (window.speechSynthesis.addEventListener) window.speechSynthesis.addEventListener('voiceschanged', pick);
+    },
+    available: function () { return !!this.voice; },
+    say: function (text) {
+      if (!this.voice) return;
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text.replace(/○/g, 'まる').replace(/×/g, 'ばつ'));
+        u.voice = this.voice;
+        u.lang = this.voice.lang;
+        u.rate = 0.9;
+        window.speechSynthesis.speak(u);
+      } catch (e) { /* 読み上げできなくても続ける */ }
+    },
+    stop: function () { try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) { /* なにもしない */ } }
+  };
+  function refreshSpeakButtons() {
+    $('btnSpeak').hidden = !Speech.available();
+    $('cdSpeak').hidden = !Speech.available();
+  }
+
+  /* ---------- マスコット「オレンジくん」 ---------- */
+  function mascotSVG(mood) {
+    const ink = '#3a2418';
+    let eyes = '<circle cx="40" cy="56" r="5.5" fill="' + ink + '"/><circle cx="64" cy="56" r="5.5" fill="' + ink + '"/>' +
+               '<circle cx="42" cy="54" r="1.8" fill="#fff"/><circle cx="66" cy="54" r="1.8" fill="#fff"/>';
+    let mouth = '<path d="M41 69 q11 9 22 0" stroke="#8a2b1a" stroke-width="4" fill="none" stroke-linecap="round"/>';
+    let extra = '';
+    if (mood === 'happy') {
+      eyes = '<path d="M34 57 q6 -8 12 0 M58 57 q6 -8 12 0" stroke="' + ink + '" stroke-width="4.5" fill="none" stroke-linecap="round"/>';
+      mouth = '<path d="M38 67 q14 18 28 0 z" fill="#8a2b1a"/><path d="M45 73 q7 5 14 0" fill="#ff8f8f"/>';
+      extra = '<path d="M88 20 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z" fill="#ffd23d"/><path d="M14 30 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z" fill="#ffd23d"/>';
+    } else if (mood === 'oops') {
+      eyes = '<circle cx="40" cy="57" r="5" fill="' + ink + '"/><circle cx="64" cy="57" r="5" fill="' + ink + '"/>' +
+             '<path d="M33 47 l12 3 M71 47 l-12 3" stroke="' + ink + '" stroke-width="3" stroke-linecap="round"/>';
+      mouth = '<path d="M44 73 q8 -6 16 0" stroke="#8a2b1a" stroke-width="4" fill="none" stroke-linecap="round"/>';
+      extra = '<path d="M84 44 q6 9 0 14 q-6 -5 0 -14z" fill="#7cc7ff"/>';
+    }
+    return '<svg viewBox="0 0 104 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<circle cx="52" cy="60" r="38" fill="#ff9a2e" stroke="#e0701a" stroke-width="3"/>' +
+      '<circle cx="46" cy="42" r="10" fill="#ffc27a" opacity=".55"/>' +
+      '<circle cx="29" cy="67" r="6" fill="#ff6f6f" opacity=".4"/><circle cx="75" cy="67" r="6" fill="#ff6f6f" opacity=".4"/>' +
+      '<path d="M18 40 q34 -38 68 0 z" fill="#f06a1e" stroke="#b84b0e" stroke-width="3" stroke-linejoin="round"/>' +
+      '<path d="M78 38 q14 -2 22 4 q-10 5 -24 2z" fill="#b84b0e"/>' +
+      '<circle cx="52" cy="27" r="7" fill="#fff"/><circle cx="52" cy="27" r="3.6" fill="none" stroke="#f06a1e" stroke-width="2.4"/>' +
+      eyes + mouth + extra + '</svg>';
+  }
+  function setMascot(el, mood, bounce) {
+    el.innerHTML = mascotSVG(mood);
+    if (bounce) { el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }
+  }
+
+  /* ---------- ダイヤモンド図（問題の中の小さな図） ---------- */
+  function diamondPic(runners) {
+    const B = { 1: [150, 70], 2: [100, 30], 3: [50, 70], 4: [100, 110] };
+    let s = '<svg viewBox="0 0 200 132" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ランナーの いち">' +
+      '<rect x="0" y="0" width="200" height="132" rx="14" fill="#3e9b4f"/>' +
+      '<path d="M100 14 L166 70 L100 126 L34 70 Z" fill="#d9a86c"/>' +
+      '<path d="M100 30 L150 70 L100 110 L50 70 Z" fill="#4fae5e"/>' +
+      '<path d="M100 110 L150 70 L100 30 L50 70 Z" fill="none" stroke="#fff" stroke-width="2"/>';
+    [1, 2, 3].forEach(function (n) {
+      const b = B[n];
+      s += '<rect x="' + (b[0] - 6) + '" y="' + (b[1] - 6) + '" width="12" height="12" fill="#fff" stroke="#333" transform="rotate(45 ' + b[0] + ' ' + b[1] + ')"/>';
+    });
+    s += '<path d="M93 106 h14 v5 l-7 6 l-7 -6 z" fill="#fff" stroke="#333"/>';
+    runners.forEach(function (n) {
+      const b = B[n];
+      const x = b[0], y = b[1] - 16;
+      s += '<g><circle cx="' + x + '" cy="' + (y + 4) + '" r="9" fill="#f06a1e" stroke="#fff" stroke-width="2.5"/>' +
+           '<path d="M' + (x - 8) + ' ' + (y + 1) + ' q8 -12 16 0 z" fill="#1e3a8a"/></g>';
+    });
+    const names = { 1: 'ファースト', 2: 'セカンド', 3: 'サード' };
+    // 塁の名前は、ランナーと重ならないよう塁の下（セカンドだけ上）に置く
+    const label = function (x, y, t) {
+      return '<text x="' + x + '" y="' + y + '" font-size="12" font-weight="800" fill="#fff" stroke="#2d6b37" stroke-width="3" paint-order="stroke" text-anchor="middle" font-family="sans-serif">' + t + '</text>';
+    };
+    s += label(158, 94, names[1]) + label(100, 13, names[2]) + label(42, 94, names[3]);
+    return s + '</svg>';
+  }
+
+  /* ---------- ダイヤモンドのマップ（ホーム画面） ---------- */
+  // 塁の座標（viewBox 0 0 320 290）。ステージ1はファースト、4はホーム
+  const MAP_POS = { 0: [160, 246], 1: [266, 148], 2: [160, 50], 3: [54, 148], 4: [160, 246] };
+
+  function renderMap() {
+    const nx = Core.nextStage(P);
+    let svg = '<svg viewBox="0 0 320 290" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<path d="M160 288 L-10 118 Q160 -40 330 118 Z" fill="#3e9b4f"/>' +
+      '<path d="M160 280 L30 150 L160 20 L290 150 Z" fill="#d9a86c"/>' +
+      '<path d="M160 230 L250 148 L160 66 L70 148 Z" fill="#4fae5e"/>';
+    // 塁と塁をむすぶ線：クリアした区間はオレンジで太く
+    for (let s = 1; s <= 4; s++) {
+      const a = MAP_POS[s - 1], b = MAP_POS[s];
+      const done = Core.bestStars(P, s) >= 1;
+      svg += '<line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '" stroke="' + (done ? '#f06a1e' : '#ffffff') +
+             '" stroke-width="' + (done ? 9 : 4) + '" stroke-linecap="round"' + (done ? '' : ' stroke-dasharray="8 8" opacity=".85"') + '/>';
+    }
+    svg += '<text x="160" y="284" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" font-family="sans-serif">スタート</text></svg>';
+
+    let html = svg;
+    Core.STAGES.forEach(function (st) {
+      const pos = MAP_POS[st.id];
+      const open = Core.isUnlocked(P, st.id);
+      const best = Core.bestStars(P, st.id);
+      let stars = '';
+      for (let i = 1; i <= 3; i++) stars += i <= best ? '★' : '<span class="off">★</span>';
+      const cls = 'node' + (open ? '' : ' locked') + (nx === st.id ? ' next' : '');
+      const left = (pos[0] / 320 * 100).toFixed(1) + '%';
+      const top = ((st.id === 4 ? pos[1] - 8 : pos[1]) / 290 * 100).toFixed(1) + '%';
+      html += '<button class="' + cls + '" data-stage="' + st.id + '" style="left:' + left + ';top:' + top + '" aria-label="' +
+        esc(st.base + ' ステージ ' + st.title + (open ? ' ほし ' + best : ' まだ ひらいていない')) + '">' +
+        (nx === st.id ? '<span class="next-tag">つぎは ここ！</span>' : '') +
+        '<span class="n-icon">' + (open ? st.icon : '🔒') + '</span>' +
+        '<span class="n-name">' + esc(st.base) + '</span>' +
+        '<span class="n-stars">' + stars + '</span></button>';
+    });
+    $('map').innerHTML = html;
+    Array.prototype.forEach.call($('map').querySelectorAll('.node'), function (b) {
+      b.onclick = function () {
+        const id = +b.getAttribute('data-stage');
+        if (!Core.isUnlocked(P, id)) {
+          Sound.tap();
+          toast('まえの ステージを クリアすると ひらくよ');
+          return;
+        }
+        startRound({ kind: 'stage', stage: id });
+      };
+    });
+  }
+
+  /* ---------- 画面の切りかえ ---------- */
+  const TITLES = {
+    'scr-home': 'ルールで ホームイン！',
+    'scr-quiz': 'クイズ',
+    'scr-result': 'けっか',
+    'scr-zukan': 'ずかん',
+    'scr-parent': 'おうちの かたへ'
+  };
+  function show(id) {
+    Array.prototype.forEach.call(document.querySelectorAll('.screen'), function (s) { s.hidden = s.id !== id; });
+    $('btnHome').hidden = id === 'scr-home';
+    $('topTitle').textContent = TITLES[id];
+    document.body.setAttribute('data-screen', id);
+    Speech.stop();
+    window.scrollTo(0, 0);
+  }
+
+  let toastTimer = null;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 2200);
+  }
+
+  function confetti() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const box = document.createElement('div');
+    box.className = 'confetti';
+    const colors = ['#f06a1e', '#f5b400', '#1e9a5f', '#2f79d0', '#ff6f9f'];
+    for (let i = 0; i < 60; i++) {
+      const c = document.createElement('i');
+      c.style.left = Math.random() * 100 + '%';
+      c.style.background = colors[i % colors.length];
+      c.style.animationDuration = (1.8 + Math.random() * 1.6) + 's';
+      c.style.animationDelay = Math.random() * 0.5 + 's';
+      box.appendChild(c);
+    }
+    document.body.appendChild(box);
+    setTimeout(function () { box.remove(); }, 4200);
+  }
+
+  /* ---------- ホーム ---------- */
+  function homeMessage() {
+    const n = Core.cardCount(P);
+    if (!P.rounds) return 'ぼく オレンジくん！ ルールを おぼえて、いっしょに ホームインしよう！';
+    if (Core.allCleared(P)) {
+      if (n >= Core.QUESTIONS.length) return 'カード ぜんぶ あつめたね！ きみは ルールはかせだ！';
+      return 'ホームイン おめでとう！ ★3と カード あつめに チャレンジしよう！';
+    }
+    const nx = Core.nextStage(P);
+    const st = Core.stageOf(nx);
+    if (P.days.indexOf(today()) < 0) return 'おかえり！ きょうも 1かい やってみよう。つぎは ' + st.base + ' だよ！';
+    return 'つぎは ' + st.base + ' ステージ！ 3もん せいかいで クリアだよ。';
+  }
+
+  function renderRank() {
+    const n = Core.cardCount(P);
+    const r = Core.rankOf(n);
+    $('rankBadge').textContent = r.rank.icon + ' ' + r.rank.name;
+    if (r.next) {
+      const span = r.next.min - r.rank.min;
+      $('rankFill').style.width = ((n - r.rank.min) / span * 100) + '%';
+      $('rankText').textContent = 'カード ' + n + 'まい ・ あと ' + (r.next.min - n) + 'まいで ' + r.next.name;
+    } else {
+      $('rankFill').style.width = '100%';
+      $('rankText').textContent = 'カード ' + n + 'まい ・ さいこうの ランク！';
+    }
+  }
+
+  function renderStamps() {
+    const t = today();
+    const days = Core.lastDays(t, 7);
+    let html = '';
+    days.forEach(function (d) {
+      const on = P.days.indexOf(d) >= 0;
+      const w = WEEK[new Date(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)).getDay()];
+      html += '<div><div class="stamp-day">' + (d === t ? 'きょう' : w) + '</div>' +
+        '<div class="stamp' + (on ? ' on' : '') + (d === t ? ' today' : '') + '">' + (on ? '⚾' : '') + '</div></div>';
+    });
+    $('stamps').innerHTML = html;
+    const s = Core.streak(P.days, t);
+    $('streak').hidden = s < 2;
+    $('streak').textContent = '🔥 ' + s + 'にち れんぞく！';
+  }
+
+  function renderHome() {
+    setMascot($('homeMascot'), 'normal');
+    $('homeBubble').textContent = homeMessage();
+    renderRank();
+    renderMap();
+    $('btnMix').hidden = !Core.allCleared(P);
+    const ng = Core.nigateIds(P).length;
+    $('btnNigate').hidden = ng === 0;
+    $('btnNigate').textContent = '💪 にがて チャレンジ（' + ng + 'もん）';
+    renderStamps();
+    show('scr-home');
+  }
+
+  /* ---------- クイズ ---------- */
+  let R = null;   // いま あそんでいる ラウンド
+
+  function modeLabel(mode) {
+    if (mode.kind === 'stage') { const st = Core.stageOf(mode.stage); return st.icon + ' ' + st.base + '：' + st.title; }
+    if (mode.kind === 'mix') return '🎲 ミックス チャレンジ';
+    return '💪 にがて チャレンジ';
+  }
+
+  function startRound(mode) {
+    Sound.ensure();
+    const list = Core.pickRound(P, mode);
+    if (!list.length) { renderHome(); return; }
+    R = {
+      mode: mode, list: list, i: 0, phase: 'main',
+      results: [], retry: [], correct: 0, combo: 0,
+      newCards: [], rankBefore: Core.rankOf(Core.cardCount(P)).rank.name
+    };
+    $('quizStage').textContent = modeLabel(mode);
+    show('scr-quiz');
+    showQuestion();
+  }
+
+  function currentQ() { return R.phase === 'main' ? R.list[R.i] : R.retry[R.i]; }
+
+  function renderDots() {
+    let html = '';
+    for (let k = 0; k < R.list.length; k++) {
+      let cls = 'dot';
+      if (k < R.results.length) cls += R.results[k] ? ' ok' : ' ng';
+      else if (R.phase === 'main' && k === R.i) cls += ' cur';
+      html += '<span class="' + cls + '">' + (k < R.results.length ? (R.results[k] ? '○' : '×') : '') + '</span>';
+    }
+    $('dots').innerHTML = html;
+  }
+
+  function showQuestion() {
+    const q = currentQ();
+    R.answered = false;
+    renderDots();
+    $('retryBanner').hidden = R.phase !== 'retry';
+    $('qCard').setAttribute('data-qid', q.id);
+    $('qIcon').textContent = R.phase === 'retry' ? '🔁' : '❓';
+    if (q.pic) { $('qPic').innerHTML = diamondPic(q.pic.runners); $('qPic').hidden = false; }
+    else { $('qPic').innerHTML = ''; $('qPic').hidden = true; }
+    $('qText').textContent = q.q;
+    $('feedback').innerHTML = '';
+    refreshSpeakButtons();
+
+    const box = $('choices');
+    box.className = 'choices' + (q.type === 'ox' ? ' ox' : '');
+    box.innerHTML = '';
+    const marks = ['A', 'B', 'C'];
+    Core.arrangeChoices(q).forEach(function (c, k) {
+      const b = document.createElement('button');
+      b.className = 'choice';
+      b.setAttribute('data-idx', String(c.idx));
+      if (q.type === 'ox') {
+        b.innerHTML = '<span class="ox-sym">' + esc(c.text) + '</span><span>' + (c.idx === 0 ? 'そう おもう' : 'ちがう と おもう') + '</span>';
+        b.setAttribute('aria-label', c.idx === 0 ? 'まる' : 'ばつ');
+      } else {
+        b.innerHTML = '<span class="mark">' + marks[k] + '</span><span>' + esc(c.text) + '</span>';
+      }
+      b.onclick = function () { answer(c.idx, b); };
+      box.appendChild(b);
+    });
+  }
+
+  function speakQuestion() {
+    const q = currentQ();
+    const parts = [q.q];
+    Array.prototype.forEach.call($('choices').querySelectorAll('.choice'), function (b, k) {
+      const i = +b.getAttribute('data-idx');
+      parts.push(q.type === 'ox' ? (i === 0 ? 'まる、そう おもう' : 'ばつ、ちがう と おもう') : (['エー', 'ビー', 'シー'][k] + '、' + q.choices[i]));
+    });
+    Speech.say(parts.join('。'));
+  }
+
+  function answer(idx, btn) {
+    if (R.answered) return;
+    R.answered = true;
+    const q = currentQ();
+    const ok = idx === q.answer;
+    const t = today();
+    let got;
+    if (R.phase === 'main') {
+      got = Core.recordAnswer(P, q.id, ok, t);
+      R.results.push(ok);
+      if (ok) { R.correct++; R.combo++; } else { R.combo = 0; R.retry.push(q); }
+    } else {
+      got = Core.recordRetry(P, q.id, ok, t);
+    }
+    if (got.newCard) R.newCards.push(q.id);
+    Store.save(P);
+
+    Array.prototype.forEach.call($('choices').querySelectorAll('.choice'), function (b) {
+      b.disabled = true;
+      const i = +b.getAttribute('data-idx');
+      if (i === q.answer) b.classList.add('correct');
+      else if (b === btn) b.classList.add('wrong');
+      else b.classList.add('dim');
+    });
+    if (!ok) btn.classList.add('shake');
+    renderDots();
+
+    const combo = $('combo');
+    if (ok && R.phase === 'main' && R.combo >= 2) {
+      combo.textContent = '🔥 ' + R.combo + 'もん れんぞく せいかい！';
+      combo.classList.remove('pop'); void combo.offsetWidth; combo.classList.add('pop');
+    } else {
+      combo.textContent = '';
+    }
+
+    if (ok) Sound.correct(); else Sound.wrong();
+    if (got.newCard) setTimeout(function () { Sound.card(); }, 350);
+
+    const oksay = ['せいかい！', 'すごい！', 'やったね！', 'ナイス！'];
+    const ngsay = ['おしい！', 'ドンマイ！', 'つぎは できる！'];
+    const title = ok ? oksay[Math.floor(Math.random() * oksay.length)] : ngsay[Math.floor(Math.random() * ngsay.length)];
+    const ansText = q.type === 'ox' ? (q.answer === 0 ? '○（そう）' : '×（ちがう）') : q.choices[q.answer];
+    const isLast = R.phase === 'main'
+      ? (R.i === R.list.length - 1 && R.retry.length === 0)
+      : (R.i === R.retry.length - 1);
+    const nextLabel = isLast ? 'けっかを みる ▶' : (R.phase === 'main' && R.i === R.list.length - 1 ? 'もういちど チャレンジへ ▶' : 'つぎへ ▶');
+
+    let html = '<div class="feedback ' + (ok ? 'ok' : 'ng') + '">' +
+      '<div class="fb-head"><div class="mascot" id="fbMascot"></div><div class="fb-title">' + (ok ? '⭕ ' : '') + title + '</div></div>' +
+      '<p class="fb-answer">こたえ：' + esc(ansText) + '</p>' +
+      '<p class="fb-explain">' + esc(q.explain) + '</p>';
+    if (got.newCard) {
+      html += '<div class="get-card"><span class="gc-icon">' + q.card.icon + '</span><div><div class="gc-label">カード ゲット！</div><div class="gc-name">' + esc(q.card.name) + '</div></div></div>';
+    }
+    html += '<button class="btn primary" id="btnGo">' + nextLabel + '</button></div>';
+    $('feedback').innerHTML = html;
+    setMascot($('fbMascot'), ok ? 'happy' : 'oops', true);
+    $('btnGo').onclick = goNext;
+    setTimeout(function () {
+      const f = $('feedback').firstChild;
+      if (f && f.scrollIntoView) f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 60);
+  }
+
+  function goNext() {
+    Speech.stop();
+    R.i++;
+    if (R.phase === 'main' && R.i >= R.list.length) {
+      if (R.retry.length) { R.phase = 'retry'; R.i = 0; }
+      else return finish();
+    } else if (R.phase === 'retry' && R.i >= R.retry.length) {
+      return finish();
+    }
+    $('combo').textContent = '';
+    window.scrollTo(0, 0);
+    showQuestion();
+  }
+
+  /* ---------- けっか ---------- */
+  function finish() {
+    const res = Core.finishRound(P, R.mode, R.correct, today());
+    Store.save(P);
+    const total = R.list.length;
+    const isStage = R.mode.kind === 'stage';
+    const rankAfter = Core.rankOf(Core.cardCount(P)).rank;
+
+    let mood = 'happy';
+    let title, bubble;
+    if (isStage) {
+      if (res.stars === 3) { title = 'パーフェクト！'; bubble = 'ぜんもん せいかい！ ほんとうに すごいよ！'; }
+      else if (res.cleared) { title = 'ステージ クリア！'; bubble = 'やったね！ つぎは ★3を めざそう！'; }
+      else { title = 'おしい！'; mood = 'oops'; bubble = 'あと ' + (3 - R.correct) + 'もんで クリアだよ。もう 1かい やってみよう！'; }
+    } else {
+      title = R.correct === total ? 'パーフェクト！' : 'おつかれさま！';
+      bubble = R.correct === total ? 'ぜんもん せいかい！' : 'まちがえた もんだいは、また でて くるよ。';
+    }
+    setMascot($('resultMascot'), mood, true);
+    $('resultBubble').textContent = bubble;
+    $('resultTitle').textContent = title;
+    $('resultTitle').className = 'result-title' + (res.cleared || R.correct === total ? ' clear' : '');
+
+    let stars = '';
+    if (isStage) for (let i = 1; i <= 3; i++) stars += '<span class="big-star' + (i <= res.stars ? ' on' : '') + '">★</span>';
+    $('bigStars').innerHTML = stars;
+    $('bigStars').hidden = !isStage;
+    $('scoreLine').textContent = total + 'もん ちゅう ' + R.correct + 'もん せいかい';
+
+    const news = [];
+    if (res.allClearNow) news.push('<div class="news-item homein">🏠 ホームイン！ ぜんぶの ステージを クリア！</div>');
+    if (res.unlocked) news.push('<div class="news-item unlock">🔓 ' + esc(Core.stageOf(res.unlocked).base) + ' ステージが ひらいたよ！</div>');
+    if (isStage && res.stars > res.prevStars && res.prevStars > 0) news.push('<div class="news-item unlock">⭐ じこベスト こうしん！</div>');
+    if (rankAfter.name !== R.rankBefore) news.push('<div class="news-item rank">' + rankAfter.icon + ' ランクアップ！「' + esc(rankAfter.name) + '」に なった！</div>');
+    if (res.stamp) news.push('<div class="news-item stamp">⚾ きょうの スタンプ ゲット！' + (res.streak >= 2 ? '（' + res.streak + 'にち れんぞく）' : '') + '</div>');
+    $('news').innerHTML = news.join('');
+
+    $('newCardsWrap').hidden = R.newCards.length === 0;
+    $('newCards').innerHTML = R.newCards.map(function (id) {
+      const c = Core.BY_ID[id].card;
+      return '<div class="mini-card"><span class="mc-icon">' + c.icon + '</span>' + esc(c.name) + '</div>';
+    }).join('');
+
+    const nextBtn = $('btnNext');
+    nextBtn.hidden = true;
+    if (isStage && R.mode.stage < 4 && Core.isUnlocked(P, R.mode.stage + 1) && res.cleared) {
+      const ns = Core.stageOf(R.mode.stage + 1);
+      nextBtn.textContent = '▶ ' + ns.base + ' ステージへ';
+      nextBtn.hidden = false;
+      nextBtn.onclick = function () { startRound({ kind: 'stage', stage: ns.id }); };
+    }
+    $('btnAgain').onclick = function () {
+      const m = R.mode;
+      if (m.kind === 'nigate' && Core.nigateIds(P).length === 0) { toast('にがては ぜんぶ なくなったよ！'); renderHome(); return; }
+      startRound(m);
+    };
+
+    show('scr-result');
+    if (res.allClearNow || res.stars === 3 || res.unlocked) { Sound.fanfare(); confetti(); }
+    else if (res.cleared || R.correct === total) Sound.fanfare();
+  }
+
+  /* ---------- ずかん ---------- */
+  function renderZukan() {
+    const n = Core.cardCount(P);
+    const all = Core.QUESTIONS.length;
+    $('zukanFill').style.width = (n / all * 100) + '%';
+    $('zukanText').textContent = n + ' / ' + all + 'まい';
+    let html = '';
+    Core.STAGES.forEach(function (st) {
+      const qs = Core.questionsOf(st.id);
+      const got = qs.filter(function (q) { return P.cards[q.id]; }).length;
+      html += '<div class="zukan-stage"><h3>' + st.icon + ' ' + esc(st.base) + '：' + esc(st.title) + '（' + got + '/' + qs.length + '）</h3><div class="grid">';
+      qs.forEach(function (q) {
+        if (P.cards[q.id]) {
+          html += '<button class="zcard" data-qid="' + q.id + '"><span class="z-icon">' + q.card.icon + '</span>' + esc(q.card.name) + '</button>';
+        } else {
+          html += '<div class="zcard no"><span class="z-icon">？</span>まだ</div>';
+        }
+      });
+      html += '</div></div>';
+    });
+    $('zukanList').innerHTML = html;
+    Array.prototype.forEach.call($('zukanList').querySelectorAll('button.zcard'), function (b) {
+      b.onclick = function () { openCard(b.getAttribute('data-qid')); };
+    });
+    show('scr-zukan');
+  }
+
+  let lastFocus = null;
+  function openCard(qid) {
+    const q = Core.BY_ID[qid];
+    lastFocus = document.activeElement;
+    $('cdIcon').textContent = q.card.icon;
+    $('cdName').textContent = q.card.name;
+    $('cdPoint').textContent = q.card.point;
+    $('cdExplain').textContent = q.explain;
+    $('cdRule').innerHTML = 'やきゅうの きそく：' + ruleHTML(q.rule);
+    $('cdSpeak').onclick = function () { Speech.say(q.card.name + '。' + q.card.point + '。' + q.explain); };
+    refreshSpeakButtons();
+    $('cardModal').hidden = false;
+    $('cdClose').focus();
+  }
+  function closeCard() {
+    Speech.stop();
+    $('cardModal').hidden = true;
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  /* ---------- おうちのかたへ ---------- */
+  function renderParent() {
+    let rows = '<tr><th>ステージ</th><th>ほし</th><th>といた</th><th>せいかい</th></tr>';
+    Core.STAGES.forEach(function (st) {
+      const qs = Core.questionsOf(st.id);
+      let seen = 0, done = 0, ok = 0;
+      qs.forEach(function (q) { const r = P.q[q.id]; if (r) { done++; seen += r.seen; ok += r.correct; } });
+      const best = Core.bestStars(P, st.id);
+      rows += '<tr><td>' + st.icon + ' ' + esc(st.base) + '</td><td class="num">' + '★'.repeat(best) + '☆'.repeat(3 - best) + '</td>' +
+        '<td class="num">' + done + '/' + qs.length + 'もん</td>' +
+        '<td class="num">' + (seen ? Math.round(ok / seen * 100) + '%' : '−') + '</td></tr>';
+    });
+    rows += '<tr><td>カード</td><td class="num" colspan="3">' + Core.cardCount(P) + ' / ' + Core.QUESTIONS.length + 'まい</td></tr>';
+    rows += '<tr><td>あそんだ ひ</td><td class="num" colspan="3">' + P.days.length + 'にち</td></tr>';
+    rows += '<tr><td>あそんだ かいすう</td><td class="num" colspan="3">' + P.rounds + 'かい</td></tr>';
+    rows += '<tr><td>にがて</td><td class="num" colspan="3">' + Core.nigateIds(P).length + 'もん</td></tr>';
+    $('parentTable').innerHTML = rows;
+    show('scr-parent');
+  }
+
+  /* ---------- 音 ---------- */
+  function renderSoundBtn() {
+    $('btnSound').textContent = P.sound ? '🔊' : '🔇';
+    $('btnSound').setAttribute('aria-label', P.sound ? 'おとを けす' : 'おとを だす');
+  }
+
+  /* ---------- はじめる ---------- */
+  function bind() {
+    $('btnHome').onclick = function () { Sound.tap(); renderHome(); };
+    $('btnBack').onclick = function () { renderHome(); };
+    $('btnSound').onclick = function () {
+      P.sound = !P.sound;
+      Store.save(P);
+      renderSoundBtn();
+      if (P.sound) Sound.tap();
+      toast(P.sound ? 'おとを だすよ' : 'おとを けしたよ');
+    };
+    $('btnMix').onclick = function () { startRound({ kind: 'mix' }); };
+    $('btnNigate').onclick = function () { startRound({ kind: 'nigate' }); };
+    $('btnZukan').onclick = function () { Sound.tap(); renderZukan(); };
+    $('btnParent').onclick = function () { Sound.tap(); renderParent(); };
+    $('btnSpeak').onclick = speakQuestion;
+    $('cdClose').onclick = closeCard;
+    $('cardModal').onclick = function (e) { if (e.target === $('cardModal')) closeCard(); };
+    $('btnReset').onclick = function () { $('confirmModal').hidden = false; $('cfNo').focus(); };
+    $('cfNo').onclick = function () { $('confirmModal').hidden = true; };
+    $('cfYes').onclick = function () {
+      Store.clear();
+      P = Core.emptyProgress();
+      $('confirmModal').hidden = true;
+      renderSoundBtn();
+      toast('きろくを けしました');
+      renderHome();
+    };
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      if (!$('cardModal').hidden) closeCard();
+      if (!$('confirmModal').hidden) $('confirmModal').hidden = true;
+    });
+  }
+
+  bind();
+  renderSoundBtn();
+  Speech.init();
+  renderHome();
+})();
+</script>
+</body>
+</html>
