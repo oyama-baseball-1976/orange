@@ -74,6 +74,10 @@ body {
   color: var(--ink);
   line-height: 1.6;
   overflow-x: hidden;
+  /* 分かち書きのスペースで改行し、単語の途中で切らない（入りきらないときだけ切る） */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  line-break: strict;
 }
 button { font-family: inherit; color: inherit; cursor: pointer; }
 ruby rt { font-size: 12px; }
@@ -164,16 +168,16 @@ ruby rt { font-size: 12px; }
 .map > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .node {
   position: absolute; transform: translate(-50%, -50%);
-  width: 96px; padding: 6px 4px 5px;
-  border: 3px solid #fff; border-radius: 18px;
+  width: 82px; padding: 4px 2px 3px;
+  border: 3px solid #fff; border-radius: 16px;
   background: var(--card); color: var(--ink);
   box-shadow: 0 4px 0 rgba(0, 0, 0, .22);
   text-align: center; line-height: 1.25;
 }
 .node:active { transform: translate(-50%, -46%); }
-.node .n-icon { font-size: 26px; display: block; }
+.node .n-icon { font-size: 22px; display: block; line-height: 1.2; }
 .node .n-name { font-size: 14px; font-weight: 900; display: block; }
-.node .n-stars { font-size: 15px; color: var(--gold); letter-spacing: 1px; display: block; }
+.node .n-stars { font-size: 14px; color: var(--gold); letter-spacing: 1px; display: block; }
 .node .n-stars .off { color: var(--locked); }
 .node.locked { background: var(--locked); color: #5a5260; border-color: rgba(255, 255, 255, .6); }
 .node.locked .n-icon { filter: grayscale(1); opacity: .6; }
@@ -188,7 +192,7 @@ ruby rt { font-size: 12px; }
 
 /* ---------- スタンプ ---------- */
 .stamps { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
-.stamp-day { font-size: 13px; font-weight: 800; color: var(--muted); }
+.stamp-day { font-size: 13px; font-weight: 800; color: var(--muted); white-space: nowrap; letter-spacing: -.02em; }
 .stamp {
   width: 38px; height: 38px; margin: 2px auto 0; border-radius: 50%;
   border: 2px dashed var(--line); display: flex; align-items: center; justify-content: center;
@@ -216,7 +220,7 @@ ruby rt { font-size: 12px; }
 .q-icon { font-size: 44px; text-align: center; line-height: 1.1; }
 .q-pic { margin: 6px auto 4px; max-width: 280px; }
 .q-pic svg { width: 100%; height: auto; display: block; }
-.q-text { font-size: 20px; font-weight: 800; line-height: 1.7; margin: 8px 0 4px; word-break: auto-phrase; }
+.q-text { font-size: 20px; font-weight: 800; line-height: 1.7; margin: 8px 0 4px; }
 .speak { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 4px 12px; border-radius: 999px; border: 2px solid var(--line); background: var(--card); font-size: 15px; font-weight: 800; }
 
 .choices { display: grid; gap: 12px; margin-top: 12px; }
@@ -273,16 +277,16 @@ ruby rt { font-size: 12px; }
 .news { display: grid; gap: 10px; margin-top: 10px; }
 .news-item { border-radius: 16px; padding: 10px 14px; font-size: 17px; font-weight: 900; text-align: center; animation: pop .4s ease-out both; }
 .news-item.unlock { background: var(--blue-soft); color: var(--blue-dark); }
-.news-item.stamp { background: var(--orange-soft); color: var(--orange-dark); }
+.news-item.stampnews { background: var(--orange-soft); color: var(--orange-dark); }
 .news-item.rank { background: #fff3c4; color: #6b4b00; }
 .news-item.homein { background: var(--orange); color: #fff; font-size: 22px; }
 @media (prefers-color-scheme: dark) {
   .news-item.unlock { color: var(--blue); }
-  .news-item.stamp { color: var(--orange); }
+  .news-item.stampnews { color: var(--orange); }
   .news-item.rank { background: #4a3d10; color: #ffe08a; }
 }
 .mini-cards { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
-.mini-card { width: 92px; padding: 8px 4px; border-radius: 14px; border: 3px solid var(--gold); background: var(--card); text-align: center; font-size: 13px; font-weight: 900; line-height: 1.3; }
+.mini-card { width: 96px; padding: 8px 3px; border-radius: 14px; border: 3px solid var(--gold); background: var(--card); text-align: center; font-size: 12px; font-weight: 900; line-height: 1.3; }
 .mini-card .mc-icon { font-size: 28px; display: block; }
 
 /* ---------- ずかん ---------- */
@@ -290,10 +294,10 @@ ruby rt { font-size: 12px; }
 .zukan-stage h3 { margin: 0 0 8px; font-size: 17px; font-weight: 900; }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .zcard {
-  aspect-ratio: 3 / 4; border-radius: 14px; padding: 6px 4px;
+  min-height: 92px; border-radius: 14px; padding: 6px 4px;
   border: 3px solid var(--gold); background: var(--card);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  text-align: center; font-size: 13px; font-weight: 900; line-height: 1.3;
+  text-align: center; font-size: 12px; font-weight: 900; line-height: 1.3;
   box-shadow: 0 3px 0 var(--line);
 }
 .zcard .z-icon { font-size: 30px; }
@@ -314,6 +318,7 @@ ruby rt { font-size: 12px; }
 .parent p { font-size: 16px; line-height: 1.8; margin: 0 0 8px; }
 .ptable { width: 100%; border-collapse: collapse; font-size: 15px; }
 .ptable th, .ptable td { border-bottom: 1px solid var(--line); padding: 8px 4px; text-align: left; }
+.ptable th { white-space: nowrap; font-size: 14px; }
 .ptable td.num { text-align: right; white-space: nowrap; font-weight: 800; }
 .btn.danger { background: var(--card); color: var(--red); box-shadow: 0 5px 0 var(--red-soft), 0 0 0 2px var(--red) inset; }
 
@@ -324,14 +329,16 @@ ruby rt { font-size: 12px; }
 @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .confetti { display: none; }
 }
 @media (max-width: 350px) {
-  .node { width: 84px; }
-  .node .n-name { font-size: 13px; }
+  .node { width: 72px; }
+  .node .n-name { font-size: 12px; }
+  .node .n-icon { font-size: 18px; }
   .mascot { width: 72px; height: 72px; }
   .stamp { width: 32px; height: 32px; font-size: 18px; }
+  .stamp-day { font-size: 12px; }
 }
 </style>
 </head>
@@ -378,7 +385,7 @@ ruby rt { font-size: 12px; }
 
     <div class="btn-row">
       <button class="btn" id="btnZukan">📖 ずかん</button>
-      <button class="btn" id="btnParent">👪 おうちの かたへ</button>
+      <button class="btn" id="btnParent">👪 おうちの かた</button>
     </div>
   </section>
 
@@ -833,7 +840,7 @@ const Core = (function () {
       q: 'ノーアウトか ワンアウトで、ランナーが ファーストと セカンド。ないやに たかい フライが あがり、しんぱんが「インフィールドフライ」と いった。バッターは？',
       choices: ['とられなくても アウト', 'とられたら アウト', 'セーフ'], answer: 0,
       explain: 'わざと おとして ダブルプレーを ねらうのを ふせぐ ルール。しんぱんが いったら、フェアなら とられなくても バッターは アウトだよ。',
-      card: { name: 'インフィールドフライ', icon: '☝️', point: 'フェアなら とられなくても アウト' },
+      card: { name: 'インフィールド フライ', icon: '☝️', point: 'フェアなら とられなくても アウト' },
       rule: '定義「インフィールドフライ」、5.09(a)(5)',
       pic: { runners: [1, 2] }
     },
@@ -1259,7 +1266,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   function renderMap() {
     const nx = Core.nextStage(P);
     let svg = '<svg viewBox="0 0 320 290" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-      '<path d="M160 288 L-10 118 Q160 -40 330 118 Z" fill="#3e9b4f"/>' +
+      '<path d="M160 288 L4 132 Q160 -34 316 132 Z" fill="#3e9b4f"/>' +
       '<path d="M160 280 L30 150 L160 20 L290 150 Z" fill="#d9a86c"/>' +
       '<path d="M160 230 L250 148 L160 66 L70 148 Z" fill="#4fae5e"/>';
     // 塁と塁をむすぶ線：クリアした区間はオレンジで太く
@@ -1592,7 +1599,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     if (res.unlocked) news.push('<div class="news-item unlock">🔓 ' + esc(Core.stageOf(res.unlocked).base) + ' ステージが ひらいたよ！</div>');
     if (isStage && res.stars > res.prevStars && res.prevStars > 0) news.push('<div class="news-item unlock">⭐ じこベスト こうしん！</div>');
     if (rankAfter.name !== R.rankBefore) news.push('<div class="news-item rank">' + rankAfter.icon + ' ランクアップ！「' + esc(rankAfter.name) + '」に なった！</div>');
-    if (res.stamp) news.push('<div class="news-item stamp">⚾ きょうの スタンプ ゲット！' + (res.streak >= 2 ? '（' + res.streak + 'にち れんぞく）' : '') + '</div>');
+    if (res.stamp) news.push('<div class="news-item stampnews">⚾ きょうの スタンプ ゲット！' + (res.streak >= 2 ? '（' + res.streak + 'にち れんぞく）' : '') + '</div>');
     $('news').innerHTML = news.join('');
 
     $('newCardsWrap').hidden = R.newCards.length === 0;
