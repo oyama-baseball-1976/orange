@@ -264,6 +264,27 @@ ruby rt { font-size: 12px; }
 .get-card .gc-label { font-size: 13px; font-weight: 900; color: var(--orange); }
 .get-card .gc-name { font-size: 18px; font-weight: 900; }
 
+/* ---------- プレーのアニメ ---------- */
+.q-field { margin: 4px -4px 6px; border-radius: 16px; overflow: hidden; background: #2d7a3a; scroll-margin-top: 76px; }
+.q-field svg { display: block; width: 100%; height: auto; touch-action: manipulation; }
+.pl-label { font-size: 24px; font-weight: 900; paint-order: stroke; stroke: #2a2233; stroke-width: 5px; stroke-linejoin: round; font-family: inherit; }
+.pl-label.out { fill: #ff5a5f; }
+.pl-label.safe { fill: #3fe08f; }
+.pl-label.run { fill: #ffd23d; }
+.pl-label.info { fill: #ffffff; font-size: 20px; }
+.pl-ring { fill: rgba(255, 255, 255, .18); stroke: #ffd23d; stroke-width: 3; stroke-dasharray: 6 5; }
+.pl-tap { cursor: pointer; outline: none; }
+.pl-tap:focus-visible .pl-ring, .pl-tap:hover .pl-ring { fill: rgba(255, 210, 61, .45); }
+.play-svg:not(.locked) .pl-ring { animation: ringpulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes ringpulse { 50% { transform: scale(1.15); } }
+.play-svg.locked .pl-tap { pointer-events: none; }
+.play-svg.locked .pl-ring { opacity: .35; }
+.pl-mark { fill: none; stroke-width: 5; }
+.pl-mark.ok { stroke: #3fe08f; }
+.pl-mark.ng { stroke: #ff5a5f; }
+.tap-hint { text-align: center; font-size: 17px; font-weight: 900; color: var(--orange); margin: 4px 0 0; }
+.replay { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 4px 12px; margin-top: 8px; border-radius: 999px; border: 2px solid var(--line); background: var(--card); font-size: 15px; font-weight: 800; }
+
 /* ---------- けっか ---------- */
 .result-title { font-size: 28px; font-weight: 900; text-align: center; margin: 4px 0 0; }
 .result-title.clear { color: var(--orange); }
@@ -534,7 +555,15 @@ const Core = (function () {
       choices: ['3つ', '4つ', '5つ'], answer: 1,
       explain: 'ボールが 4つで フォアボール。バッターは ファーストへ すすめるよ。「フォア」は えいごで「4」の ことだよ。',
       card: { name: 'フォアボール', icon: '🚶', point: 'ボール 4つで ファーストへ' },
-      rule: '5.05(b)(1)'
+      rule: '5.05(b)(1)',
+      scene: {
+        runners: [0], fielders: ['p', 'c'], steps: [
+        { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: 'c', d: 500 },
+        { t: 500, type: 'sfx', name: 'catch' },
+        { t: 600, type: 'label', text: 'ボール フォア！', at: 'H', tone: 'info', d: 1000 },
+        { t: 700, type: 'run', who: 0, to: 1, d: 1300 },
+        { t: 2000, type: 'label', text: 'ファーストへ！', at: 'b1', tone: 'run' }
+      ] }
     },
     {
       id: 's1-02', stage: 1, type: 'choice',
@@ -590,7 +619,16 @@ const Core = (function () {
       choices: ['ファーストへ すすめる', 'ストライク', 'もういちど うつ'], answer: 0,
       explain: '「デッドボール」だよ。バットを ふっていなくて、よけようと したなら、ファーストへ すすめる。',
       card: { name: 'デッドボール', icon: '🩹', point: 'よけようと して あたったら ファーストへ' },
-      rule: '5.05(b)(2)'
+      rule: '5.05(b)(2)',
+      scene: {
+        runners: [0], fielders: ['p', 'c'], steps: [
+        { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: 'r0', d: 450 },
+        { t: 450, type: 'ball', kind: 'roll', to: [178, 230], d: 300 },
+        { t: 500, type: 'sfx', name: 'whistle' },
+        { t: 500, type: 'label', text: 'デッドボール！', at: 'H', tone: 'info', d: 1100 },
+        { t: 900, type: 'run', who: 0, to: 1, d: 1300 },
+        { t: 2200, type: 'label', text: 'ファーストへ！', at: 'b1', tone: 'run' }
+      ] }
     },
     {
       id: 's1-09', stage: 1, type: 'choice',
@@ -598,7 +636,15 @@ const Core = (function () {
       choices: ['ファーストへ すすめる', 'さんしん', 'そのまま つづける'], answer: 0,
       explain: 'ボールが 4つめなので フォアボール。3ボール 2ストライクは「フルカウント」と いうよ。',
       card: { name: 'フルカウント', icon: '🖐️', point: '3ボール 2ストライクから ボールで フォアボール' },
-      rule: '5.05(b)(1)'
+      rule: '5.05(b)(1)',
+      scene: {
+        runners: [0], fielders: ['p', 'c'], steps: [
+        { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: 'c', d: 500 },
+        { t: 500, type: 'sfx', name: 'catch' },
+        { t: 600, type: 'label', text: 'フォアボール！', at: 'H', tone: 'info', d: 1000 },
+        { t: 700, type: 'run', who: 0, to: 1, d: 1300 },
+        { t: 2000, type: 'label', text: 'ファーストへ！', at: 'b1', tone: 'run' }
+      ] }
     },
     {
       id: 's1-10', stage: 1, type: 'ox',
@@ -640,7 +686,17 @@ const Core = (function () {
       choices: ['ホームラン', 'ファール', 'アウト'], answer: 0,
       explain: 'フェアの まま とんで フェンスを こえたら ホームラン！ ベースを ぜんぶ ふんで かえってこよう。',
       card: { name: 'ホームラン', icon: '🎆', point: 'フェアで フェンスを こえたら ホームラン' },
-      rule: '5.05(a)(5)'
+      rule: '5.05(a)(5)',
+      scene: {
+        runners: [0], fielders: ['p', 'cf'], steps: [
+        { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: 'H', d: 400 },
+        { t: 400, type: 'sfx', name: 'bat' },
+        { t: 400, type: 'ball', kind: 'fly', from: 'H', to: 'fenceC', d: 1400, h: 110, hide: true },
+        { t: 1100, type: 'label', text: 'ホームラン！', at: 'mid', tone: 'run', d: 1700 },
+        { t: 1700, type: 'sfx', name: 'cheer' },
+        { t: 500, type: 'run', who: 0, to: 4, d: 3000 },
+        { t: 3500, type: 'label', text: '1てん！', at: 'H', tone: 'run' }
+      ] }
     },
     {
       id: 's2-05', stage: 2, type: 'ox',
@@ -656,7 +712,18 @@ const Core = (function () {
       choices: ['2つ すすめる（ツーベース）', 'ホームラン', 'ファール'], answer: 0,
       explain: 'バウンドしてから こえたら ホームランでは ない。バッターも ランナーも 2つ すすめるよ（エンタイトル ツーベース）。',
       card: { name: 'エンタイトル ツーベース', icon: '✌️', point: 'バウンドして こえたら 2つ すすむ' },
-      rule: '5.05(a)(6)'
+      rule: '5.05(a)(6)',
+      scene: {
+        runners: [0], fielders: ['p', 'cf'], steps: [
+        { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: 'H', d: 400 },
+        { t: 400, type: 'sfx', name: 'bat' },
+        { t: 400, type: 'ball', kind: 'fly', from: 'H', to: 'warnC', d: 900, h: 70 },
+        { t: 1300, type: 'ball', kind: 'roll', to: 'fenceC', d: 350, hide: true },
+        { t: 1400, type: 'label', text: 'バウンドして こえた！', at: 'mid', tone: 'info', d: 1100 },
+        { t: 1400, type: 'sfx', name: 'whistle' },
+        { t: 500, type: 'run', who: 0, to: 2, d: 2000 },
+        { t: 2500, type: 'label', text: 'ツーベース！', at: 'b2', tone: 'run' }
+      ] }
     },
     {
       id: 's2-07', stage: 2, type: 'choice',
@@ -664,7 +731,15 @@ const Core = (function () {
       choices: ['ファースト', 'サード', 'セカンド'], answer: 0,
       explain: 'うったら ファーストへ ダッシュ！ ベースは ファースト → セカンド → サード → ホームの じゅんばんだよ。',
       card: { name: 'ファーストへ ダッシュ', icon: '💨', point: 'うったら まず ファーストへ' },
-      rule: '5.05(a)(1)、5.06(b)(1)'
+      rule: '5.05(a)(1)、5.06(b)(1)',
+      scene: {
+        runners: [0], fielders: ['p', 'cf'], steps: [
+        { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: 'H', d: 400 },
+        { t: 400, type: 'sfx', name: 'bat' },
+        { t: 400, type: 'ball', kind: 'grounder', from: 'H', to: 'cf', d: 1000 },
+        { t: 500, type: 'run', who: 0, to: 1, d: 1400 },
+        { t: 1900, type: 'label', text: 'ダッシュ！', at: 'b1', tone: 'run' }
+      ] }
     },
     {
       id: 's2-08', stage: 2, type: 'ox',
@@ -672,7 +747,19 @@ const Core = (function () {
       choices: OX, answer: 0,
       explain: 'ファーストだけは かけぬけて いい。すぐ もどれば、タッチされても アウトに ならないよ。でも セカンドへ すすもうと すると、タッチで アウトに なる。',
       card: { name: 'かけぬけ', icon: '🏁', point: 'ファーストは かけぬけて すぐ もどれば いい' },
-      rule: '5.09(b)(4)、5.09(b)(11)'
+      rule: '5.09(b)(4)、5.09(b)(11)',
+      scene: {
+        runners: [0], fielders: ['ss', '1b'], steps: [
+        { t: 0, type: 'sfx', name: 'bat' },
+        { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: 'ss', d: 700 },
+        { t: 0, type: 'field', who: '1b', to: 'b1', d: 400 },
+        { t: 800, type: 'ball', kind: 'throw', from: 'ss', to: '1b', d: 550 },
+        { t: 1350, type: 'sfx', name: 'catch' },
+        { t: 100, type: 'run', who: 0, to: 'over1', d: 1300 },
+        { t: 1150, type: 'label', text: 'セーフ！', at: 'b1', tone: 'safe', d: 1000 },
+        { t: 1600, type: 'run', who: 0, to: 1, d: 500 },
+        { t: 2200, type: 'label', text: 'すぐ もどれば OK', at: 'b1', tone: 'info' }
+      ] }
     },
     {
       id: 's2-09', stage: 2, type: 'choice',
@@ -680,7 +767,18 @@ const Core = (function () {
       choices: ['アウト', 'ファールで そのまま', 'セーフ'], answer: 0,
       explain: 'フライは、ファールゾーンでも とられたら アウトだよ。',
       card: { name: 'ファールフライ', icon: '🎈', point: 'ファールでも フライを とられたら アウト' },
-      rule: '5.09(a)(1)'
+      rule: '5.09(a)(1)',
+      scene: {
+        runners: [0], fielders: ['p', '1b'], steps: [
+        { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: 'H', d: 400 },
+        { t: 400, type: 'sfx', name: 'bat' },
+        { t: 400, type: 'ball', kind: 'fly', from: 'H', to: '1b', d: 1200, h: 90 },
+        { t: 450, type: 'field', who: '1b', to: 'foulR', d: 1000 },
+        { t: 1600, type: 'sfx', name: 'catch' },
+        { t: 500, type: 'run', who: 0, to: 0.5, d: 1100 },
+        { t: 1650, type: 'out', who: 0 },
+        { t: 1650, type: 'label', text: 'アウト！', at: 'foulR', tone: 'out' }
+      ] }
     },
     {
       id: 's2-10', stage: 2, type: 'choice',
@@ -699,6 +797,14 @@ const Core = (function () {
       explain: 'ベースから はなれている ときに タッチされたら アウトだよ。',
       card: { name: 'タッチアウト', icon: '👆', point: 'ベースから はなれて タッチされたら アウト' },
       rule: '5.09(b)(4)',
+      scene: {
+        runners: [1.5], fielders: ['ss'], steps: [
+        { t: 0, type: 'ball', kind: 'carry', to: 'ss', d: 1000 },
+        { t: 0, type: 'field', who: 'ss', to: 'r1.5', d: 900 },
+        { t: 0, type: 'run', who: 1.5, to: 1.3, d: 900 },
+        { t: 900, type: 'out', who: 1.5 },
+        { t: 900, type: 'label', text: 'タッチ！ アウト', at: 'r1.5', tone: 'out' }
+      ] },
       pic: { runners: [1] }
     },
     {
@@ -708,6 +814,14 @@ const Core = (function () {
       explain: 'ベースに ついていれば あんぜん。タッチされても アウトに ならないよ。（うった あと、うしろから ランナーが きて すすむしか ない とき〈フォース〉は べつ）',
       card: { name: 'ベースは あんぜん', icon: '🛡️', point: 'けんせいの とき ベースに ついていれば セーフ' },
       rule: '5.09(b)(4)',
+      scene: {
+        runners: [2.2], fielders: ['p', 'ss'], steps: [
+        { t: 0, type: 'field', who: 'ss', to: 'b2', d: 500 },
+        { t: 150, type: 'ball', kind: 'throw', from: 'p', to: 'ss', d: 500 },
+        { t: 100, type: 'run', who: 2.2, to: 2, d: 450 },
+        { t: 650, type: 'sfx', name: 'catch' },
+        { t: 700, type: 'label', text: 'セーフ！', at: 'b2', tone: 'safe' }
+      ] },
       pic: { runners: [2] }
     },
     {
@@ -716,7 +830,18 @@ const Core = (function () {
       choices: ['もとの ベースに ふれてから すすむ', 'そのまま すすんで いい', 'すすんでは いけない'], answer: 0,
       explain: 'フライが とられたら、いちど もとの ベースに ふれて（もどって）から すすむよ。これを「タッチアップ」と いうよ。',
       card: { name: 'タッチアップ', icon: '🔁', point: 'フライが とられたら もどってから すすむ' },
-      rule: '5.09(b)(5)、5.09(c)(1)'
+      rule: '5.09(b)(5)、5.09(c)(1)',
+      scene: {
+        runners: [3], fielders: ['lf', 'c'], steps: [
+        { t: 0, type: 'sfx', name: 'bat' },
+        { t: 0, type: 'ball', kind: 'fly', from: 'H', to: 'lf', d: 1200, h: 80 },
+        { t: 1200, type: 'sfx', name: 'catch' },
+        { t: 1200, type: 'label', text: 'キャッチ！', at: 'lf', tone: 'info', d: 700 },
+        { t: 1250, type: 'run', who: 3, to: 4, d: 1100 },
+        { t: 1350, type: 'ball', kind: 'throw', from: 'lf', to: 'c', d: 1100, h: 30 },
+        { t: 2350, type: 'label', text: '1てん！', at: 'H', tone: 'run' },
+        { t: 2350, type: 'sfx', name: 'cheer' }
+      ] }
     },
     {
       id: 's3-04', stage: 3, type: 'ox',
@@ -724,7 +849,17 @@ const Core = (function () {
       choices: OX, answer: 0,
       explain: 'まえの ランナーを おいこしたら アウト。じゅんばんを まもって はしろう。',
       card: { name: 'おいこし きんし', icon: '🚫', point: 'まえの ランナーを おいこすと アウト' },
-      rule: '5.09(b)(9)'
+      rule: '5.09(b)(9)',
+      scene: {
+        runners: [0, 1], fielders: ['cf'], steps: [
+        { t: 0, type: 'sfx', name: 'bat' },
+        { t: 0, type: 'ball', kind: 'fly', from: 'H', to: 'cf', d: 1300, h: 60 },
+        { t: 0, type: 'run', who: 1, to: 1.4, d: 600 },
+        { t: 700, type: 'run', who: 1, to: 1.1, d: 800 },
+        { t: 100, type: 'run', who: 0, to: 1.3, d: 1100 },
+        { t: 1200, type: 'out', who: 0 },
+        { t: 1200, type: 'label', text: 'おいこし アウト', at: 'r0', tone: 'out' }
+      ] }
     },
     {
       id: 's3-05', stage: 3, type: 'choice',
@@ -732,7 +867,19 @@ const Core = (function () {
       choices: ['アウト', 'セーフ', 'ひとつ すすむ'], answer: 0,
       explain: 'ピッチャーいがいの ないやしゅを とおりすぎる まえに、うった ボールに あたった ランナーは アウト。バッターは ファーストへ すすめるよ。',
       card: { name: 'だきゅうに あたる', icon: '⚠️', point: 'ピッチャーいがいの ないやしゅより まえで あたると アウト' },
-      rule: '5.09(b)(7)'
+      rule: '5.09(b)(7)',
+      scene: {
+        runners: [0, 2], fielders: ['ss'], steps: [
+        { t: 0, type: 'run', who: 2, to: 2.3, d: 300 },
+        { t: 300, type: 'sfx', name: 'bat' },
+        { t: 300, type: 'ball', kind: 'grounder', from: 'H', to: 'r2', d: 700 },
+        { t: 1000, type: 'ball', kind: 'roll', to: [132, 126], d: 400 },
+        { t: 1000, type: 'out', who: 2 },
+        { t: 1000, type: 'label', text: 'あたった！ アウト', at: 'r2', tone: 'out', d: 1100 },
+        { t: 1000, type: 'sfx', name: 'whistle' },
+        { t: 400, type: 'run', who: 0, to: 1, d: 1300 },
+        { t: 2100, type: 'label', text: 'バッターは ファーストへ', at: 'b1', tone: 'info' }
+      ] }
     },
     {
       id: 's3-06', stage: 3, type: 'choice',
@@ -740,7 +887,18 @@ const Core = (function () {
       choices: ['ランナーが アウト', 'やしゅの しっぱい', 'なにも おこらない'], answer: 0,
       explain: 'ゴロを とる やしゅが ゆうせん。ランナーは よけて はしらないと いけない。じゃまを したら アウトだよ。',
       card: { name: 'やしゅが ゆうせん', icon: '🙅', point: 'ゴロを とる やしゅの じゃまは アウト' },
-      rule: '6.01(a)(10)、5.09(b)(3)'
+      rule: '6.01(a)(10)、5.09(b)(3)',
+      scene: {
+        runners: [0, 2], fielders: ['ss'], steps: [
+        { t: 0, type: 'sfx', name: 'bat' },
+        { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: [124, 122], d: 700 },
+        { t: 100, type: 'run', who: 2, to: [124, 116], d: 600 },
+        { t: 100, type: 'field', who: 'ss', to: [122, 120], d: 550 },
+        { t: 750, type: 'sfx', name: 'whistle' },
+        { t: 750, type: 'out', who: 2 },
+        { t: 750, type: 'label', text: 'じゃま！ アウト', at: 'r2', tone: 'out' },
+        { t: 200, type: 'run', who: 0, to: 1, d: 1400 }
+      ] }
     },
     {
       id: 's3-07', stage: 3, type: 'choice',
@@ -748,7 +906,17 @@ const Core = (function () {
       choices: ['アウト', 'セーフ', 'やりなおし'], answer: 0,
       explain: 'タッチから にげるために、はしる みちから よこへ おおきく はなれると アウトだよ。',
       card: { name: 'はしる みち', icon: '🛤️', point: 'タッチから にげて みちを はずれると アウト' },
-      rule: '5.09(b)(1)'
+      rule: '5.09(b)(1)',
+      scene: {
+        runners: [2.4], fielders: ['3b'], steps: [
+        { t: 0, type: 'ball', kind: 'carry', to: '3b', d: 1300 },
+        { t: 200, type: 'field', who: '3b', to: [112, 128], d: 700 },
+        { t: 300, type: 'run', who: 2.4, to: [96, 92], d: 800 },
+        { t: 1100, type: 'label', text: 'みちから でた！', at: 'r2.4', tone: 'info', d: 700 },
+        { t: 1100, type: 'sfx', name: 'whistle' },
+        { t: 1100, type: 'out', who: 2.4 },
+        { t: 1800, type: 'label', text: 'アウト！', at: 'r2.4', tone: 'out' }
+      ] }
     },
     {
       id: 's3-08', stage: 3, type: 'choice',
@@ -757,6 +925,18 @@ const Core = (function () {
       explain: 'バッターが ファーストへ いくので、みんな 1つずつ おされて すすむ。サードの ランナーは ホームへ（おしだし）。',
       card: { name: 'おしだし', icon: '➡️', point: 'まんるいで フォアボールは 1てん' },
       rule: '5.05(b)(1)、5.06(b)(3)(B)',
+      scene: {
+        runners: [0, 1, 2, 3], fielders: ['p', 'c'], steps: [
+        { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: 'c', d: 500 },
+        { t: 500, type: 'sfx', name: 'catch' },
+        { t: 600, type: 'label', text: 'フォアボール！', at: 'mid', tone: 'info', d: 900 },
+        { t: 800, type: 'run', who: 0, to: 1, d: 1100 },
+        { t: 800, type: 'run', who: 1, to: 2, d: 1100 },
+        { t: 800, type: 'run', who: 2, to: 3, d: 1100 },
+        { t: 800, type: 'run', who: 3, to: 4, d: 1100 },
+        { t: 1900, type: 'label', text: 'おしだし 1てん！', at: 'H', tone: 'run' },
+        { t: 1900, type: 'sfx', name: 'cheer' }
+      ] },
       pic: { runners: [1, 2, 3] }
     },
     {
@@ -765,7 +945,14 @@ const Core = (function () {
       choices: ['1つ すすめる', 'アウト', 'うごけない'], answer: 0,
       explain: 'ボークは、ランナーを だますような ピッチャーの はんそく。ランナーは みんな 1つ すすめるよ。',
       card: { name: 'ボーク', icon: '🙈', point: 'ボークで ランナーは 1つ すすむ' },
-      rule: '6.02(a)、5.06(b)(3)(A)'
+      rule: '6.02(a)、5.06(b)(3)(A)',
+      scene: {
+        runners: [1], fielders: ['p'], steps: [
+        { t: 300, type: 'sfx', name: 'whistle' },
+        { t: 300, type: 'label', text: 'ボーク！', at: 'p', tone: 'out', d: 1000 },
+        { t: 900, type: 'run', who: 1, to: 2, d: 1000 },
+        { t: 1900, type: 'label', text: '1つ すすむ', at: 'b2', tone: 'run' }
+      ] }
     },
     {
       id: 's3-10', stage: 3, type: 'ox',
@@ -773,7 +960,19 @@ const Core = (function () {
       choices: OX, answer: 0,
       explain: 'やしゅ（キャッチャーも）が なげた ボールが ベンチに はいったら、ランナーは あんぜんに 2つ すすめるよ。（ピッチャーが プレートから けんせいした ボールが はいった ときは 1つ）',
       card: { name: 'ボールが ベンチへ', icon: '🪑', point: 'やしゅの そうきゅうが ベンチに はいったら 2つ（プレートからの けんせいは 1つ）' },
-      rule: '5.06(b)(4)(G)、5.06(b)(4)(H)'
+      rule: '5.06(b)(4)(G)、5.06(b)(4)(H)',
+      scene: {
+        runners: [0], fielders: ['ss', '1b'], steps: [
+        { t: 0, type: 'sfx', name: 'bat' },
+        { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: 'ss', d: 700 },
+        { t: 0, type: 'field', who: '1b', to: 'b1', d: 400 },
+        { t: 800, type: 'ball', kind: 'throw', from: 'ss', to: 'bench1', d: 700, hide: true },
+        { t: 100, type: 'run', who: 0, to: 1, d: 1100 },
+        { t: 1500, type: 'sfx', name: 'whistle' },
+        { t: 1500, type: 'label', text: 'ベンチに はいった！', at: 'bench1', tone: 'info', d: 900 },
+        { t: 2000, type: 'run', who: 0, to: 2, d: 800 },
+        { t: 2800, type: 'label', text: '2つ すすむ', at: 'b2', tone: 'run' }
+      ] }
     },
 
     /* ===== ステージ4 ホーム：アウトと まもり ===== */
@@ -791,7 +990,16 @@ const Core = (function () {
       choices: ['アウト', 'セーフ', 'ファーストへ すすめる'], answer: 0,
       explain: 'フライを じめんに おちる まえに とったら アウトだよ。',
       card: { name: 'フライアウト', icon: '🪁', point: 'フライを とられたら アウト' },
-      rule: '5.09(a)(1)'
+      rule: '5.09(a)(1)',
+      scene: {
+        runners: [0], fielders: ['cf'], steps: [
+        { t: 0, type: 'sfx', name: 'bat' },
+        { t: 0, type: 'ball', kind: 'fly', from: 'H', to: 'cf', d: 1300, h: 90 },
+        { t: 1300, type: 'sfx', name: 'catch' },
+        { t: 100, type: 'run', who: 0, to: 0.8, d: 1200 },
+        { t: 1350, type: 'out', who: 0 },
+        { t: 1350, type: 'label', text: 'アウト！', at: 'cf', tone: 'out' }
+      ] }
     },
     {
       id: 's4-03', stage: 4, type: 'choice',
@@ -799,7 +1007,16 @@ const Core = (function () {
       choices: ['とったことに ならない', 'アウト', 'ファール'], answer: 0,
       explain: 'しっかり にぎって いないと、とったことに ならない。さいごまで ボールを はなさないのが だいじ。',
       card: { name: 'しっかり キャッチ', icon: '🤲', point: 'すぐ おとしたら とったことに ならない' },
-      rule: '定義「キャッチ」'
+      rule: '定義「キャッチ」',
+      scene: {
+        runners: [0], fielders: ['lf'], steps: [
+        { t: 0, type: 'sfx', name: 'bat' },
+        { t: 0, type: 'ball', kind: 'fly', from: 'H', to: 'lf', d: 1200, h: 90 },
+        { t: 1250, type: 'ball', kind: 'roll', to: 'dropL', d: 400 },
+        { t: 1300, type: 'label', text: 'おとした！', at: 'lf', tone: 'safe', d: 900 },
+        { t: 100, type: 'run', who: 0, to: 1, d: 1500 },
+        { t: 2100, type: 'label', text: 'セーフ！', at: 'b1', tone: 'safe' }
+      ] }
     },
     {
       id: 's4-04', stage: 4, type: 'choice',
@@ -807,7 +1024,15 @@ const Core = (function () {
       choices: ['ボールを もった てか、ボールの はいった グラブで さわる', 'からの グラブで さわる', 'ボールを ランナーに なげて あてる'], answer: 0,
       explain: 'ボールが ない てや グラブで さわっても タッチに ならない。ボールを なげて あてても アウトに ならないよ。',
       card: { name: 'タッチの しかた', icon: '✋', point: 'ボールを もって タッチする' },
-      rule: '定義「タッグ」'
+      rule: '定義「タッグ」',
+      scene: {
+        runners: [1.5], fielders: ['2b'], steps: [
+        { t: 0, type: 'ball', kind: 'carry', to: '2b', d: 900 },
+        { t: 0, type: 'field', who: '2b', to: 'r1.5', d: 800 },
+        { t: 0, type: 'run', who: 1.5, to: 1.7, d: 800 },
+        { t: 850, type: 'out', who: 1.5 },
+        { t: 850, type: 'label', text: 'タッチ！', at: 'r1.5', tone: 'out' }
+      ] }
     },
     {
       id: 's4-05', stage: 4, type: 'ox',
@@ -816,6 +1041,18 @@ const Core = (function () {
       explain: 'バッターが ファーストへ くるので、ファーストの ランナーは セカンドへ すすむしか ない（フォース）。だから ランナーより さきに ベースを ふめば アウトだよ。',
       card: { name: 'フォースアウト', icon: '👟', point: 'すすむしか ない ランナーは ベースを ふんで アウト' },
       rule: '定義「フォースプレイ」、5.09(b)(6)',
+      scene: {
+        runners: [0, 1], fielders: ['2b', 'ss'], steps: [
+        { t: 0, type: 'sfx', name: 'bat' },
+        { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: '2b', d: 700 },
+        { t: 100, type: 'field', who: 'ss', to: 'b2', d: 600 },
+        { t: 800, type: 'ball', kind: 'throw', from: '2b', to: 'ss', d: 400 },
+        { t: 1200, type: 'sfx', name: 'catch' },
+        { t: 200, type: 'run', who: 1, to: 1.85, d: 1100 },
+        { t: 1250, type: 'out', who: 1 },
+        { t: 1250, type: 'label', text: 'フォースアウト！', at: 'b2', tone: 'out' },
+        { t: 200, type: 'run', who: 0, to: 1, d: 1500 }
+      ] },
       pic: { runners: [1] }
     },
     {
@@ -825,6 +1062,20 @@ const Core = (function () {
       explain: 'ファーストが あいているので、セカンドの ランナーは すすまなくても よかった（フォースでは ない）。アウトに するには タッチが ひつようだよ。',
       card: { name: 'タッチプレー', icon: '🎯', point: 'すすまなくて いい ランナーは タッチで アウト' },
       rule: '定義「フォースプレイ」、5.09(b)(4)',
+      scene: {
+        runners: [0, 2], fielders: ['ss', '3b'], steps: [
+        { t: 0, type: 'sfx', name: 'bat' },
+        { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: 'ss', d: 700 },
+        { t: 0, type: 'field', who: '3b', to: 'b3', d: 500 },
+        { t: 800, type: 'ball', kind: 'throw', from: 'ss', to: '3b', d: 400 },
+        { t: 1200, type: 'sfx', name: 'catch' },
+        { t: 100, type: 'run', who: 2, to: 2.85, d: 1400 },
+        { t: 1250, type: 'field', who: '3b', to: 'r2', d: 250 },
+        { t: 1250, type: 'ball', kind: 'carry', to: '3b', d: 300 },
+        { t: 1500, type: 'out', who: 2 },
+        { t: 1500, type: 'label', text: 'タッチ アウト！', at: 'b3', tone: 'out' },
+        { t: 200, type: 'run', who: 0, to: 1, d: 1500 }
+      ] },
       pic: { runners: [2] }
     },
     {
@@ -833,7 +1084,18 @@ const Core = (function () {
       choices: ['アウト', 'セーフ', 'もういちど うつ'], answer: 0,
       explain: 'バッターが ファーストに つく まえに、ボールを もって ファーストの ベースを ふめば アウトだよ。',
       card: { name: 'ファーストで アウト', icon: '🥇', point: 'バッターより さきに ファーストを ふめば アウト' },
-      rule: '5.09(a)(10)'
+      rule: '5.09(a)(10)',
+      scene: {
+        runners: [0], fielders: ['ss', '1b'], steps: [
+        { t: 0, type: 'sfx', name: 'bat' },
+        { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: 'ss', d: 700 },
+        { t: 0, type: 'field', who: '1b', to: 'b1', d: 400 },
+        { t: 800, type: 'ball', kind: 'throw', from: 'ss', to: '1b', d: 450 },
+        { t: 1250, type: 'sfx', name: 'catch' },
+        { t: 200, type: 'run', who: 0, to: 1, d: 1400 },
+        { t: 1250, type: 'out', who: 0 },
+        { t: 1250, type: 'label', text: 'アウト！', at: 'b1', tone: 'out' }
+      ] }
     },
     {
       id: 's4-08', stage: 4, type: 'choice',
@@ -842,6 +1104,16 @@ const Core = (function () {
       explain: 'わざと おとして ダブルプレーを ねらうのを ふせぐ ルール。しんぱんが いったら、フェアなら とられなくても バッターは アウトだよ。',
       card: { name: 'インフィールド フライ', icon: '☝️', point: 'フェアなら とられなくても アウト' },
       rule: '定義「インフィールドフライ」、5.09(a)(5)',
+      scene: {
+        runners: [0, 1, 2], fielders: ['ss'], steps: [
+        { t: 0, type: 'sfx', name: 'bat' },
+        { t: 0, type: 'ball', kind: 'fly', from: 'H', to: 'ss', d: 1600, h: 110 },
+        { t: 500, type: 'sfx', name: 'whistle' },
+        { t: 500, type: 'label', text: 'インフィールドフライ！', at: 'mid', tone: 'info', d: 1200 },
+        { t: 100, type: 'run', who: 0, to: 0.3, d: 500 },
+        { t: 600, type: 'out', who: 0 },
+        { t: 1800, type: 'label', text: 'バッター アウト', at: 'H', tone: 'out' }
+      ] },
       pic: { runners: [1, 2] }
     },
     {
@@ -864,6 +1136,272 @@ const Core = (function () {
 
   const BY_ID = {};
   QUESTIONS.forEach(function (q) { BY_ID[q.id] = q; });
+
+  /* ------------------------------------------------------------
+     プレーのアニメ（場面＝scene）
+     ------------------------------------------------------------
+     ここは「時刻 t のとき、だれが どこに いるか」を計算するだけ（画面には触れない）。
+     描くのは app の Play。こうしておくと、テストで位置や判定の文字を確かめられる。
+
+     scene = {
+       runners: [0, 1, 2.5],    // はじめの ランナーの位置（ベースパスの きょり s）。0＝バッター、1＝ファースト…4＝ホーム
+       fielders: ['ss', '1b'],  // えがく やしゅ（ボールに かかわる人だけ）
+       steps: [ …うごき… ]       // 時間わり。t＝はじまり（ミリ秒）、d＝かかる時間
+     }
+     うごきの種類
+       { type:'run',   who:1, to:2 }            ランナー who（はじめの s で よぶ）が s＝to まで はしる（数字なら ベースパスを とおる）
+       { type:'field', who:'ss', to:'b2' }       やしゅが うごく
+       { type:'ball',  kind:'grounder', from:'H', to:'ss' }   ボール。kind：grounder／fly／liner／throw／pitch／carry（やしゅが もって はこぶ）／roll
+       { type:'out',   who:1 }                  ランナーが アウト（うすく なる）
+       { type:'label', text:'アウト！', at:'b2', tone:'out' }   おおきな もじ（tone：out／safe／run／info）
+       { type:'sfx',   name:'bat' }             こうかおん（bat／catch／cheer／whistle）
+     場所の よびかた：'H' 'b1' 'b2' 'b3'（ベース）、'p' 'c' '1b' '2b' 'ss' '3b' 'lf' 'cf' 'rf'（やしゅの いま いる ところ）、
+       FIELD.SPOT の なまえ、'r1' のような ランナーの いま いる ところ、[x, y]
+     ------------------------------------------------------------ */
+  const FIELD = {
+    W: 320, H: 250,
+    // ベースパス上の点。s＝0 ホーム → 1 ファースト → 2 セカンド → 3 サード → 4 ホーム
+    PATH: [[160, 222], [254, 158], [160, 96], [66, 158], [160, 222]],
+    BASE: { H: [160, 222], b1: [254, 158], b2: [160, 96], b3: [66, 158], b4: [160, 222] },
+    POS: {
+      p: [160, 162], c: [160, 242], '1b': [240, 140], '2b': [206, 114], ss: [114, 114],
+      '3b': [80, 140], lf: [66, 60], cf: [160, 38], rf: [254, 60]
+    },
+    SPOT: {
+      over1: [282, 139],      // ファーストを かけぬけた さき
+      foulR: [290, 196],      // ファーストがわの ファールゾーン
+      fenceC: [160, 2],       // センターの フェンスの むこう
+      warnC: [160, 30],       // センターの フェンスの てまえ
+      bench1: [306, 238],     // ファーストがわの ベンチ
+      mid: [160, 150],        // まんなか（もじを だす ところ）
+      dropL: [84, 74]         // レフトが おとした ボールが ころがる ところ
+    }
+  };
+  const SCENE_TAIL = 700;     // さいごの うごきの あと、けっかを みせておく 時間
+
+  function lerp2(a, b, u) { return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]; }
+  function clamp01(u) { return u < 0 ? 0 : u > 1 ? 1 : u; }
+  function easeOut(u) { return 1 - (1 - u) * (1 - u); }
+  function easeInOut(u) { return u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; }
+
+  // ベースパスの きょり s の点
+  function pathPoint(s) {
+    const P = FIELD.PATH;
+    if (s <= 0) return P[0].slice();
+    if (s >= 4) return P[4].slice();
+    const k = Math.floor(s);
+    return lerp2(P[k], P[k + 1], s - k);
+  }
+
+  // 毎フレーム ならべかえないように、場面ごとに 1回だけ ならべて おぼえておく
+  const SORTED = typeof WeakMap === 'function' ? new WeakMap() : null;
+  function sortedSteps(scene) {
+    const cached = SORTED && SORTED.get(scene);
+    if (cached && cached.src === scene.steps && cached.n === (scene.steps || []).length) return cached.list;
+    const list = (scene.steps || []).slice().sort(function (a, b) { return a.t - b.t; });
+    if (SORTED) SORTED.set(scene, { src: scene.steps, n: list.length, list: list });
+    return list;
+  }
+
+  function isRunnerRef(ref) { return typeof ref === 'string' && /^r\d+(\.\d+)?$/.test(ref); }
+
+  // 場所の よびかたを [x, y] に なおす（t は そのときの 時刻）
+  function pointOf(scene, ref, t) {
+    if (Array.isArray(ref)) return ref.slice();
+    if (FIELD.BASE[ref]) return FIELD.BASE[ref].slice();
+    if (FIELD.POS[ref]) return fielderAt(scene, ref, t);
+    if (FIELD.SPOT[ref]) return FIELD.SPOT[ref].slice();
+    if (isRunnerRef(ref)) return runnerAt(scene, +ref.slice(1), t).xy;
+    return null;
+  }
+
+  function fielderAt(scene, who, t) {
+    let p = FIELD.POS[who].slice();
+    const steps = sortedSteps(scene);
+    for (let i = 0; i < steps.length; i++) {
+      const st = steps[i];
+      if (st.type !== 'field' || st.who !== who) continue;
+      if (t <= st.t) break;
+      // やしゅの いきさきは ベース・ばしょ・ランナー（やしゅ どうしは さんしょうしない）
+      const to = isRunnerRef(st.to) ? runnerAt(scene, +st.to.slice(1), st.t + st.d).xy
+        : (FIELD.BASE[st.to] || FIELD.SPOT[st.to] || st.to);
+      const u = clamp01((t - st.t) / (st.d || 1));
+      p = lerp2(p, to, easeInOut(u));
+      if (u < 1) break;
+    }
+    return p;
+  }
+
+  // ランナー who の いる ところ。{ xy, s（ベースパスの上なら きょり）, out, home }
+  function runnerAt(scene, who, t) {
+    let s = who, xy = pathPoint(who), out = false;
+    const steps = sortedSteps(scene);
+    for (let i = 0; i < steps.length; i++) {
+      const st = steps[i];
+      if (st.who !== who) continue;
+      if (st.type === 'out' && t >= st.t) out = true;
+      if (st.type !== 'run' || t <= st.t) continue;
+      const u = clamp01((t - st.t) / (st.d || 1));
+      if (typeof st.to === 'number' && s !== null) {
+        s = s + (st.to - s) * u;
+        xy = pathPoint(s);
+      } else {
+        const to = typeof st.to === 'number' ? pathPoint(st.to) : (FIELD.SPOT[st.to] || FIELD.BASE[st.to] || st.to);
+        xy = lerp2(xy, to, u);
+        s = (u >= 1 && typeof st.to === 'number') ? st.to : null;
+      }
+    }
+    return { xy: xy, s: s, out: out, home: s !== null && s >= 4 };
+  }
+
+  // ボールの たかさ（地面からの うき）。かげとの きょりに なる
+  function ballHeight(kind, u, st) {
+    if (kind === 'fly') return (st.h || 70) * 4 * u * (1 - u);
+    if (kind === 'throw') return (st.h || 14) * 4 * u * (1 - u);
+    if (kind === 'liner') return 9 + 3 * (1 - u);
+    if (kind === 'pitch') return 6;
+    if (kind === 'carry') return 7;
+    if (kind === 'grounder') return 9 * Math.abs(Math.sin(u * Math.PI * 3)) * (1 - u);
+    return 0;
+  }
+
+  function ballAt(scene, t) {
+    const all = sortedSteps(scene);
+    const steps = [];
+    for (let i = 0; i < all.length; i++) if (all[i].type === 'ball') steps.push(all[i]);
+    let cur = null, idx = -1;
+    for (let i = 0; i < steps.length; i++) { if (steps[i].t <= t) { cur = steps[i]; idx = i; } }
+    if (!cur) return { visible: false, xy: FIELD.BASE.H.slice(), h: 0 };
+    const u = clamp01((t - cur.t) / (cur.d || 1));
+    if (cur.hide && u >= 1) return { visible: false, xy: pointOf(scene, cur.to, cur.t + cur.d), h: 0 };
+    if (cur.kind === 'carry') return { visible: true, xy: pointOf(scene, cur.to, t), h: ballHeight('carry', u, cur) };
+    let from;
+    if (cur.from) from = pointOf(scene, cur.from, cur.t);
+    else if (idx > 0) from = pointOf(scene, steps[idx - 1].to, cur.t);
+    else from = FIELD.BASE.H.slice();
+    const to = pointOf(scene, cur.to, cur.t + cur.d);
+    const k = cur.kind === 'grounder' || cur.kind === 'roll' ? easeOut(u) : u;
+    return { visible: true, xy: lerp2(from, to, k), h: ballHeight(cur.kind, u, cur), kind: cur.kind };
+  }
+
+  function sceneDuration(scene) {
+    let end = 0;
+    (scene.steps || []).forEach(function (s) { end = Math.max(end, s.t + (s.d || 0)); });
+    return end + SCENE_TAIL;
+  }
+
+  // 時刻 t の ようす（画面は これを そのまま えがく）
+  function sceneAt(scene, t) {
+    const runners = {};
+    (scene.runners || []).forEach(function (r) { runners[r] = runnerAt(scene, r, t); });
+    const fielders = {};
+    (scene.fielders || []).forEach(function (f) { fielders[f] = fielderAt(scene, f, t); });
+    const labels = [];
+    sortedSteps(scene).forEach(function (st) {
+      if (st.type === 'label' && t >= st.t && (!st.d || t < st.t + st.d)) {
+        labels.push({ text: st.text, tone: st.tone || 'info', xy: pointOf(scene, st.at || 'mid', st.t), age: t - st.t });
+      }
+    });
+    return { t: t, runners: runners, fielders: fielders, ball: ballAt(scene, t), labels: labels };
+  }
+
+  // 場面の まちがいを さがす（テスト用）。まちがいの 文の配列を かえす
+  function checkScene(scene) {
+    const errs = [];
+    const runners = scene.runners || [];
+    const fielders = scene.fielders || [];
+    const knownRef = function (ref, allowRunner) {
+      if (Array.isArray(ref)) return ref.length === 2;
+      if (FIELD.BASE[ref] || FIELD.SPOT[ref]) return true;
+      if (FIELD.POS[ref]) return fielders.indexOf(ref) >= 0;
+      if (allowRunner && isRunnerRef(ref)) return runners.indexOf(+ref.slice(1)) >= 0;
+      return false;
+    };
+    runners.forEach(function (r) { if (typeof r !== 'number' || r < 0 || r > 4) errs.push('runner ' + r); });
+    fielders.forEach(function (f) { if (!FIELD.POS[f]) errs.push('fielder ' + f); });
+    (scene.steps || []).forEach(function (st, i) {
+      const at = 'step' + i + '(' + st.type + ')';
+      if (!(st.t >= 0)) errs.push(at + ' t');
+      if (st.d !== undefined && !(st.d > 0)) errs.push(at + ' d');
+      if (st.type === 'run') {
+        if (runners.indexOf(st.who) < 0) errs.push(at + ' who');
+        if (!(typeof st.to === 'number' ? st.to >= 0 && st.to <= 4 : FIELD.SPOT[st.to] || FIELD.BASE[st.to] || (Array.isArray(st.to) && st.to.length === 2))) errs.push(at + ' to');
+        if (!st.d) errs.push(at + ' d');
+      } else if (st.type === 'field') {
+        if (fielders.indexOf(st.who) < 0) errs.push(at + ' who');
+        if (!(FIELD.BASE[st.to] || FIELD.SPOT[st.to] || (Array.isArray(st.to) && st.to.length === 2) || (isRunnerRef(st.to) && runners.indexOf(+st.to.slice(1)) >= 0))) errs.push(at + ' to');
+        if (!st.d) errs.push(at + ' d');
+      } else if (st.type === 'ball') {
+        if (['grounder', 'fly', 'liner', 'throw', 'pitch', 'carry', 'roll'].indexOf(st.kind) < 0) errs.push(at + ' kind');
+        if (st.from && !knownRef(st.from, true)) errs.push(at + ' from');
+        if (!knownRef(st.to, true)) errs.push(at + ' to');
+        if (!st.d) errs.push(at + ' d');
+      } else if (st.type === 'out') {
+        if (runners.indexOf(st.who) < 0) errs.push(at + ' who');
+      } else if (st.type === 'label') {
+        if (!st.text) errs.push(at + ' text');
+        if (st.at && !knownRef(st.at, true)) errs.push(at + ' at');
+        if (['out', 'safe', 'run', 'info'].indexOf(st.tone || 'info') < 0) errs.push(at + ' tone');
+      } else if (st.type === 'sfx') {
+        if (['bat', 'catch', 'cheer', 'whistle'].indexOf(st.name) < 0) errs.push(at + ' name');
+      } else {
+        errs.push(at + ' type');
+      }
+    });
+    if (sceneDuration(scene) > 5000) errs.push('ながすぎる ' + sceneDuration(scene));
+    return errs;
+  }
+
+  /* ---------- どこに なげる？（判断問題）の 場面 ----------
+     q.scene = {
+       runners, fielders,
+       holder: 'ss',                 // ボールを とる やしゅ
+       setup: [ …うって とるまで… ],   // こたえる まえに うごかす ところ
+       runs: [ …ランナーの はしり… ],  // こたえた あとも つづく はしり（時刻は はじめからの ミリ秒）
+       cover: { 1:'1b', 2:'2b', 3:'3b', 4:'c' },   // それぞれの ベースに はいる やしゅ
+       target: 1,                    // せいかいの ベースで アウトに なる ランナー
+       arrive: { 1: 0 }              // ベースへ むかう ランナー（まちがえた ときに「セーフ」と だす）
+     }
+     えらんだ ベースへ なげる ところは、ここで くみたてる（こたえごとに 場面を かかなくて いい） */
+  const THROW_AT = 150, THROW_D = 550;
+
+  function judgeSetupEnd(q) {
+    let end = 0;
+    q.scene.setup.forEach(function (st) { end = Math.max(end, st.t + (st.d || 0)); });
+    return end;
+  }
+
+  function judgeScene(q, tapped) {
+    const sc = q.scene;
+    const end = judgeSetupEnd(q);
+    const steps = sc.setup.concat(sc.runs || []);
+    if (tapped) {
+      const baseRef = tapped === 4 ? 'H' : 'b' + tapped;
+      const cov = sc.cover[tapped];
+      const arrival = end + THROW_AT + THROW_D;
+      if (cov !== sc.holder) steps.push({ t: end, type: 'field', who: cov, to: baseRef, d: THROW_AT + THROW_D - 60 });
+      steps.push({ t: end + THROW_AT, type: 'ball', kind: cov === sc.holder ? 'carry' : 'throw', from: sc.holder, to: cov, d: THROW_D });
+      steps.push({ t: arrival, type: 'sfx', name: 'catch' });
+      if (tapped === q.answer) {
+        steps.push({ t: arrival + 50, type: 'out', who: sc.target });
+        steps.push({ t: arrival + 50, type: 'label', text: 'アウト！', at: baseRef, tone: 'out' });
+        steps.push({ t: arrival + 60, type: 'sfx', name: 'cheer' });
+      } else {
+        const who = sc.arrive && sc.arrive[tapped];
+        steps.push({ t: arrival + 300, type: 'label', text: who !== undefined ? 'セーフ！' : 'だれも こない…', at: baseRef, tone: 'safe', d: 900 });
+        const good = q.answer === 4 ? 'H' : 'b' + q.answer;
+        steps.push({ t: arrival + 1200, type: 'label', text: 'ここなら アウト！', at: good, tone: 'info' });
+      }
+    }
+    const fielders = (sc.fielders || []).slice();
+    return { runners: sc.runners, fielders: fielders, steps: steps };
+  }
+
+  // 時刻 from〜to の あいだに なる こうかおん
+  function sfxBetween(scene, from, to) {
+    return (scene.steps || []).filter(function (s) { return s.type === 'sfx' && s.t >= from && s.t < to; })
+      .map(function (s) { return s.name; });
+  }
 
   /* ---------- 日付（端末の日付で「きょう」を決める） ---------- */
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -1001,6 +1539,7 @@ const Core = (function () {
   // えらぶ ボタンの ならびを きめる。○×は ならびを かえない
   function arrangeChoices(q, rng) {
     rng = rng || Math.random;
+    if (q.type === 'tap') return [];
     const list = q.choices.map(function (text, i) { return { text: text, idx: i, correct: i === q.answer }; });
     if (q.type === 'ox') return list;
     for (let i = list.length - 1; i > 0; i--) {
@@ -1081,7 +1620,9 @@ const Core = (function () {
     stageOf: stageOf, questionsOf: questionsOf, bestStars: bestStars,
     isUnlocked: isUnlocked, allCleared: allCleared, nextStage: nextStage, starsFor: starsFor,
     weightOf: weightOf, nigateIds: nigateIds, poolFor: poolFor, pickRound: pickRound, arrangeChoices: arrangeChoices,
-    recordAnswer: recordAnswer, recordRetry: recordRetry, cardCount: cardCount, rankOf: rankOf, finishRound: finishRound
+    recordAnswer: recordAnswer, recordRetry: recordRetry, cardCount: cardCount, rankOf: rankOf, finishRound: finishRound,
+    FIELD: FIELD, pathPoint: pathPoint, sceneAt: sceneAt, sceneDuration: sceneDuration, checkScene: checkScene, sfxBetween: sfxBetween,
+    runnerAt: runnerAt, fielderAt: fielderAt, ballAt: ballAt, judgeScene: judgeScene, judgeSetupEnd: judgeSetupEnd
   };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = Core;
@@ -1164,7 +1705,28 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       [523, 659, 784, 1046].forEach(function (f, i) { self.tone(f, i * 0.13, 0.25, 'triangle', 0.16); });
       this.tone(1046, 0.55, 0.6, 'triangle', 0.16);
     },
-    tap: function () { this.tone(660, 0, 0.06, 'sine', 0.08); }
+    tap: function () { this.tone(660, 0, 0.06, 'sine', 0.08); },
+    // ノイズ（ざわざわ した おと）を みじかく ならす。うつ おと・かんせいに つかう
+    noise: function (dur, freq, vol, at) {
+      const c = this.ensure();
+      if (!c) return;
+      const len = Math.floor(c.sampleRate * dur);
+      const buf = c.createBuffer(1, len, c.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      const f = c.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.8;
+      const g = c.createGain();
+      g.gain.value = vol;
+      src.connect(f); f.connect(g); g.connect(c.destination);
+      src.start(c.currentTime + (at || 0));
+    },
+    bat: function () { this.noise(0.08, 2500, 0.5); this.tone(1800, 0, 0.12, 'square', 0.05); },
+    catch: function () { this.noise(0.05, 900, 0.4); },
+    cheer: function () { this.noise(1.2, 1200, 0.18); this.noise(1.0, 700, 0.12, 0.15); },
+    whistle: function () { this.tone(2200, 0, 0.35, 'sine', 0.08); }
   };
 
   /* ---------- 読み上げ（端末の中の音声だけを使う） ---------- */
@@ -1258,6 +1820,186 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     s += label(158, 94, names[1]) + label(100, 13, names[2]) + label(42, 94, names[3]);
     return s + '</svg>';
   }
+
+  /* ------------------------------------------------------------
+     Play：プレーのアニメを えがく
+     ------------------------------------------------------------
+     位置の計算は Core.sceneAt。ここは その結果を SVG の transform に うつすだけ。
+     毎フレーム かきかえるのは transform と opacity だけなので、古い スマホでも かるい。
+     動きを減らす設定の 端末では、さいごの ようすを すぐに みせる（うごかさない）。
+     ------------------------------------------------------------ */
+  const Play = (function () {
+    const F = Core.FIELD;
+    const NS = 'http://www.w3.org/2000/svg';
+    const stats = { frames: 0, total: 0, max: 0 };
+    window.__animStats = stats;
+
+    function reduced() {
+      return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+    function n1(v) { return Math.round(v * 10) / 10; }
+
+    function fieldSVG() {
+      const b = F.BASE;
+      const base = function (xy) {
+        const x = xy[0], y = xy[1];
+        return '<path d="M' + x + ' ' + (y - 5) + ' L' + (x + 9) + ' ' + y + ' L' + x + ' ' + (y + 5) + ' L' + (x - 9) + ' ' + y + ' Z" fill="#fff" stroke="#2b2b2b" stroke-width="1"/>';
+      };
+      return '<rect x="0" y="0" width="320" height="250" fill="#2d7a3a"/>' +
+        '<path d="M160 222 L-20 100 Q160 -34 340 100 Z" fill="#3e9b4f"/>' +
+        '<path d="M-20 100 Q160 -34 340 100" fill="none" stroke="#f2d25a" stroke-width="3"/>' +
+        '<path d="M160 244 L20 158 L160 70 L300 158 Z" fill="#d9a86c"/>' +
+        '<path d="M160 208 L236 158 L160 110 L84 158 Z" fill="#4fae5e"/>' +
+        '<ellipse cx="160" cy="162" rx="16" ry="9" fill="#d9a86c"/>' +
+        '<ellipse cx="160" cy="226" rx="30" ry="14" fill="#d9a86c"/>' +
+        '<path d="M160 222 L-20 100 M160 222 L340 100" stroke="#fff" stroke-width="2"/>' +
+        '<path d="M160 222 L254 158 L160 96 L66 158 Z" fill="none" stroke="#fff" stroke-width="1.2" opacity=".55"/>' +
+        base(b.b1) + base(b.b2) + base(b.b3) +
+        '<path d="M152 218 h16 v5 l-8 6 l-8 -6 z" fill="#fff" stroke="#2b2b2b" stroke-width="1"/>';
+    }
+
+    // 人の かたち（あしもとが 0,0）。runner＝オレンジの ヘルメット、fielder＝青い ぼうし
+    function figure(kind) {
+      const body = kind === 'runner' ? '#f06a1e' : '#2f79d0';
+      const cap = kind === 'runner' ? '#1e3a8a' : '#123a6b';
+      return '<ellipse cx="0" cy="0" rx="7" ry="2.6" fill="#000" opacity=".25"/>' +
+        '<path d="M-4 -1 L-2 -9 M4 -1 L2 -9" stroke="#2a2233" stroke-width="3.2" stroke-linecap="round"/>' +
+        '<rect x="-5" y="-19" width="10" height="11" rx="4" fill="' + body + '" stroke="#2a2233" stroke-width="1.4"/>' +
+        '<circle cx="0" cy="-24" r="5.2" fill="#ffd9b8" stroke="#2a2233" stroke-width="1.4"/>' +
+        '<path d="M-5.6 -24 q5.6 -9 11.2 0 z" fill="' + cap + '"/>';
+    }
+
+    function mount(box, scene, opts) {
+      opts = opts || {};
+      let html = '<svg viewBox="0 0 320 250" xmlns="' + NS + '" class="play-svg" role="img" aria-label="ダイヤモンドの ようす">' + fieldSVG();
+      html += '<g class="pl-marks"></g>';
+      (scene.fielders || []).forEach(function (f) { html += '<g class="pl-fielder" data-f="' + f + '">' + figure('fielder') + '</g>'; });
+      (scene.runners || []).forEach(function (r) { html += '<g class="pl-runner" data-r="' + r + '">' + figure('runner') + '</g>'; });
+      html += '<ellipse class="pl-shadow" rx="4" ry="1.8" fill="#000" opacity=".35"/>' +
+        '<g class="pl-ball"><circle r="3.8" fill="#fff" stroke="#333" stroke-width=".8"/><path d="M-1.6 -3 q2 3 0 6 M1.6 -3 q-2 3 0 6" stroke="#c8433c" stroke-width=".7" fill="none"/></g>';
+      if (opts.tap) {
+        [1, 2, 3, 4].forEach(function (n) {
+          const xy = n === 4 ? F.BASE.H : F.BASE['b' + n];
+          const name = ['', 'ファースト', 'セカンド', 'サード', 'ホーム'][n];
+          html += '<g class="pl-tap" data-base="' + n + '" role="button" tabindex="0" aria-label="' + name + 'に なげる">' +
+            '<circle class="pl-ring" cx="' + xy[0] + '" cy="' + xy[1] + '" r="17"/>' +
+            '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="28" fill="transparent"/></g>';
+        });
+      }
+      html += '<g class="pl-labels"></g></svg>';
+      box.innerHTML = html;
+
+      const svg = box.querySelector('svg');
+      const q = function (sel) { return svg.querySelector(sel); };
+      const runnerNodes = {}, fielderNodes = {};
+      (scene.runners || []).forEach(function (r) { runnerNodes[r] = q('.pl-runner[data-r="' + r + '"]'); });
+      (scene.fielders || []).forEach(function (f) { fielderNodes[f] = q('.pl-fielder[data-f="' + f + '"]'); });
+      const ball = q('.pl-ball'), shadow = q('.pl-shadow'), labelBox = q('.pl-labels');
+      const labelNodes = [];
+      const dur = Core.sceneDuration(scene);
+      let raf = 0, now = 0;
+
+      function render(t) {
+        const t0 = performance.now();
+        const st = Core.sceneAt(scene, t);
+        Object.keys(runnerNodes).forEach(function (r) {
+          const s = st.runners[r], nd = runnerNodes[r];
+          nd.setAttribute('transform', 'translate(' + n1(s.xy[0]) + ' ' + n1(s.xy[1]) + ')');
+          nd.setAttribute('opacity', s.out ? '0.35' : '1');
+        });
+        Object.keys(fielderNodes).forEach(function (f) {
+          const p = st.fielders[f];
+          fielderNodes[f].setAttribute('transform', 'translate(' + n1(p[0]) + ' ' + n1(p[1]) + ')');
+        });
+        const b = st.ball;
+        ball.setAttribute('display', b.visible ? 'inline' : 'none');
+        shadow.setAttribute('display', b.visible ? 'inline' : 'none');
+        if (b.visible) {
+          shadow.setAttribute('transform', 'translate(' + n1(b.xy[0]) + ' ' + n1(b.xy[1]) + ')');
+          ball.setAttribute('transform', 'translate(' + n1(b.xy[0]) + ' ' + n1(b.xy[1] - 4 - b.h) + ')');
+        }
+        // もじ：でてきた ときに ポンと おおきく なる
+        st.labels.forEach(function (L, i) {
+          let nd = labelNodes[i];
+          if (!nd) {
+            nd = document.createElementNS(NS, 'text');
+            nd.setAttribute('text-anchor', 'middle');
+            labelBox.appendChild(nd);
+            labelNodes.push(nd);
+          }
+          if (nd.textContent !== L.text) nd.textContent = L.text;
+          nd.setAttribute('class', 'pl-label ' + L.tone);
+          const k = reduced() ? 1 : Math.min(1, L.age / 160);
+          const sc = k < 1 ? 0.4 + 0.8 * k : 1;
+          const x = Math.max(60, Math.min(260, L.xy[0])), y = Math.max(26, L.xy[1] - 30);
+          nd.setAttribute('transform', 'translate(' + n1(x) + ' ' + n1(y) + ') scale(' + n1(sc) + ')');
+          nd.setAttribute('display', 'inline');
+        });
+        for (let i = st.labels.length; i < labelNodes.length; i++) labelNodes[i].setAttribute('display', 'none');
+        now = t;
+        const cost = performance.now() - t0;
+        stats.frames++; stats.total += cost; stats.max = Math.max(stats.max, cost);
+      }
+
+      function stop() { if (raf) cancelAnimationFrame(raf); raf = 0; }
+
+      // from → to（ミリ秒）まで うごかす。おわったら done
+      function play(from, to, done) {
+        stop();
+        from = from || 0;
+        to = to === undefined ? dur : to;
+        if (reduced()) {
+          render(to);
+          if (opts.onSfx) opts.onSfx(Core.sfxBetween(scene, from, to + 1).filter(function (n) { return n === 'cheer'; }));
+          if (done) setTimeout(done, 0);
+          return;
+        }
+        const start = performance.now();
+        let last = from;
+        const step = function (ts) {
+          const t = Math.min(to, from + (ts - start));
+          if (opts.onSfx) { const s = Core.sfxBetween(scene, last, t + 0.001); if (s.length) opts.onSfx(s); }
+          last = t + 0.001;
+          render(t);
+          if (t < to) raf = requestAnimationFrame(step);
+          else { raf = 0; if (done) done(); }
+        };
+        raf = requestAnimationFrame(step);
+      }
+
+      render(opts.start || 0);
+
+      const api = {
+        svg: svg,
+        duration: dur,
+        play: play,
+        stop: stop,
+        seek: function (t) { stop(); render(t); },
+        now: function () { return now; },
+        playing: function () { return !!raf; },
+        // こたえた あとに ベースへ しるし。ok＝せいかい（みどり）、false＝まちがい（あか）
+        mark: function (n, ok) {
+          const xy = n === 4 ? F.BASE.H : F.BASE['b' + n];
+          const c = document.createElementNS(NS, 'circle');
+          c.setAttribute('cx', xy[0]); c.setAttribute('cy', xy[1]); c.setAttribute('r', '17');
+          c.setAttribute('class', 'pl-mark ' + (ok ? 'ok' : 'ng'));
+          svg.querySelector('.pl-marks').appendChild(c);
+        },
+        onTap: function (fn) {
+          Array.prototype.forEach.call(svg.querySelectorAll('.pl-tap'), function (g) {
+            const go = function () { fn(+g.getAttribute('data-base'), g); };
+            g.addEventListener('click', go);
+            g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+          });
+        },
+        lockTap: function (v) { svg.classList.toggle('locked', !!v); }
+      };
+      window.__play = api;
+      return api;
+    }
+
+    return { mount: mount, reduced: reduced };
+  })();
 
   /* ---------- ダイヤモンドのマップ（ホーム画面） ---------- */
   // 塁の座標（viewBox 0 0 320 290）。ステージ1はファースト、4はホーム
@@ -1452,8 +2194,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     $('retryBanner').hidden = R.phase !== 'retry';
     $('qCard').setAttribute('data-qid', q.id);
     $('qIcon').textContent = R.phase === 'retry' ? '🔁' : '❓';
-    if (q.pic) { $('qPic').innerHTML = diamondPic(q.pic.runners); $('qPic').hidden = false; }
-    else { $('qPic').innerHTML = ''; $('qPic').hidden = true; }
+    if (R.player) R.player.stop();
+    R.player = null;
+    const pic = $('qPic');
+    pic.className = 'q-pic';
+    if (q.scene && q.type !== 'tap') {
+      // ルール問題の プレー：こたえる まえは はじめの ようすだけ（こたえが わからないように）
+      pic.className = 'q-field';
+      pic.hidden = false;
+      R.player = Play.mount(pic, q.scene, { onSfx: playSfx });
+    } else if (q.pic) { pic.innerHTML = diamondPic(q.pic.runners); pic.hidden = false; }
+    else { pic.innerHTML = ''; pic.hidden = true; }
+    $('qIcon').hidden = !!q.scene;
     $('qText').textContent = q.q;
     $('feedback').innerHTML = '';
     refreshSpeakButtons();
@@ -1461,6 +2213,22 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     const box = $('choices');
     box.className = 'choices' + (q.type === 'ox' ? ' ox' : '');
     box.innerHTML = '';
+    if (q.type === 'tap') {
+      // どこに なげる？：うった ボールを やしゅが とるまで うごかしてから、ベースを タップで こたえる
+      const field = document.createElement('div');
+      field.className = 'q-field';
+      box.appendChild(field);
+      const hint = document.createElement('p');
+      hint.className = 'tap-hint';
+      hint.textContent = '👆 なげる ベースを タップしてね';
+      box.appendChild(hint);
+      const sc = Core.judgeScene(q, null);
+      R.player = Play.mount(field, sc, { tap: true, onSfx: playSfx });
+      R.player.lockTap(true);
+      R.player.onTap(function (base) { answer(base, null); });
+      R.player.play(0, Core.judgeSetupEnd(q), function () { if (!R.answered && R.player) R.player.lockTap(false); });
+      return;
+    }
     const marks = ['A', 'B', 'C'];
     Core.arrangeChoices(q).forEach(function (c, k) {
       const b = document.createElement('button');
@@ -1480,6 +2248,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   function speakQuestion() {
     const q = currentQ();
     const parts = [q.q];
+    if (q.type === 'tap') { Speech.say(q.q); return; }
     Array.prototype.forEach.call($('choices').querySelectorAll('.choice'), function (b, k) {
       const i = +b.getAttribute('data-idx');
       parts.push(q.type === 'ox' ? (i === 0 ? 'まる、そう おもう' : 'ばつ、ちがう と おもう') : (['エー', 'ビー', 'シー'][k] + '、' + q.choices[i]));
@@ -1511,7 +2280,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       else if (b === btn) b.classList.add('wrong');
       else b.classList.add('dim');
     });
-    if (!ok) btn.classList.add('shake');
+    if (!ok && btn) btn.classList.add('shake');
+    playResult(q, idx);
     renderDots();
 
     const combo = $('combo');
@@ -1528,7 +2298,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     const oksay = ['せいかい！', 'すごい！', 'やったね！', 'ナイス！'];
     const ngsay = ['おしい！', 'ドンマイ！', 'つぎは できる！'];
     const title = ok ? oksay[Math.floor(Math.random() * oksay.length)] : ngsay[Math.floor(Math.random() * ngsay.length)];
-    const ansText = q.type === 'ox' ? (q.answer === 0 ? '○（そう）' : '×（ちがう）') : q.choices[q.answer];
+    const ansText = q.type === 'ox' ? (q.answer === 0 ? '○（そう）' : '×（ちがう）')
+      : q.type === 'tap' ? BASE_NAME[q.answer] : q.choices[q.answer];
     const isLast = R.phase === 'main'
       ? (R.i === R.list.length - 1 && R.retry.length === 0)
       : (R.i === R.retry.length - 1);
@@ -1537,7 +2308,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     let html = '<div class="feedback ' + (ok ? 'ok' : 'ng') + '">' +
       '<div class="fb-head"><div class="mascot" id="fbMascot"></div><div class="fb-title">' + (ok ? '⭕ ' : '') + title + '</div></div>' +
       '<p class="fb-answer">こたえ：' + esc(ansText) + '</p>' +
-      '<p class="fb-explain">' + esc(q.explain) + '</p>';
+      '<p class="fb-explain">' + esc(q.explain) + '</p>' +
+      (R.player ? '<button class="replay" id="btnReplay">🔁 プレーを もういちど みる</button>' : '');
     if (got.newCard) {
       html += '<div class="get-card"><span class="gc-icon">' + q.card.icon + '</span><div><div class="gc-label">カード ゲット！</div><div class="gc-name">' + esc(q.card.name) + '</div></div></div>';
     }
@@ -1545,14 +2317,56 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     $('feedback').innerHTML = html;
     setMascot($('fbMascot'), ok ? 'happy' : 'oops', true);
     $('btnGo').onclick = goNext;
+    if ($('btnReplay')) $('btnReplay').onclick = function () { replayResult(q, idx); };
+    // アニメが ある ときは、プレーを みおわってから 解説へ スクロールする
+    if (!R.player) scrollToFeedback();
+  }
+
+  function scrollToFeedback() {
     setTimeout(function () {
       const f = $('feedback').firstChild;
       if (f && f.scrollIntoView) f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 60);
   }
 
+  const BASE_NAME = ['', 'ファースト', 'セカンド', 'サード', 'ホーム'];
+
+  // こたえた あとの プレー。ルール問題は はじめから さいごまで、どこに なげる？は えらんだ ベースへ なげる
+  function playResult(q, idx) {
+    if (!R.player) return;
+    const field = R.player.svg.parentNode;
+    if (field.scrollIntoView && !Play.reduced()) field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    let from = 0;
+    if (q.type === 'tap') {
+      R.player.stop();
+      from = Core.judgeSetupEnd(q);
+      R.player = Play.mount(field, Core.judgeScene(q, idx), { tap: true, onSfx: playSfx, start: from });
+      R.player.lockTap(true);
+    }
+    const pl = R.player;
+    pl.play(from, pl.duration, function () {
+      if (q.type === 'tap') {
+        pl.mark(q.answer, true);
+        if (idx !== q.answer) pl.mark(idx, false);
+      }
+      scrollToFeedback();
+    });
+  }
+
+  function replayResult(q, idx) {
+    if (!R.player) return;
+    Sound.tap();
+    const from = q.type === 'tap' ? 0 : 0;
+    R.player.play(from, R.player.duration);
+  }
+
+  function playSfx(names) {
+    names.forEach(function (n) { if (Sound[n]) Sound[n](); });
+  }
+
   function goNext() {
     Speech.stop();
+    if (R.player) { R.player.stop(); R.player = null; }
     R.i++;
     if (R.phase === 'main' && R.i >= R.list.length) {
       if (R.retry.length) { R.phase = 'retry'; R.i = 0; }
