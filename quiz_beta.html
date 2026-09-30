@@ -336,6 +336,26 @@ ruby rt { font-size: 12px; }
 .q-tools { display: flex; flex-wrap: wrap; gap: 8px; }
 .preview-btn { border-color: var(--orange); color: var(--orange-dark); }
 @media (prefers-color-scheme: dark) { .preview-btn { color: var(--orange); } }
+/* アウトの ランプを めだたせる（アウトの かずで こたえが かわる 問題） */
+.pl-bso.focus-o .bso-row[data-k="o"] .bso-hl { fill: rgba(255, 77, 77, .22); stroke: #ff4d4d; stroke-width: 1.6; animation: oGlow 1.2s ease-in-out infinite alternate; }
+@keyframes oGlow { from { stroke-opacity: .45; } to { stroke-opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pl-bso.focus-o .bso-row[data-k="o"] .bso-hl { animation: none; } }
+.outs-banner { background: var(--red-soft); color: var(--red); border-radius: 12px; padding: 8px 12px; font-weight: 900; margin-bottom: 10px; font-size: 16px; }
+.outs-cmp { margin-top: 12px; padding: 10px 12px; border-radius: 14px; background: var(--card); border: 2px solid var(--line); }
+.oc-title { font-weight: 900; font-size: 16px; margin: 0 0 8px; }
+.oc-btns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.oc-btn { min-height: 56px; border-radius: 12px; border: 2px solid var(--line); background: var(--bg-2); color: var(--ink); font-family: inherit; font-size: 14px; font-weight: 800; padding: 4px 1px; white-space: nowrap; letter-spacing: -.02em; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+.oc-btn[aria-pressed="true"] { border-color: #ff4d4d; box-shadow: 0 0 0 2px rgba(255, 77, 77, .35); }
+.oc-btn:disabled { opacity: .45; }
+.oc-lamps { display: inline-flex; gap: 4px; align-items: center; font-size: 12px; font-weight: 900; color: #ff4d4d; }
+.oc-lamps i { width: 12px; height: 12px; border-radius: 50%; background: #3b4654; display: inline-block; }
+.oc-lamps i.on { background: #ff4d4d; }
+.oc-now { font-size: 12px; color: var(--muted); white-space: normal; text-align: center; line-height: 1.2; }
+@media (max-width: 360px) { .oc-btns { gap: 4px; } .oc-btn { font-size: 13px; } }
+.oc-result { margin: 8px 0 0; font-size: 15px; line-height: 1.6; }
+.oc-result b.chg { color: var(--red); }
+.oc-result b.same { color: var(--green-dark); }
+@media (prefers-color-scheme: dark) { .oc-result b.same { color: var(--green); } }
 .fb-note { font-size: 15px; font-weight: 800; margin: 8px 0 0; }
 .master-line { text-align: center; font-weight: 900; margin: 6px 0 0; }
 .send-line { text-align: center; font-size: 14px; color: var(--muted); margin: 10px 0 0; font-weight: 700; }
@@ -493,6 +513,7 @@ ruby rt { font-size: 12px; }
     </div>
     <div class="bucket-tag" id="bucketTag"></div>
     <div class="retry-banner" id="retryBanner" hidden>🔁 まちがえた もんだいに もういちど チャレンジ！</div>
+    <div class="outs-banner" id="outsBanner" hidden>🔴 さっきと おなじ ばめん。アウトの かずだけ ちがうよ！</div>
     <div class="combo" id="combo" aria-live="polite"></div>
     <div class="card q-card" id="qCard">
       <div class="q-icon" id="qIcon" aria-hidden="true"></div>
@@ -2232,6 +2253,60 @@ const Core = (function () {
     return templateQuestion(t, list[rngInt(rng, list.length)], rng);
   }
 
+  /* ---------- アウトの かずだけ かえた 問題（「もし アウトが ○つ だったら？」） ----------
+     おなじ 状況（ランナー・ボールの いき先・ねらう ランナー・ふむ じゅん）で、アウトの かずだけ ちがう 状況を さがす。
+     それ いがいの 項目（canRun・twoOuts・infieldFly など）は アウトの かずから きまるので くらべない */
+  const OUTS_INPUTS = ['runners', 'ball', 'target', 'order'];
+  function outsInputs(sit) {
+    const r = {};
+    OUTS_INPUTS.forEach(function (k) { if (sit[k] !== undefined) r[k] = sit[k]; });
+    return JSON.stringify(r);
+  }
+  function outsSibling(t, sit, outs) {
+    const base = outsInputs(sit);
+    return t.situations.filter(function (x) { return x.situation.outs === outs && outsInputs(x.situation) === base; })[0] || null;
+  }
+  // q と おなじ 状況・おなじ B・S で、アウトだけ outs に かえた 問題（その 状況が ない ときは null）
+  function withOuts(q, outs) {
+    const t = q.template && TEMPLATE_BY_ID[q.itemId];
+    if (!t) return null;
+    const sib = outsSibling(t, q.situation, outs);
+    if (!sib) return null;
+    const sq = templateQuestion(t, sib, function () { return 0; });
+    const bso = { b: q.situation.bso.b, s: q.situation.bso.s, o: outs };
+    sq.situation.bso = bso;
+    sq.scene.bso = { b: bso.b, s: bso.s, o: bso.o };
+    return sq;
+  }
+  function answerText(q) {
+    if (q.type === 'ox') return q.answer === 0 ? '○' : '×';
+    if (q.type === 'tap') return NAME[q.answer];
+    return q.choices[q.answer];
+  }
+  // こたえた あとの くらべる パネル：[{ outs, current, none, same, answer, explain, q }]。パターン問題 いがいは null
+  function outsCompare(q) {
+    if (!q.template) return null;
+    return [0, 1, 2].map(function (o) {
+      if (o === q.situation.outs) return { outs: o, current: true, same: true, answer: answerText(q), explain: q.explain, q: q };
+      const sq = withOuts(q, o);
+      if (!sq) return { outs: o, none: true };
+      return { outs: o, current: false, same: sq.answer === q.answer, answer: answerText(sq), explain: sq.explain, q: sq };
+    });
+  }
+  // アウトの かずで こたえが かわる ことが ある テンプレート（ふりにげ・タッチアップ・インフィールドフライ）。
+  // 状況を ぜんぶ しらべて きめる（手で かかない）
+  const OUTS_MATTER = {};
+  TEMPLATES.forEach(function (t) {
+    OUTS_MATTER[t.id] = t.situations.some(function (x) {
+      const a = templateQuestion(t, x, function () { return 0; }).answer;
+      return [0, 1, 2].some(function (o) {
+        const s = outsSibling(t, x.situation, o);
+        return s && templateQuestion(t, s, function () { return 0; }).answer !== a;
+      });
+    });
+  });
+  function outsMatter(q) { return !!(q && q.template && OUTS_MATTER[q.itemId]); }
+
   // ランクの さかいめは カードの まいすうに あわせて きめる（ぜんぶ あつめたら ルールはかせ）
   (function () {
     const total = QUESTIONS.length + TEMPLATES.length;
@@ -2574,12 +2649,103 @@ const Core = (function () {
     return shuffle(out, rng);
   }
 
+  /* アウトの かずだけ ちがう 問題を つづけて だす（ときどき・1回に 1くみ まで）。
+     10もんの わりあい（復習・あたらしい・確認）を こわさない ように、
+     ・もう リストに ある 2もんを ならべかえる か、
+     ・おなじ バケツ（復習なら 復習）の 1もんを、おなじ バケツに はいる あいての 問題と いれかえる
+     だけに する。あいては おなじ テンプレート（アウトで こたえが かわる ことが ある 3種）の、アウトだけ ちがう 型。
+     こたえが かわる くみ（ふりにげ f1-o0 と f1-o2）を おもに だし、こたえが おなじ くみ（f0-o0 と f0-o2）も まぜる */
+  const PAIR_RATE = 0.5;
+  // key → アウトだけ ちがう 型の key。こたえが かわる くみも、かわらない くみ（ランナーなしの ふりにげ など）も いれる。
+  // いつも こたえが かわると「2もんめは はんたいを えらべば いい」と おぼえて しまうので（rule-checker ☆）
+  const OUTS_PARTNERS = {};
+  TEMPLATES.forEach(function (t) {
+    if (!OUTS_MATTER[t.id]) return;
+    t.situations.forEach(function (x) {
+      const k = t.id + ':' + x.pattern;
+      [0, 1, 2].forEach(function (o) {
+        const s = outsSibling(t, x.situation, o);
+        if (!s || s.pattern === x.pattern) return;
+        const list = OUTS_PARTNERS[k] || (OUTS_PARTNERS[k] = []);
+        const sk = t.id + ':' + s.pattern;
+        if (list.indexOf(sk) < 0) list.push(sk);
+      });
+    });
+  });
+  function bucketOf(p, key, today) {
+    const r = p.srs[key];
+    if (!r) return 'fresh';
+    if (!isDue(r, today)) return 'extra';
+    if (isMastered(r)) return 'check';
+    return 'review';
+  }
+  // くみの うち、こたえが かわる くみを だす わりあい（のこりは こたえが おなじ くみ）
+  const PAIR_FLIP_RATE = 0.85;
+  // 型ごとの こたえ（この 3種の テンプレートは、型が きまれば こたえも きまる。テストで たしかめる）
+  const PATTERN_ANSWER = {};
+  Object.keys(OUTS_PARTNERS).forEach(function (k) { PATTERN_ANSWER[k] = questionFor(k, function () { return 0; }).answer; });
+  function pairOuts(list, p, mode, today, rng) {
+    if (list.length < 2 || rng() >= PAIR_RATE) return list;
+    const pool = {};
+    unitPool(p, mode).forEach(function (u) { pool[u.key] = 1; });
+    const inList = function (k) { return list.some(function (x) { return x.key === k; }); };
+    const count = function (tid) { return list.filter(function (x) { return x.key.indexOf(tid + ':') === 0; }).length; };
+    const firsts = shuffle(list.filter(function (x) { return OUTS_PARTNERS[x.key]; }), rng);
+    const wantFlip = rng() < PAIR_FLIP_RATE;
+    // こたえが かわる くみ（または おなじ くみ）を さきに さがし、なければ もう いっぽうを さがす
+    const passes = [wantFlip, !wantFlip];
+    for (let pass = 0; pass < 2; pass++) {
+      for (let i = 0; i < firsts.length; i++) {
+        const a = firsts[i];
+        const tid = a.key.slice(0, a.key.indexOf(':'));
+        const partners = OUTS_PARTNERS[a.key].filter(function (k) {
+          return pool[k] && (PATTERN_ANSWER[k] !== PATTERN_ANSWER[a.key]) === passes[pass];
+        });
+        let b = null;
+        // 1) あいてが もう リストに ある → ならべかえるだけ
+        const already = partners.filter(inList)[0];
+        if (already) b = list.filter(function (x) { return x.key === already; })[0];
+        else {
+          // 2) おなじ バケツの 問題と いれかえる（テンプレートの じょうげんも まもる）
+          for (let j = 0; j < partners.length && !b; j++) {
+            const bucket = bucketOf(p, partners[j], today);
+            const c = list.filter(function (x) {
+              if (x === a || x.bucket !== bucket) return false;
+              const sameT = x.key.indexOf(tid + ':') === 0;
+              return sameT || count(tid) < MAX_PER_TEMPLATE;
+            })[0];
+            if (c) { b = { key: partners[j], bucket: bucket }; list = list.map(function (x) { return x === c ? b : x; }); }
+          }
+        }
+        if (!b) continue;
+        // a の すぐ あとに b を おく
+        list = list.filter(function (x) { return x !== b; });
+        const at = list.indexOf(a);
+        list.splice(at + 1, 0, b);
+        a.pair = 1; b.pair = 2;
+        return list;
+      }
+    }
+    return list;
+  }
+
   // 画面に だす 問題の リスト（テンプレートは その場で 状況を えらぶ）
   function buildRound(p, mode, today, rng) {
     rng = rng || Math.random;
-    return composeSession(p, mode, today, rng).map(function (x) {
-      const q = questionFor(x.key, rng);
-      return Object.assign({}, q, { bucket: x.bucket });
+    const list = pairOuts(composeSession(p, mode, today, rng), p, mode, today, rng);
+    let prev = null;
+    return list.map(function (x) {
+      let q = questionFor(x.key, rng);
+      // 2もんめは 1もんめと おなじ 状況・おなじ カウントで、アウトの かずだけ ちがう
+      if (x.pair === 2 && prev) {
+        const t = TEMPLATE_BY_ID[prev.itemId];
+        const outs = t.situations.filter(function (s) { return x.key === t.id + ':' + s.pattern; })[0].situation.outs;
+        q = withOuts(prev, outs) || q;
+      }
+      const item = Object.assign({}, q, { bucket: x.bucket });
+      if (x.pair) item.pair = x.pair;
+      prev = q;
+      return item;
     });
   }
 
@@ -2707,7 +2873,8 @@ const Core = (function () {
     questionFor: questionFor, templateQuestion: templateQuestion, arrangeChoices: arrangeChoices, answerId: answerId,
     recordAnswer: recordAnswer, recordRetry: recordRetry, cardIds: cardIds, cardCount: cardCount, rankOf: rankOf,
     finishRound: finishRound, sessionPayload: sessionPayload, isForced: isForced, forceBases: forceBases,
-    FIELD: FIELD, pathPoint: pathPoint, runnerPoint: runnerPoint, sceneAt: sceneAt, bsoAt: bsoAt, sceneDuration: sceneDuration, checkScene: checkScene, sfxBetween: sfxBetween,
+    FIELD: FIELD, pathPoint: pathPoint, runnerPoint: runnerPoint, sceneAt: sceneAt, bsoAt: bsoAt, withOuts: withOuts, outsCompare: outsCompare, outsMatter: outsMatter,
+    OUTS_MATTER: OUTS_MATTER, OUTS_PARTNERS: OUTS_PARTNERS, pairOuts: pairOuts, PAIR_RATE: PAIR_RATE, PAIR_FLIP_RATE: PAIR_FLIP_RATE, PATTERN_ANSWER: PATTERN_ANSWER, bucketOf: bucketOf, MAX_PER_TEMPLATE: MAX_PER_TEMPLATE, sceneDuration: sceneDuration, checkScene: checkScene, sfxBetween: sfxBetween,
     runnerAt: runnerAt, fielderAt: fielderAt, ballAt: ballAt, judgeScene: judgeScene, judgeSetupEnd: judgeSetupEnd
   };
 })();
@@ -2960,8 +3127,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     // スコアボード：うえから B（みどり）・S（きいろ）・O（あか）。球場と おなじ ならびと いろ
     const BSO_ROWS = [['b', 'B', 3, '#35d46a'], ['s', 'S', 2, '#ffd23f'], ['o', 'O', 2, '#ff4d4d']];
     const LAMP_OFF = '#3b4654';
-    function bsoSVG() {
-      let s = '<g class="pl-bso" transform="translate(3 199)" aria-hidden="true">' +
+    function bsoSVG(focusOuts) {
+      let s = '<g class="pl-bso' + (focusOuts ? ' focus-o' : '') + '" transform="translate(3 199)" aria-hidden="true">' +
         '<rect class="bso-panel" x="0" y="0" width="56" height="48" rx="5" fill="#16202b" stroke="#e9eef3" stroke-opacity=".55" stroke-width="1"/>';
       BSO_ROWS.forEach(function (r, i) {
         const y = 10 + i * 14;
@@ -3004,7 +3171,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
             '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="28" fill="transparent"/></g>';
         });
       }
-      if (scene.bso) html += bsoSVG();
+      if (scene.bso) html += bsoSVG(opts.focusOuts);
       html += '<g class="pl-labels"></g></svg>';
       box.innerHTML = html;
 
@@ -3579,6 +3746,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     R.shownAt = Date.now();
     renderDots();
     $('retryBanner').hidden = R.phase !== 'retry';
+    $('outsBanner').hidden = !(R.phase === 'main' && q.pair === 2);
     $('bucketTag').textContent = R.phase === 'main' && q.bucket ? BUCKET_LABEL[q.bucket] : '';
     $('qCard').setAttribute('data-qid', q.id);
     $('qIcon').textContent = R.phase === 'retry' ? '🔁' : '❓';
@@ -3590,7 +3758,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       // こたえる まえは はじめの ようす。「さいせい」で 判断する しゅんかんまで みられる
       pic.className = 'q-field';
       pic.hidden = false;
-      R.player = Play.mount(pic, q.scene, { onSfx: playSfx });
+      R.player = Play.mount(pic, q.scene, { onSfx: playSfx, focusOuts: Core.outsMatter(q) });
     } else if (q.pic) { pic.innerHTML = diamondPic(q.pic.runners); pic.hidden = false; }
     else { pic.innerHTML = ''; pic.hidden = true; }
     $('qIcon').hidden = !!q.scene;
@@ -3610,7 +3778,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       hint.className = 'tap-hint';
       hint.textContent = '👆 なげる ベースを タップしてね';
       box.appendChild(hint);
-      R.player = Play.mount(field, Core.judgeScene(q, null), { tap: true, onSfx: playSfx });
+      R.player = Play.mount(field, Core.judgeScene(q, null), { tap: true, onSfx: playSfx, focusOuts: Core.outsMatter(q) });
       R.player.onTap(function (base) { answer(base, null); });
     } else {
       const marks = ['A', 'B', 'C'];
@@ -3716,7 +3884,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       '<div class="fb-head"><div class="mascot" id="fbMascot"></div><div class="fb-title">' + (ok ? '⭕ ' : '') + title + '</div></div>' +
       '<p class="fb-answer">こたえ：' + esc(ansText) + '</p>' +
       '<p class="fb-explain">' + esc(q.explain) + '</p>' + note +
-      (R.player ? '<button class="replay" id="btnReplay">🔁 プレーを もういちど みる</button>' : '');
+      (R.player ? '<button class="replay" id="btnReplay">🔁 プレーを もういちど みる</button>' : '') +
+      outsCompareHTML(q);
     if (got.newCard) {
       html += '<div class="get-card"><span class="gc-icon">' + q.card.icon + '</span><div><div class="gc-label">カード ゲット！</div><div class="gc-name">' + esc(q.card.name) + '</div></div></div>';
     }
@@ -3725,8 +3894,64 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     setMascot($('fbMascot'), ok ? 'happy' : 'oops', true);
     $('btnGo').onclick = goNext;
     if ($('btnReplay')) $('btnReplay').onclick = function () { replayResult(q, idx); };
+    bindOutsCompare(q, idx);
     // アニメが ある ときは、プレーを みおわってから 解説へ スクロールする
     if (!R.player) scrollToFeedback();
+  }
+
+  /* ---------- 「もし アウトの かずが ちがったら？」 ----------
+     こたえた あと、アウトの かずだけ かえた ときの こたえを みせる。ボタンで ランプを きりかえると、
+     フィールドの ボードも かわり、その ときの プレーが うごく */
+  const OUTS_NAME = ['ノーアウト', 'ワンアウト', 'ツーアウト'];
+  function outsLamps(n) {
+    return '<span class="oc-lamps" aria-hidden="true">O <i class="' + (n >= 1 ? 'on' : '') + '"></i><i class="' + (n >= 2 ? 'on' : '') + '"></i></span>';
+  }
+  function outsCompareHTML(q) {
+    const cmp = Core.outsCompare(q);
+    if (!cmp) return '';
+    let s = '<div class="outs-cmp" id="outsCmp"><p class="oc-title">🔴 もし アウトの かずが ちがったら？</p><div class="oc-btns">';
+    cmp.forEach(function (c) {
+      s += '<button class="oc-btn" data-outs="' + c.outs + '" aria-pressed="' + (c.current ? 'true' : 'false') + '"' + (c.none ? ' disabled' : '') +
+        ' aria-label="' + OUTS_NAME[c.outs] + (c.current ? '（いまの もんだい）' : '') + '">' + outsLamps(c.outs) +
+        '<span>' + OUTS_NAME[c.outs] + '</span>' + (c.current ? '<span class="oc-now">いまの もんだい</span>' : '') + '</button>';
+    });
+    return s + '</div><p class="oc-result" id="ocResult" aria-live="polite">ボタンを おして くらべて みよう。</p></div>';
+  }
+  function outsResultHTML(c) {
+    if (c.current) return '<b>' + OUTS_NAME[c.outs] + '（いまの もんだい）</b>：こたえは「' + esc(c.answer) + '」';
+    return '<b>もし ' + OUTS_NAME[c.outs] + ' だったら</b>：こたえは「' + esc(c.answer) + '」' +
+      (c.same ? '　<b class="same">＝ おなじ</b>' : '　<b class="chg">← こたえが かわる！</b>') +
+      '<br>' + esc(c.explain);
+  }
+  function bindOutsCompare(q, idx) {
+    const box = $('outsCmp');
+    if (!box) return;
+    const cmp = Core.outsCompare(q);
+    Array.prototype.forEach.call(box.querySelectorAll('.oc-btn'), function (b) {
+      b.onclick = function () {
+        const c = cmp[+b.getAttribute('data-outs')];
+        if (c.none) return;
+        Sound.tap();
+        Array.prototype.forEach.call(box.querySelectorAll('.oc-btn'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        $('ocResult').innerHTML = outsResultHTML(c);
+        showOutsPlay(q, c, idx);
+      };
+    });
+  }
+  // フィールドを その アウトの かずの プレーに かえて うごかす（ボードの O の ランプも かわる）
+  function showOutsPlay(q, c, idx) {
+    if (!R.player) return;
+    const field = R.player.svg.parentNode;
+    R.player.stop();
+    const sq = c.q;
+    const tapped = c.current ? idx : sq.answer;
+    const scene = sq.type === 'tap' ? Core.judgeScene(sq, tapped) : sq.scene;
+    R.player = Play.mount(field, scene, { tap: sq.type === 'tap', onSfx: playSfx, focusOuts: Core.outsMatter(sq) });
+    if (sq.type === 'tap') R.player.lockTap(true);
+    const pl = R.player;
+    pl.play(0, pl.duration, function () {
+      if (sq.type === 'tap') { pl.mark(sq.answer, true); if (tapped !== sq.answer) pl.mark(tapped, false); }
+    });
   }
 
   function scrollToFeedback() {
@@ -3747,7 +3972,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     if (q.type === 'tap') {
       R.player.stop();
       from = Core.judgeSetupEnd(q);
-      R.player = Play.mount(field, Core.judgeScene(q, idx), { tap: true, onSfx: playSfx, start: from });
+      R.player = Play.mount(field, Core.judgeScene(q, idx), { tap: true, onSfx: playSfx, start: from, focusOuts: Core.outsMatter(q) });
       R.player.lockTap(true);
     }
     const pl = R.player;
