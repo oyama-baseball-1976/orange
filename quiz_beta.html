@@ -1407,6 +1407,10 @@ const Core = (function () {
     // ベースパス上の点。s＝0 ホーム → 1 ファースト → 2 セカンド → 3 サード → 4 ホーム
     PATH: [[160, 222], [254, 158], [160, 96], [66, 158], [160, 222]],
     BASE: { H: [160, 222], b1: [254, 158], b2: [160, 96], b3: [66, 158], b4: [160, 222] },
+    // 右うちの バッターが たつ ところ（三塁がわの バッターボックスの まんなか）。ホームベースと キャッチャーに かさならない
+    BOX: [136, 221],
+    // バッターボックス（三塁がわ・一塁がわ）の 白線：[左, 上, はば, たかさ]
+    BOXES: [[125, 209, 22, 24], [173, 209, 22, 24]],
     POS: {
       p: [160, 162], c: [160, 242], '1b': [240, 140], '2b': [206, 114], ss: [114, 114],
       '3b': [80, 140], lf: [66, 60], cf: [160, 38], rf: [254, 60]
@@ -1435,6 +1439,13 @@ const Core = (function () {
     if (s >= 4) return P[4].slice();
     const k = Math.floor(s);
     return lerp2(P[k], P[k + 1], s - k);
+  }
+
+  // ランナー who が ベースパスの きょり s に いる ときの 点。
+  // バッター（who＝0）の さいしょの 区間は、バッターボックスから ファーストへ むかう
+  function runnerPoint(who, s) {
+    if (who === 0 && s < 1) return lerp2(FIELD.BOX, FIELD.PATH[1], Math.max(0, s));
+    return pathPoint(s);
   }
 
   // 毎フレーム ならべかえないように、場面ごとに 1回だけ ならべて おぼえておく
@@ -1478,7 +1489,7 @@ const Core = (function () {
 
   // ランナー who の いる ところ。{ xy, s（ベースパスの上なら きょり）, out, home }
   function runnerAt(scene, who, t) {
-    let s = who, xy = pathPoint(who), out = false;
+    let s = who, xy = runnerPoint(who, who), out = false;
     const steps = sortedSteps(scene);
     for (let i = 0; i < steps.length; i++) {
       const st = steps[i];
@@ -1488,9 +1499,9 @@ const Core = (function () {
       const u = clamp01((t - st.t) / (st.d || 1));
       if (typeof st.to === 'number' && s !== null) {
         s = s + (st.to - s) * u;
-        xy = pathPoint(s);
+        xy = runnerPoint(who, s);
       } else {
-        const to = typeof st.to === 'number' ? pathPoint(st.to) : (FIELD.SPOT[st.to] || FIELD.BASE[st.to] || st.to);
+        const to = typeof st.to === 'number' ? runnerPoint(who, st.to) : (FIELD.SPOT[st.to] || FIELD.BASE[st.to] || st.to);
         xy = lerp2(xy, to, u);
         s = (u >= 1 && typeof st.to === 'number') ? st.to : null;
       }
@@ -2616,7 +2627,7 @@ const Core = (function () {
     questionFor: questionFor, templateQuestion: templateQuestion, arrangeChoices: arrangeChoices, answerId: answerId,
     recordAnswer: recordAnswer, recordRetry: recordRetry, cardIds: cardIds, cardCount: cardCount, rankOf: rankOf,
     finishRound: finishRound, sessionPayload: sessionPayload, isForced: isForced, forceBases: forceBases,
-    FIELD: FIELD, pathPoint: pathPoint, sceneAt: sceneAt, sceneDuration: sceneDuration, checkScene: checkScene, sfxBetween: sfxBetween,
+    FIELD: FIELD, pathPoint: pathPoint, runnerPoint: runnerPoint, sceneAt: sceneAt, sceneDuration: sceneDuration, checkScene: checkScene, sfxBetween: sfxBetween,
     runnerAt: runnerAt, fielderAt: fielderAt, ballAt: ballAt, judgeScene: judgeScene, judgeSetupEnd: judgeSetupEnd
   };
 })();
@@ -2861,6 +2872,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
         '<ellipse cx="160" cy="226" rx="30" ry="14" fill="#d9a86c"/>' +
         '<path d="M160 222 L-20 100 M160 222 L340 100" stroke="#fff" stroke-width="2"/>' +
         '<path d="M160 222 L254 158 L160 96 L66 158 Z" fill="none" stroke="#fff" stroke-width="1.2" opacity=".55"/>' +
+        F.BOXES.map(function (x) { return '<rect x="' + x[0] + '" y="' + x[1] + '" width="' + x[2] + '" height="' + x[3] + '" fill="none" stroke="#fff" stroke-width="1.5" opacity=".8"/>'; }).join('') +
         base(b.b1) + base(b.b2) + base(b.b3) +
         '<path d="M152 218 h16 v5 l-8 6 l-8 -6 z" fill="#fff" stroke="#2b2b2b" stroke-width="1"/>';
     }
