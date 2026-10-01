@@ -1687,6 +1687,137 @@ const Core = (function () {
             { t: 2200, type: 'run', who: 0, to: 3, d: 1000 }, { t: 3200, type: 'run', who: 0, to: 4, d: 900 },
             { t: 4100, type: 'label', text: 'ホームまで かえられた', at: 'H', tone: 'safe' }]
         }
+      },
+
+      /* ===== がいやの しごと：ボールが こえても、しごとは おわらない =====
+         外野手の 定位置は、この 場面だけ すこし まえ（pos）。フェンスとの あいだに うしろへ まわる ばしょを とる */
+      {
+        id: 's6-09', stage: 6, type: 'spot', judge: true,
+        q: 'きみは センター。ランナーは いない。レフトの まえに ゴロの ヒット。レフトが ボールを とりに いく。きみは どこへ いく？',
+        spots: [{ id: 'backLF', at: [70, 66], label: 'レフトの うしろ', lab: [16, -14, 'start'] }, { id: 'ball', at: [104, 100], label: 'ボールへ' }, { id: 'stay', at: [160, 52], label: 'ここに いる', lab: [18, 5, 'start'] }],
+        answer: 0,
+        explain: 'レフトの ほうへ ボールが とんだら、センターは レフトの うしろへ はしる（バックアップ）。レフトが ボールを そらしても、すぐ ひろえるので、バッターは つぎの ベースへ すすめない。ボールが じぶんの ところに こなくても、しごとが あるよ。',
+        card: { name: 'センターの バックアップ（レフト）', icon: '🛡️', point: 'レフトへの ボールは レフトの うしろへ' },
+        scene: {
+          T: T, runners: [0], fielders: ['lf', 'cf', 'ss', '2b', '3b'], you: 'cf', youLab: [18, -12, 'start'], youSpeed: 12, pos: { lf: [72, 80], cf: [160, 52] },
+          base: [hit, { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: [80, 92], d: 900 }, { t: 200, type: 'field', who: 'lf', to: [80, 90], d: 600 },
+            { t: 900, type: 'label', text: 'そらした！', at: [80, 92], tone: 'info', d: 700 }, { t: 900, type: 'ball', kind: 'roll', to: [70, 66], d: 600 },
+            { t: 100, type: 'run', who: 0, to: 1, d: 1400 }],
+          jobs: [{ t: T, type: 'field', who: '2b', to: 'b2', d: 400 }, { t: T, type: 'field', who: 'ss', to: [104, 104], d: 400 }],
+          outcome: [
+            [{ t: 1500, type: 'sfx', name: 'catch' }, { t: 1500, type: 'label', text: 'とめた！', at: [70, 66], tone: 'good', d: 900 },
+              { t: 1600, type: 'ball', kind: 'throw', from: 'cf', to: 'ss', d: 350, h: 14 }, { t: 1500, type: 'run', who: 0, to: 1.2, d: 300 }, { t: 1900, type: 'run', who: 0, to: 1, d: 300 },
+              { t: 2200, type: 'label', text: 'ファーストで ストップ！', at: 'mid', tone: 'good' }],
+            [{ t: 1500, type: 'ball', kind: 'roll', to: [60, 58], d: 400 }, { t: 1000, type: 'field', who: 'lf', to: [62, 62], d: 1300 },
+              { t: 1500, type: 'run', who: 0, to: 2, d: 900 }, { t: 2400, type: 'run', who: 0, to: 3, d: 1000 },
+              { t: 1600, type: 'label', text: 'ころがって いく…', at: [72, 52], tone: 'info', d: 800 }, { t: 3400, type: 'label', text: 'サードまで いかれた', at: 'b3', tone: 'safe' }],
+            [{ t: 1500, type: 'ball', kind: 'roll', to: [60, 58], d: 400 }, { t: 1000, type: 'field', who: 'lf', to: [62, 62], d: 1300 },
+              { t: 1500, type: 'run', who: 0, to: 2, d: 900 }, { t: 2400, type: 'run', who: 0, to: 3, d: 1000 },
+              { t: 1600, type: 'label', text: 'ころがって いく…', at: [72, 52], tone: 'info', d: 800 }, { t: 3400, type: 'label', text: 'サードまで いかれた', at: 'b3', tone: 'safe' }]
+          ],
+          crowd: [crowdTo('cf', [80, 92], 22, 4), crowdTo('ss', [80, 92], 26, 14), crowdTo('3b', [80, 92], 10, 26), CROWD_LABEL,
+            { t: 1500, type: 'ball', kind: 'roll', to: [60, 58], d: 400 }, { t: 1000, type: 'field', who: 'lf', to: [62, 62], d: 1300 },
+            { t: 1500, type: 'run', who: 0, to: 2, d: 900 }, { t: 2400, type: 'run', who: 0, to: 3, d: 1000 },
+            { t: 3400, type: 'label', text: 'サードまで いかれた', at: 'b3', tone: 'safe' }]
+        }
+      },
+      {
+        id: 's6-10', stage: 6, type: 'spot', judge: true,
+        q: 'きみは センター。ランナーは いない。ライトの まえに ゴロの ヒット。ライトが ボールを とりに いく。きみは どこへ いく？',
+        spots: [{ id: 'backRF', at: [250, 66], label: 'ライトの うしろ', lab: [-16, -14, 'end'] }, { id: 'ball', at: [216, 100], label: 'ボールへ' }, { id: 'stay', at: [160, 52], label: 'ここに いる', lab: [-18, 5, 'end'] }],
+        answer: 0,
+        explain: 'ライトの ほうへ ボールが とんだら、センターは ライトの うしろへ はしる（バックアップ）。ライトが ボールを そらしても、すぐ ひろえるので、バッターは つぎの ベースへ すすめない。ボールが じぶんの ところに こなくても、しごとが あるよ。',
+        card: { name: 'センターの バックアップ（ライト）', icon: '🛡️', point: 'ライトへの ボールは ライトの うしろへ' },
+        scene: {
+          T: T, runners: [0], fielders: ['rf', 'cf', '2b', 'ss', '1b'], you: 'cf', youLab: [-18, -12, 'end'], youSpeed: 12, pos: { rf: [248, 80], cf: [160, 52] },
+          base: [hit, { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: [240, 92], d: 900 }, { t: 200, type: 'field', who: 'rf', to: [240, 90], d: 600 },
+            { t: 900, type: 'label', text: 'そらした！', at: [240, 92], tone: 'info', d: 700 }, { t: 900, type: 'ball', kind: 'roll', to: [250, 66], d: 600 },
+            { t: 100, type: 'run', who: 0, to: 1, d: 1400 }],
+          jobs: [{ t: T, type: 'field', who: 'ss', to: 'b2', d: 400 }],
+          outcome: [
+            [{ t: 1500, type: 'sfx', name: 'catch' }, { t: 1500, type: 'label', text: 'とめた！', at: [250, 66], tone: 'good', d: 900 },
+              { t: 1600, type: 'ball', kind: 'throw', from: 'cf', to: 'ss', d: 500, h: 14 }, { t: 1500, type: 'run', who: 0, to: 1.2, d: 300 }, { t: 1900, type: 'run', who: 0, to: 1, d: 300 },
+              { t: 2200, type: 'label', text: 'ファーストで ストップ！', at: 'mid', tone: 'good' }],
+            [{ t: 1500, type: 'ball', kind: 'roll', to: [260, 58], d: 400 }, { t: 1000, type: 'field', who: 'rf', to: [258, 62], d: 1300 },
+              { t: 1500, type: 'run', who: 0, to: 2, d: 900 }, { t: 2400, type: 'run', who: 0, to: 3, d: 1000 },
+              { t: 1600, type: 'label', text: 'ころがって いく…', at: [248, 52], tone: 'info', d: 800 }, { t: 3400, type: 'label', text: 'サードまで いかれた', at: 'b3', tone: 'safe' }],
+            [{ t: 1500, type: 'ball', kind: 'roll', to: [260, 58], d: 400 }, { t: 1000, type: 'field', who: 'rf', to: [258, 62], d: 1300 },
+              { t: 1500, type: 'run', who: 0, to: 2, d: 900 }, { t: 2400, type: 'run', who: 0, to: 3, d: 1000 },
+              { t: 1600, type: 'label', text: 'ころがって いく…', at: [248, 52], tone: 'info', d: 800 }, { t: 3400, type: 'label', text: 'サードまで いかれた', at: 'b3', tone: 'safe' }]
+          ],
+          crowd: [crowdTo('cf', [240, 92], -22, 4), crowdTo('2b', [240, 92], -26, 14), crowdTo('1b', [240, 92], -8, 26), CROWD_LABEL,
+            { t: 1500, type: 'ball', kind: 'roll', to: [260, 58], d: 400 }, { t: 1000, type: 'field', who: 'rf', to: [258, 62], d: 1300 },
+            { t: 1500, type: 'run', who: 0, to: 2, d: 900 }, { t: 2400, type: 'run', who: 0, to: 3, d: 1000 },
+            { t: 3400, type: 'label', text: 'サードまで いかれた', at: 'b3', tone: 'safe' }]
+        }
+      },
+      {
+        id: 's6-11', stage: 6, type: 'spot', judge: true,
+        q: 'きみは レフト。ランナーは いない。レフトの まえの ゴロを、きみが うしろに そらして しまった！ センターが バックアップに きて いるので、センターが ボールを ひろう。きみは どこへ いく？',
+        spots: [{ id: 'relay', at: [96, 80], label: 'あいだ', lab: [18, 5, 'start'] }, { id: 'ball', at: [64, 64], label: 'ボールへ', lab: [-14, 26, 'start'] }, { id: 'stay', at: [96, 112], label: 'ここで とまる', lab: [0, 30] }],
+        answer: 0,
+        explain: 'そらしても、しごとは おわらない。センターが ひろったら、きみは センターと ショートの あいだに はいって、ボールを つなぐ。ボールが はやく うちやに もどるので、バッターは サードへ すすめない（どこに はいるかは、きょりや チームの やくそくで かわる ことが あるよ）。',
+        card: { name: 'そらしても とまらない（レフト）', icon: '💪', point: 'そらしたら センターと ショートの あいだに はいる' },
+        scene: {
+          T: 1000, runners: [0], fielders: ['lf', 'cf', 'ss', '3b'], you: 'lf', youSpeed: 13, pos: { lf: [72, 80], cf: [160, 52] },
+          crowdLabel: '😵 そらした ひとが とまると', crowdNote: 'そらした ひとが とまると、ボールが うちやに もどるのが おそく なる。',
+          base: [hit, { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: [96, 112], d: 900 }, { t: 200, type: 'field', who: 'lf', to: [96, 112], d: 700 },
+            { t: 900, type: 'label', text: 'そらした！', at: [160, 176], tone: 'info', d: 100 }, { t: 900, type: 'ball', kind: 'roll', to: [64, 62], d: 800 },
+            { t: 300, type: 'field', who: 'cf', to: [68, 60], d: 1100 }, { t: 1750, type: 'sfx', name: 'catch' },
+            { t: 100, type: 'run', who: 0, to: 1, d: 1400 }, { t: 1500, type: 'run', who: 0, to: 2, d: 900 }],
+          jobs: [{ t: 1000, type: 'field', who: 'ss', to: [140, 110], d: 300 }, { t: 1000, type: 'field', who: '3b', to: 'b3', d: 300 }],
+          outcome: [
+            [{ t: 1800, type: 'ball', kind: 'throw', from: 'cf', to: 'lf', d: 350, h: 10 }, { t: 2150, type: 'sfx', name: 'catch' },
+              { t: 2200, type: 'ball', kind: 'throw', from: 'lf', to: 'ss', d: 350, h: 10 }, { t: 2550, type: 'sfx', name: 'catch' },
+              { t: 2550, type: 'label', text: 'もどった！ 2.6びょう', at: [140, 110], tone: 'good', d: 1000 },
+              { t: 2800, type: 'label', text: 'セカンドで ストップ！', at: 'mid', tone: 'good' }],
+            [{ t: 1800, type: 'ball', kind: 'throw', from: 'cf', to: [112, 92], d: 800, h: 20 }, { t: 2600, type: 'ball', kind: 'roll', to: [138, 108], d: 500 },
+              { t: 2400, type: 'label', text: 'とどかない…', at: [112, 92], tone: 'info', d: 600 }, { t: 3100, type: 'label', text: 'もどるまで 3.1びょう', at: [138, 108], tone: 'info', d: 1000 },
+              { t: 2400, type: 'run', who: 0, to: 3, d: 800 }, { t: 3200, type: 'label', text: 'サードまで いかれた', at: 'b3', tone: 'safe' }],
+            [{ t: 1800, type: 'ball', kind: 'throw', from: 'cf', to: [112, 92], d: 800, h: 20 }, { t: 2600, type: 'ball', kind: 'roll', to: [138, 108], d: 500 },
+              { t: 2400, type: 'label', text: 'とどかない…', at: [112, 92], tone: 'info', d: 600 }, { t: 3100, type: 'label', text: 'もどるまで 3.1びょう', at: [138, 108], tone: 'info', d: 1000 },
+              { t: 2400, type: 'run', who: 0, to: 3, d: 800 }, { t: 3200, type: 'label', text: 'サードまで いかれた', at: 'b3', tone: 'safe' }]
+          ],
+          crowd: [{ t: 1000, type: 'field', who: 'ss', to: [140, 110], d: 300 }, { t: 1000, type: 'field', who: '3b', to: 'b3', d: 300 },
+            { t: 1100, type: 'label', text: 'そらした ひとが とまった…', at: 'mid', tone: 'info', d: 900 },
+            { t: 1800, type: 'ball', kind: 'throw', from: 'cf', to: [112, 92], d: 800, h: 20 }, { t: 2600, type: 'ball', kind: 'roll', to: [138, 108], d: 500 },
+            { t: 2400, type: 'label', text: 'とどかない…', at: [112, 92], tone: 'info', d: 600 }, { t: 3100, type: 'label', text: 'もどるまで 3.1びょう', at: [138, 108], tone: 'info', d: 1000 },
+            { t: 2400, type: 'run', who: 0, to: 3, d: 800 }, { t: 3200, type: 'label', text: 'サードまで いかれた', at: 'b3', tone: 'safe' }]
+        }
+      },
+      {
+        id: 's6-12', stage: 6, type: 'spot', judge: true,
+        q: 'きみは ライト。ランナーは いない。ライトの まえの ゴロを、きみが うしろに そらして しまった！ センターが バックアップに きて いるので、センターが ボールを ひろう。きみは どこへ いく？',
+        spots: [{ id: 'relay', at: [224, 80], label: 'あいだ', lab: [-18, 5, 'end'] }, { id: 'ball', at: [256, 64], label: 'ボールへ', lab: [14, 26, 'end'] }, { id: 'stay', at: [224, 112], label: 'ここで とまる', lab: [0, 30] }],
+        answer: 0,
+        explain: 'そらしても、しごとは おわらない。センターが ひろったら、きみは センターと セカンドを まもる ひとの あいだに はいって、ボールを つなぐ。ボールが はやく うちやに もどるので、バッターは サードへ すすめない（どこに はいるかは、きょりや チームの やくそくで かわる ことが あるよ）。',
+        card: { name: 'そらしても とまらない（ライト）', icon: '💪', point: 'そらしたら センターと セカンドの あいだに はいる' },
+        scene: {
+          T: 1000, runners: [0], fielders: ['rf', 'cf', '2b', 'ss', '1b'], you: 'rf', youSpeed: 13, pos: { rf: [248, 80], cf: [160, 52] },
+          crowdLabel: '😵 そらした ひとが とまると', crowdNote: 'そらした ひとが とまると、ボールが うちやに もどるのが おそく なる。',
+          base: [hit, { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: [224, 112], d: 900 }, { t: 200, type: 'field', who: 'rf', to: [224, 112], d: 700 },
+            { t: 900, type: 'label', text: 'そらした！', at: [160, 176], tone: 'info', d: 100 }, { t: 900, type: 'ball', kind: 'roll', to: [256, 62], d: 800 },
+            { t: 300, type: 'field', who: 'cf', to: [252, 60], d: 1100 }, { t: 1750, type: 'sfx', name: 'catch' },
+            { t: 100, type: 'run', who: 0, to: 1, d: 1400 }, { t: 1500, type: 'run', who: 0, to: 2, d: 900 }],
+          jobs: [{ t: 1000, type: 'field', who: '2b', to: [180, 110], d: 300 }, { t: 1000, type: 'field', who: 'ss', to: 'b2', d: 400 }],
+          outcome: [
+            [{ t: 1800, type: 'ball', kind: 'throw', from: 'cf', to: 'rf', d: 350, h: 10 }, { t: 2150, type: 'sfx', name: 'catch' },
+              { t: 2200, type: 'ball', kind: 'throw', from: 'rf', to: '2b', d: 350, h: 10 }, { t: 2550, type: 'sfx', name: 'catch' },
+              { t: 2550, type: 'label', text: 'もどった！ 2.6びょう', at: [180, 110], tone: 'good', d: 1000 },
+              { t: 2800, type: 'label', text: 'セカンドで ストップ！', at: 'mid', tone: 'good' }],
+            [{ t: 1800, type: 'ball', kind: 'throw', from: 'cf', to: [208, 92], d: 800, h: 20 }, { t: 2600, type: 'ball', kind: 'roll', to: [182, 108], d: 500 },
+              { t: 2400, type: 'label', text: 'とどかない…', at: [208, 92], tone: 'info', d: 600 }, { t: 3100, type: 'label', text: 'もどるまで 3.1びょう', at: [182, 108], tone: 'info', d: 1000 },
+              { t: 2400, type: 'run', who: 0, to: 3, d: 800 }, { t: 3200, type: 'label', text: 'サードまで いかれた', at: 'b3', tone: 'safe' }],
+            [{ t: 1800, type: 'ball', kind: 'throw', from: 'cf', to: [208, 92], d: 800, h: 20 }, { t: 2600, type: 'ball', kind: 'roll', to: [182, 108], d: 500 },
+              { t: 2400, type: 'label', text: 'とどかない…', at: [208, 92], tone: 'info', d: 600 }, { t: 3100, type: 'label', text: 'もどるまで 3.1びょう', at: [182, 108], tone: 'info', d: 1000 },
+              { t: 2400, type: 'run', who: 0, to: 3, d: 800 }, { t: 3200, type: 'label', text: 'サードまで いかれた', at: 'b3', tone: 'safe' }]
+          ],
+          crowd: [{ t: 1000, type: 'field', who: '2b', to: [180, 110], d: 300 }, { t: 1000, type: 'field', who: 'ss', to: 'b2', d: 400 },
+            { t: 1100, type: 'label', text: 'そらした ひとが とまった…', at: 'mid', tone: 'info', d: 900 },
+            { t: 1800, type: 'ball', kind: 'throw', from: 'cf', to: [208, 92], d: 800, h: 20 }, { t: 2600, type: 'ball', kind: 'roll', to: [182, 108], d: 500 },
+            { t: 2400, type: 'label', text: 'とどかない…', at: [208, 92], tone: 'info', d: 600 }, { t: 3100, type: 'label', text: 'もどるまで 3.1びょう', at: [182, 108], tone: 'info', d: 1000 },
+            { t: 2400, type: 'run', who: 0, to: 3, d: 800 }, { t: 3200, type: 'label', text: 'サードまで いかれた', at: 'b3', tone: 'safe' }]
+        }
       }
     ];
   })();
@@ -2015,11 +2146,13 @@ const Core = (function () {
     let steps = sc.base.slice();
     if (choice === 'crowd') steps = steps.concat(sc.crowd);
     else if (choice !== null && choice !== undefined) {
-      const from = (sc.pos && sc.pos[sc.you]) || FIELD.POS[sc.you];
+      // こたえる しゅんかんに きみが いる ところから はしる（そらした あとの 問題は、そらした ところから）
+      const from = fielderAt({ steps: sc.base, pos: sc.pos }, sc.you, sc.T);
       const to = spotXY(q.spots[choice]);
       const dist = Math.hypot(to[0] - from[0], to[1] - from[1]);
+      const speed = sc.youSpeed || YOU_SPEED;
       steps = steps.concat(sc.jobs);
-      if (dist > 1) steps.push({ t: sc.T, type: 'field', who: sc.you, to: q.spots[choice].at, d: Math.max(250, Math.round(dist * YOU_SPEED)) });
+      if (dist > 1) steps.push({ t: sc.T, type: 'field', who: sc.you, to: q.spots[choice].at, d: Math.max(250, Math.round(dist * speed)) });
       steps = steps.concat(sc.outcome[choice]);
     }
     return { runners: sc.runners, fielders: sc.fielders.slice(), steps: steps, you: sc.you, youLab: sc.youLab, pos: sc.pos };
@@ -2051,7 +2184,8 @@ const Core = (function () {
     'backup': 'バックアップ',
     'relay': 'ちゅうけい',
     'baserun': 'そうるいの はんだん',
-    'outs': 'アウトの かず'
+    'outs': 'アウトの かず',
+    'outfield': 'がいやの しごと'
   };
   const TAG_OF = {
     's1-01': ['count'], 's1-02': ['count'], 's1-03': ['count'], 's1-04': ['count'], 's1-05': ['count'],
@@ -2065,7 +2199,8 @@ const Core = (function () {
     's5-01': ['throw', 'force-tag'], 's5-02': ['throw', 'force-tag'], 's5-03': ['throw', 'force-tag'], 's5-04': ['throw', 'force-tag'],
     's5-05': ['throw', 'tagup'], 's5-06': ['throw', 'tagup'], 's5-07': ['throw', 'force-tag'], 's5-08': ['throw', 'force-tag'],
     's6-01': ['cover'], 's6-02': ['cover'], 's6-03': ['cover'], 's6-04': ['cover'],
-    's6-05': ['backup'], 's6-06': ['backup'], 's6-07': ['relay'], 's6-08': ['relay']
+    's6-05': ['backup'], 's6-06': ['backup'], 's6-07': ['relay'], 's6-08': ['relay'],
+    's6-09': ['outfield', 'backup'], 's6-10': ['outfield', 'backup'], 's6-11': ['outfield', 'relay'], 's6-12': ['outfield', 'relay']
   };
   // こたえる まえの「さいせい」で みせて よい ところ（ミリ秒）。こたえが わかる ところ（けっかの もじ・うごき）の てまえで とめる。
   // ない 問題は、アニメ そのものが こたえに なるので さいせいしない
@@ -4405,7 +4540,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     return '<div class="outs-cmp def-cmp" id="defCmp"><p class="oc-title">👀 うごきを くらべて みよう</p>' +
       '<div class="oc-btns' + (wrong ? ' three' : '') + '">' +
       '<button class="oc-btn" data-mode="ok" aria-pressed="' + (wrong ? 'false' : 'true') + '">⭕ ただしい うごき</button>' +
-      '<button class="oc-btn" data-mode="crowd" aria-pressed="false">😵 みんなが ボールに いくと</button>' +
+      (q.scene.crowd ? '<button class="oc-btn" data-mode="crowd" aria-pressed="false">' + (q.scene.crowdLabel || '😵 みんなが ボールに いくと') + '</button>' : '') +
       (wrong ? '<button class="oc-btn" data-mode="mine" aria-pressed="true">きみが えらんだ うごき</button>' : '') +
       '</div><p class="oc-result" id="dcNote" aria-live="polite">ボタンを おすと、プレーが うごくよ。</p></div>';
   }
@@ -4421,7 +4556,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
         $('dcNote').textContent = mode === 'ok'
           ? 'きみは「' + answerLabel + '」へ。ほかの ひとも じぶんの しごとを しているから、うまく いくよ。'
           : mode === 'crowd'
-            ? 'みんなが ボールに あつまると、ベースや うしろが あいて しまう。'
+            ? (q.scene.crowdNote || 'みんなが ボールに あつまると、ベースや うしろが あいて しまう。')
             : 'きみが「' + q.spots[idx].label + '」へ いった ときの うごき。';
         showDefensePlay(q, mode === 'ok' ? q.answer : mode === 'crowd' ? 'crowd' : idx);
       };
