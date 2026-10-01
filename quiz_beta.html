@@ -2049,7 +2049,9 @@ const Core = (function () {
     'throw': 'どこに なげる',
     'cover': 'ベースカバー',
     'backup': 'バックアップ',
-    'relay': 'ちゅうけい'
+    'relay': 'ちゅうけい',
+    'baserun': 'そうるいの はんだん',
+    'outs': 'アウトの かず'
   };
   const TAG_OF = {
     's1-01': ['count'], 's1-02': ['count'], 's1-03': ['count'], 's1-04': ['count'], 's1-05': ['count'],
@@ -2489,6 +2491,114 @@ const Core = (function () {
           scene: { runners: all, fielders: ['ss'], target: 0, steps: steps }, preview: 600
         };
       }
+    },
+
+    /* ===== ランナーの はんだん（あたらしい 問題）：「きみは ランナー」で、うった しゅんかんに どう うごくか =====
+       ・フライ（ファーストの ランナー）：ツーアウトは すぐ はしる、ツーアウト みまんは とちゅうで まつ
+       ・ゴロで つぎの ベースが あいていない（フォース）：アウトの かずに かかわらず はしる
+       ・セカンドの ランナーだけで、じぶんより まえ（ショート・サード）の ゴロ：ツーアウトは はしる、ツーアウト みまんは ベースに もどる
+       タッチアップ（サードの ランナーと ふかい フライ）は tag-up で あつかう */
+    {
+      id: 'runner-decision', stage: 3, type: 'choice', tags: ['baserun', 'outs'],
+      title: 'ランナーの はんだん',
+      card: { name: 'ランナーの はんだん', icon: '🏃‍♀️', point: 'ツーアウトは うった しゅんかんに はしる' },
+      rule: '5.09(b)(5)、5.09(b)(6)、定義「フォースプレイ」',
+      all: function () {
+        const out = [];
+        [0, 1, 2].forEach(function (outs) {
+          ['lf', 'cf', 'rf'].forEach(function (ball) {
+            out.push({ pattern: 'fly-o' + outs, situation: { runners: [1], outs: outs, target: 1, ball: ball, kind: 'fly' } });
+          });
+          ['3b', 'ss'].forEach(function (ball) {
+            out.push({ pattern: 'force-o' + outs, situation: { runners: [1], outs: outs, target: 1, ball: ball, kind: 'force' } });
+          });
+          ['3b', 'ss'].forEach(function (ball) {
+            out.push({ pattern: 'g2-o' + outs, situation: { runners: [2], outs: outs, target: 2, ball: ball, kind: 'grounder2' } });
+          });
+        });
+        return out;
+      },
+      build: function (sit, rng) {
+        const s = sit.situation;
+        const two = s.outs === 2;
+        const OW = OUTS_WORD[s.outs];
+        let q, answer, explain;
+        const steps = [{ t: 0, type: 'sfx', name: 'bat' }];
+        const fielders = [s.ball, '1b', 'ss'];
+        if (s.kind === 'fly') {
+          q = 'きみは ファーストの ランナー（ランナーは きみ だけ）。' + OW + '。バッターが ' + POS_NAME[s.ball] + 'に たかい フライを うちあげた！ どう する？';
+          answer = two ? 0 : 1;
+          explain = two
+            ? 'ツーアウトなので、フライを とられたら そこで こうたい（チェンジ）。もどっても いみが ないので、うった しゅんかんに すぐ はしる。おちたら さきの ベースまで いける。'
+            : 'まだ ' + OW + 'なので、フライを とられたら ファーストに もどらないと アウトに なる。とちゅうで まって、とったら もどる、おちたら すすむ。';
+          const land = FIELD.POS[s.ball];
+          if (two) {
+            const drop = [land[0] + 8, land[1] + 14];
+            steps.push({ t: 0, type: 'ball', kind: 'fly', from: 'H', to: drop, d: 1300, h: 90 });
+            // ライトなら サードまで。レフト・センターは サードへの なげが ちかいので セカンドで とまる
+            const far = s.ball === 'rf';
+            steps.push({ t: 300, type: 'run', who: 1, to: 2, d: 1100 });
+            if (far) steps.push({ t: 1400, type: 'run', who: 1, to: 3, d: 1100 });
+            steps.push({ t: 1500, type: 'field', who: s.ball, to: [drop[0] + 6, drop[1] + 8], d: 300 });
+            steps.push({ t: 1800, type: 'ball', kind: 'throw', from: s.ball, to: 'ss', d: 700, h: 30 });
+            steps.push({ t: 100, type: 'run', who: 0, to: 1, d: 1500 });
+            steps.push({ t: 300, type: 'field', who: s.ball, to: [drop[0] - 6, drop[1] - 4], d: 1000 });
+            steps.push({ t: 1300, type: 'label', text: 'おちた！', at: drop, tone: 'info', d: 700 });
+            steps.push({ t: 1300, type: 'ball', kind: 'roll', to: [drop[0] + 6, drop[1] + 8], d: 300 });
+            steps.push(far ? { t: 2550, type: 'label', text: 'サードまで いけた！', at: 'b3', tone: 'run' } : { t: 1500, type: 'label', text: 'セカンドまで いけた！', at: 'b2', tone: 'run' });
+          } else {
+            steps.push({ t: 0, type: 'ball', kind: 'fly', from: 'H', to: s.ball, d: 1300, h: 90 });
+            steps.push({ t: 300, type: 'run', who: 1, to: 1.5, d: 700 });
+            steps.push({ t: 100, type: 'run', who: 0, to: 0.6, d: 900 });
+            steps.push({ t: 1300, type: 'sfx', name: 'catch' });
+            steps.push({ t: 1300, type: 'out', who: 0 });
+            steps.push({ t: 1300, type: 'label', text: 'キャッチ！ もどる', at: 'mid', tone: 'info', d: 800 });
+            steps.push({ t: 1350, type: 'run', who: 1, to: 1, d: 700 });
+            steps.push({ t: 1500, type: 'ball', kind: 'throw', from: s.ball, to: '1b', d: 900, h: 30 });
+            steps.push({ t: 2100, type: 'label', text: 'もどれた！', at: 'b1', tone: 'safe' });
+          }
+        } else if (s.kind === 'force') {
+          q = 'きみは ファーストの ランナー（ランナーは きみ だけ）。' + OW + '。バッターが ' + POS_NAME[s.ball] + 'の まえに ゆるい ゴロ（ボテボテの ゴロ）を うった！ どう する？';
+          answer = 0;
+          explain = 'バッターが ファーストへ はしって くるので、きみは ファーストに いられない。アウトが いくつでも、セカンドへ はしるしか ない（フォース：バッターに おしだされる）。' +
+            (two ? 'ツーアウトでも おなじ。' : '');
+          steps.push({ t: 0, type: 'ball', kind: 'grounder', from: 'H', to: s.ball, d: 900 });
+          steps.push({ t: 0, type: 'field', who: s.ball, to: [FIELD.POS[s.ball][0] + 16, FIELD.POS[s.ball][1] + 18], d: 900 });
+          steps.push({ t: 900, type: 'sfx', name: 'catch' });
+          steps.push({ t: 300, type: 'run', who: 1, to: 2, d: 1000 });
+          steps.push({ t: 100, type: 'run', who: 0, to: 1, d: 1500 });
+          steps.push({ t: 1000, type: 'ball', kind: 'throw', from: s.ball, to: '1b', d: 500 });
+          steps.push({ t: 1300, type: 'label', text: 'セーフ', at: 'b2', tone: 'safe' });
+          steps.push({ t: 1500, type: 'sfx', name: 'catch' });
+          steps.push({ t: 1500, type: 'out', who: 0 });
+          steps.push({ t: 1500, type: 'label', text: 'バッター アウト', at: 'b1', tone: 'out' });
+        } else {
+          q = 'きみは セカンドの ランナー（ランナーは きみ だけ）。' + OW + '。バッターが ' + POS_NAME[s.ball] + 'に ゴロを うった！ どう する？';
+          answer = two ? 0 : 2;
+          explain = two
+            ? 'ツーアウトなので、バッターが アウトなら こうたい（チェンジ）。まよわず はしる。エラーが あれば ホームまで かえれる かも しれない。'
+            : 'まだ ' + OW + '。ファーストに ランナーが いないので、きみは バッターに おしだされない（フォースでは ない）。すすまなくても いい。ショートや サードの ほうの ゴロで すぐ はしると、サードで タッチされて アウトに なりやすいので、うった しゅんかんは ベースに もどる。';
+          steps.push({ t: 0, type: 'ball', kind: 'grounder', from: 'H', to: s.ball, d: 600 });
+          steps.push({ t: 600, type: 'sfx', name: 'catch' });
+          steps.push({ t: 100, type: 'run', who: 0, to: 1, d: 1500 });
+          if (two) {
+            // やしゅが なげた あとに、やしゅの よこを とおる
+            steps.push({ t: 300, type: 'run', who: 2, to: 3, d: 1500 });
+          } else {
+            steps.push({ t: 300, type: 'run', who: 2, to: 2.15, d: 200 });
+            steps.push({ t: 500, type: 'run', who: 2, to: 2, d: 300 });
+          }
+          steps.push({ t: 610, type: 'ball', kind: 'throw', from: s.ball, to: '1b', d: 550 });
+          steps.push({ t: 1160, type: 'sfx', name: 'catch' });
+          steps.push({ t: 1160, type: 'out', who: 0 });
+          steps.push({ t: 1160, type: 'label', text: 'バッター アウト', at: 'b1', tone: 'out' });
+        }
+        return {
+          type: 'choice', q: q, choices: ['すぐ はしる', 'とちゅうで まつ', 'ベースに もどる'], answerIds: ['go', 'half', 'back'], answer: answer, explain: explain,
+          bso: { b: rngInt(rng, 4), s: rngInt(rng, 3), o: s.outs },
+          scene: { runners: s.runners.concat([0]), fielders: uniq(fielders), youRunner: s.target, steps: steps }, preview: 300
+        };
+      }
     }
   ];
 
@@ -2537,7 +2647,7 @@ const Core = (function () {
   /* ---------- アウトの かずだけ かえた 問題（「もし アウトが ○つ だったら？」） ----------
      おなじ 状況（ランナー・ボールの いき先・ねらう ランナー・ふむ じゅん）で、アウトの かずだけ ちがう 状況を さがす。
      それ いがいの 項目（canRun・twoOuts・infieldFly など）は アウトの かずから きまるので くらべない */
-  const OUTS_INPUTS = ['runners', 'ball', 'target', 'order'];
+  const OUTS_INPUTS = ['runners', 'ball', 'target', 'order', 'kind'];
   function outsInputs(sit) {
     const r = {};
     OUTS_INPUTS.forEach(function (k) { if (sit[k] !== undefined) r[k] = sit[k]; });
@@ -3441,7 +3551,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       (scene.fielders || []).forEach(function (f) { html += '<g class="pl-fielder" data-f="' + f + '">' + figure('fielder') + '</g>'; });
       (scene.runners || []).forEach(function (r) { html += '<g class="pl-runner" data-r="' + r + '">' + figure('runner') + '</g>'; });
       // まもりの 問題：きみ（scene.you）に きいろの わと「きみ」
-      if (scene.you) {
+      if (scene.you || scene.youRunner !== undefined) {
         const yl = scene.youLab || [0, -36];
         html += '<g class="pl-you"><ellipse class="pl-you-ring" rx="12" ry="17" cy="-13"/><text class="pl-you-label" x="' + yl[0] + '" y="' + yl[1] + '" text-anchor="' + (yl[2] || 'middle') + '">きみ</text></g>';
       }
@@ -3540,7 +3650,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
           fielderNodes[f].setAttribute('transform', 'translate(' + n1(p[0]) + ' ' + n1(p[1]) + ')');
         });
         if (youMark) {
-          const yp = st.fielders[scene.you];
+          const yp = scene.youRunner !== undefined ? st.runners[scene.youRunner].xy : st.fielders[scene.you];
           youMark.setAttribute('transform', 'translate(' + n1(yp[0]) + ' ' + n1(yp[1]) + ')');
           // 「きみ」の もじが はしで きれる ときは はんたいがわに だす
           const yl = scene.youLab || [0, -36];
