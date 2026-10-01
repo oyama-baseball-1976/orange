@@ -2152,10 +2152,10 @@ const Core = (function () {
       const dist = Math.hypot(to[0] - from[0], to[1] - from[1]);
       const speed = sc.youSpeed || YOU_SPEED;
       steps = steps.concat(sc.jobs);
-      if (dist > 1) steps.push({ t: sc.T, type: 'field', who: sc.you, to: q.spots[choice].at, d: Math.max(250, Math.round(dist * speed)) });
+      if (dist > 1 && !sc.throwTo) steps.push({ t: sc.T, type: 'field', who: sc.you, to: q.spots[choice].at, d: Math.max(250, Math.round(dist * speed)) });
       steps = steps.concat(sc.outcome[choice]);
     }
-    return { runners: sc.runners, fielders: sc.fielders.slice(), steps: steps, you: sc.you, youLab: sc.youLab, pos: sc.pos };
+    return { runners: sc.runners, fielders: sc.fielders.slice(), steps: steps, you: sc.you, youLab: sc.youLab, pos: sc.pos, bso: sc.bso };
   }
 
   // 時刻 from〜to の あいだに なる こうかおん
@@ -2185,7 +2185,8 @@ const Core = (function () {
     'relay': 'ちゅうけい',
     'baserun': 'そうるいの はんだん',
     'outs': 'アウトの かず',
-    'outfield': 'がいやの しごと'
+    'outfield': 'がいやの しごと',
+    'after-fly': 'フライの あと'
   };
   const TAG_OF = {
     's1-01': ['count'], 's1-02': ['count'], 's1-03': ['count'], 's1-04': ['count'], 's1-05': ['count'],
@@ -2689,7 +2690,8 @@ const Core = (function () {
             steps.push({ t: 1300, type: 'out', who: 0 });
             steps.push({ t: 1300, type: 'label', text: 'キャッチ！ もどる', at: 'mid', tone: 'info', d: 800 });
             steps.push({ t: 1350, type: 'run', who: 1, to: 1, d: 700 });
-            steps.push({ t: 1500, type: 'ball', kind: 'throw', from: s.ball, to: '1b', d: 900, h: 30 });
+            steps.push({ t: 1500, type: 'ball', kind: 'throw', from: s.ball, to: 'ss', d: 700, h: 30 });
+            steps.push({ t: 1000, type: 'field', who: 'ss', to: 'b2', d: 400 });
             steps.push({ t: 2100, type: 'label', text: 'もどれた！', at: 'b1', tone: 'safe' });
           }
         } else if (s.kind === 'force') {
@@ -2734,6 +2736,95 @@ const Core = (function () {
           scene: { runners: s.runners.concat([0]), fielders: uniq(fielders), youRunner: s.target, steps: steps }, preview: 300
         };
       }
+    },
+
+    /* ===== フライを とった あと、どこへ なげる？（あたらしい 問題・ばしょを タップ） =====
+       ・ツーアウト：とった ところで 3つめの アウト（チェンジ）。なげなくて いい → ベンチへ
+       ・ツーアウト みまん：ランナーは タッチアップで つぎの ベースへ すすもうと する → その ベースの ほうへ なげる（とどかなければ ちゅうけいへ）
+       ランナーは 1人だけ（ファースト・セカンド・サード）。とびだして もどる ばめんは つかわない */
+    {
+      id: 'throw-after-fly', stage: 4, type: 'spot', tags: ['after-fly', 'outs'],
+      title: 'フライの あと どこへ なげる',
+      card: { name: 'フライの あと どこへ なげる', icon: '🎯', point: 'ツーアウトなら なげない。それいがいは ランナーが すすむ ベースへ' },
+      rule: '5.09(b)(5)、5.09(c)(1)、5.08(a)',
+      all: function () {
+        const out = [];
+        [1, 2, 3].forEach(function (n) {
+          [0, 1, 2].forEach(function (outs) {
+            ['lf', 'cf', 'rf'].forEach(function (ball) {
+              out.push({ pattern: 'r' + n + '-o' + outs, situation: { runners: [n], outs: outs, target: n, ball: ball, twoOuts: outs === 2 } });
+            });
+          });
+        });
+        return out;
+      },
+      build: function (sit, rng) {
+        const s = sit.situation;
+        const n = s.target, two = s.twoOuts, you = s.ball;
+        const T = 1350;
+        const spots = [
+          { id: 'H', at: 'H', label: 'ホーム', lab: [-18, 5, 'end'] },
+          { id: '3B', at: 'b3', label: 'サード', lab: [0, 28] },
+          { id: '2B', at: 'b2', label: 'セカンド', lab: [0, 28] },
+          { id: 'bench', at: [296, 212], label: 'なげずに ベンチへ', lab: [12, -19, 'end'] }
+        ];
+        const nextId = { 1: '2B', 2: '3B', 3: 'H' }[n];
+        const answer = two ? 3 : spots.map(function (x) { return x.id; }).indexOf(nextId);
+        const q = 'きみは ' + POS_NAME[you] + '。ランナーは ' + NAME[n] + 'に いる。' + OUTS_WORD[s.outs] + '。' +
+          (two ? 'たかい フライを きみが とった！' : 'ランナーは ベースに ついて、タッチアップの じゅんびを して いる。とおくまで とんだ ふかい フライを、きみが とった！') + ' どこへ なげる？';
+        const explain = two
+          ? 'ツーアウトで フライを とったので、3つめの アウト。こうたい（チェンジ）なので、なげなくて いい。' + (n === 3 ? 'ランナーが ホームを ふんでも てんは はいらない。' : '')
+          : 'とった あとも まだ チェンジでは ない。ランナーは、とった しゅんかんに ' + NAME[n + 1] + 'へ すすもうと する（タッチアップ）。' +
+            NAME[n + 1] + 'の ほうへ なげて、すすませない ように する（とどかない ときは、あいだに はいった ひとへ なげる）。';
+        const cover = { H: 'c', '3B': '3b', '2B': you === 'rf' ? '2b' : 'ss' };
+        const fielders = uniq([you, 'c', '3b', 'ss', '2b', '1b']);
+        const base = [
+          { t: 0, type: 'sfx', name: 'bat' },
+          { t: 0, type: 'ball', kind: 'fly', from: 'H', to: you, d: 1300, h: 90 },
+          { t: 1300, type: 'sfx', name: 'catch' },
+          // フライを とったので バッターは アウト（アウトの ランプが 1つ ふえる。3つめなら チェンジ）
+          { t: 1300, type: 'bso', b: 0, s: 0, o: s.outs + 1 },
+          { t: 1300, type: 'label', text: two ? 'キャッチ！ 3アウト' : 'キャッチ！', at: you, tone: 'info', d: 700 }
+        ];
+        // ツーアウトは うった しゅんかんに はしる。ツーアウト みまんは ベースで まつ（タッチアップ）
+        if (two) base.push({ t: 300, type: 'run', who: n, to: n + 1, d: n === 3 ? 1100 : 1000 });
+        if (two && n === 3) base.push({ t: 1500, type: 'label', text: 'てんは はいらない', at: 'H', tone: 'info', d: 1500 });
+        base.push({ t: 300, type: 'field', who: '3b', to: 'b3', d: 400 }, { t: 300, type: 'field', who: cover['2B'], to: 'b2', d: 400 });
+        const jobs = [];
+        const outcome = spots.map(function (sp, i) {
+          const list = [];
+          if (sp.id === 'bench') {
+            // 一塁がわの ベンチの ほうへ あるく
+            list.push({ t: T, type: 'field', who: you, to: [270, 186], d: 2200 });
+            list.push({ t: T, type: 'ball', kind: 'carry', to: you, d: 2200 });
+          } else {
+            const tgt = cover[sp.id];
+            const from = FIELD.POS[you], to = sp.id === 'H' ? FIELD.BASE.H : FIELD.BASE[sp.id === '3B' ? 'b3' : 'b2'];
+            const d = Math.round(Math.hypot(to[0] - from[0], to[1] - from[1]) * 4.5);
+            list.push({ t: T + 100, type: 'ball', kind: 'throw', from: you, to: tgt, d: d, h: 30 });
+            list.push({ t: T + 100 + d, type: 'sfx', name: 'catch' });
+            sp.arrive = T + 100 + d;
+          }
+          if (two) {
+            list.push({ t: T + 150, type: 'label', text: i === answer ? 'チェンジ！ ベンチへ' : 'もう チェンジ。なげなくて いい', at: 'mid', tone: i === answer ? 'good' : 'info', d: 1500 });
+          } else if (i === answer) {
+            // タッチアップで スタート → ボールが くるので もどる
+            list.push({ t: T, type: 'run', who: n, to: n + 0.3, d: 400 });
+            list.push({ t: T + 500, type: 'run', who: n, to: n, d: 400 });
+            list.push({ t: T + 1000, type: 'label', text: 'すすめなかった！', at: { 1: 'b1', 2: 'b2', 3: 'b3' }[n], tone: 'good' });
+          } else {
+            list.push({ t: T, type: 'run', who: n, to: n + 1, d: n === 3 ? 1100 : 1000 });
+            list.push({ t: T + 1150, type: 'label', text: n === 3 ? '1てん とられた' : NAME[n + 1] + 'まで すすまれた', at: { 1: 'b2', 2: 'b3', 3: 'H' }[n], tone: 'safe' });
+          }
+          return list;
+        });
+        spots.forEach(function (x) { delete x.arrive; });
+        return {
+          type: 'spot', q: q, spots: spots, answerIds: spots.map(function (x) { return x.id; }), answer: answer, explain: explain,
+          bso: { b: rngInt(rng, 4), s: rngInt(rng, 3), o: s.outs },
+          scene: { T: T, throwTo: true, runners: [n], fielders: fielders, you: you, youLab: you === 'cf' ? [18, -12, 'start'] : [0, -36], base: base, jobs: jobs, outcome: outcome }
+        };
+      }
     }
   ];
 
@@ -2760,6 +2851,7 @@ const Core = (function () {
       stage: t.stage, type: b.type, q: b.q, choices: b.choices, answerIds: b.answerIds, answer: b.answer,
       explain: b.explain, card: t.card, cardId: t.id, rule: t.rule, tags: t.tags, situation: ordered, preview: b.preview
     };
+    if (b.spots) q.spots = b.spots;
     q.scene = b.scene;
     // スコアボードは situation の bso と おなじ ものを みせる
     q.scene.bso = { b: b.bso.b, s: b.bso.s, o: b.bso.o };
@@ -3714,7 +3806,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
           else if (sp.lab === 'a') ly = y - 19;
           else if (sp.lab === 'l') { lx = x - 18; ly = y + 5; anchor = 'end'; }
           else if (sp.lab === 'r') { lx = x + 18; ly = y + 5; anchor = 'start'; }
-          html += '<g class="pl-tap" data-base="' + i + '" role="button" tabindex="0" aria-label="' + sp.label + 'へ いく">' +
+          html += '<g class="pl-tap" data-base="' + i + '" role="button" tabindex="0" aria-label="' + sp.label + (opts.spotVerb || 'へ いく') + '">' +
             '<circle class="pl-ring" cx="' + x + '" cy="' + y + '" r="15"/>' +
             '<circle cx="' + x + '" cy="' + y + '" r="24" fill="transparent"/>' +
             '<text class="pl-spot-label" x="' + lx + '" y="' + ly + '" text-anchor="' + anchor + '">' + sp.label + '</text></g>';
@@ -4303,7 +4395,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   }
   function mountQuestion(field, q, choice, extra) {
     const opts = Object.assign({ onSfx: playSfx }, extra || {});
-    if (q.type === 'spot') return Play.mount(field, Core.defenseScene(q, choice), Object.assign(opts, { spots: spotsOf(q) }));
+    if (q.type === 'spot') return Play.mount(field, Core.defenseScene(q, choice), Object.assign(opts, { spots: spotsOf(q), focusOuts: Core.outsMatter(q), spotVerb: q.scene.throwTo ? 'へ なげる' : null }));
     return Play.mount(field, Core.judgeScene(q, choice), Object.assign(opts, { tap: true, focusOuts: Core.outsMatter(q) }));
   }
   function playPreview() {
@@ -4353,7 +4445,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       box.appendChild(field);
       const hint = document.createElement('p');
       hint.className = 'tap-hint';
-      hint.textContent = q.type === 'spot' ? '👆 きみが いく ばしょを タップしてね' : '👆 なげる ベースを タップしてね';
+      hint.textContent = q.type === 'spot' ? (q.scene.throwTo ? '👆 なげる ところを タップしてね' : '👆 きみが いく ばしょを タップしてね') : '👆 なげる ベースを タップしてね';
       box.appendChild(hint);
       R.player = mountQuestion(field, q, null);
       R.player.onTap(function (base) { answer(base, null); });
@@ -4523,12 +4615,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     R.player.stop();
     const sq = c.q;
     const tapped = c.current ? idx : sq.answer;
-    const scene = sq.type === 'tap' ? Core.judgeScene(sq, tapped) : sq.scene;
-    R.player = Play.mount(field, scene, { tap: sq.type === 'tap', onSfx: playSfx, focusOuts: Core.outsMatter(sq) });
-    if (sq.type === 'tap') R.player.lockTap(true);
+    if (sq.type === 'tap' || sq.type === 'spot') R.player = mountQuestion(field, sq, tapped);
+    else R.player = Play.mount(field, sq.scene, { onSfx: playSfx, focusOuts: Core.outsMatter(sq) });
+    if (sq.type === 'tap' || sq.type === 'spot') R.player.lockTap(true);
     const pl = R.player;
     pl.play(0, pl.duration, function () {
-      if (sq.type === 'tap') { pl.mark(sq.answer, true); if (tapped !== sq.answer) pl.mark(tapped, false); }
+      if (sq.type === 'tap' || sq.type === 'spot') { pl.mark(sq.answer, true); if (tapped !== sq.answer) pl.mark(tapped, false); }
     });
   }
 
