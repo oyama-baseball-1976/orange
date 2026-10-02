@@ -2915,6 +2915,19 @@ const Core = (function () {
     return templateQuestion(t, list[rngInt(rng, list.length)], rng);
   }
 
+  // コーチの ページから ひらく 問題（quiz/index.html?play=キー）。キーは 固定問題の ID・「テンプレートID:型」・テンプレートID だけ（型は えらぶ）
+  // つかえない キーは null
+  function playQuestion(key, rng) {
+    rng = rng || Math.random;
+    key = String(key || '');
+    if (!/^[a-z0-9-]+(:[a-z0-9-]+)?$/.test(key)) return null;
+    if (key.indexOf(':') < 0 && TEMPLATE_BY_ID[key]) {
+      const t = TEMPLATE_BY_ID[key];
+      return templateQuestion(t, t.situations[rngInt(rng, t.situations.length)], rng);
+    }
+    return questionFor(key, rng);
+  }
+
   /* ---------- アウトの かずだけ かえた 問題（「もし アウトが ○つ だったら？」） ----------
      おなじ 状況（ランナー・ボールの いき先・ねらう ランナー・ふむ じゅん）で、アウトの かずだけ ちがう 状況を さがす。
      それ いがいの 項目（canRun・twoOuts・infieldFly など）は アウトの かずから きまるので くらべない */
@@ -3535,7 +3548,7 @@ const Core = (function () {
     isUnlocked: isUnlocked, stageLearned: stageLearned, allCleared: allCleared, nextStage: nextStage, starsFor: starsFor,
     nigateKeys: nigateKeys, unitPool: unitPool, composeSession: composeSession, buildRound: buildRound,
     questionFor: questionFor, templateQuestion: templateQuestion, arrangeChoices: arrangeChoices, answerId: answerId,
-    recordAnswer: recordAnswer, recordRetry: recordRetry, cardIds: cardIds, cardCount: cardCount, rankOf: rankOf,
+    recordAnswer: recordAnswer, recordRetry: recordRetry, playQuestion: playQuestion, cardIds: cardIds, cardCount: cardCount, rankOf: rankOf,
     finishRound: finishRound, sessionPayload: sessionPayload, isForced: isForced, forceBases: forceBases,
     FIELD: FIELD, pathPoint: pathPoint, runnerPoint: runnerPoint, sceneAt: sceneAt, bsoAt: bsoAt, withOuts: withOuts, outsCompare: outsCompare, outsMatter: outsMatter,
     OUTS_MATTER: OUTS_MATTER, OUTS_PARTNERS: OUTS_PARTNERS, pairOuts: pairOuts, PAIR_RATE: PAIR_RATE, PAIR_FLIP_RATE: PAIR_FLIP_RATE, PATTERN_ANSWER: PATTERN_ANSWER, bucketOf: bucketOf, MAX_PER_TEMPLATE: MAX_PER_TEMPLATE, sceneDuration: sceneDuration, checkScene: checkScene, sfxBetween: sfxBetween,
@@ -4375,6 +4388,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   function modeLabel(mode) {
     if (mode.kind === 'stage') { const st = Core.stageOf(mode.stage); return st.icon + ' ' + st.base + '：' + st.title; }
     if (mode.kind === 'today') return '📅 きょうの 10もん';
+    if (mode.kind === 'show') return '👀 みんなで みよう';
     return '💪 にがて チャレンジ';
   }
 
@@ -4395,6 +4409,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     show('scr-quiz');
     showQuestion();
     intro('プレイボール！', 'playball');
+  }
+
+  // コーチの ページから ひらいた 1もん（?play=キー）。記録は しない・おくらない
+  function startShow(key) {
+    const q = Core.playQuestion(key);
+    if (!q) return false;
+    Sound.ensure();
+    R = {
+      mode: { kind: 'show', key: key }, list: [Object.assign({}, q, { bucket: 'show' })], i: 0, phase: 'main',
+      results: [], retry: [], correct: 0, combo: 0, answers: [], mastered: 0,
+      newCards: [], rankBefore: '', startedAt: Date.now(), sessionId: '', openBefore: []
+    };
+    $('quizStage').textContent = modeLabel(R.mode);
+    $('qCard').classList.remove('hot');
+    mapRun = null;
+    show('scr-quiz');
+    showQuestion();
+    return true;
   }
 
   // 大きな 文字を 1びょう ほど だす（動きを減らす設定では ださない）
@@ -4556,7 +4588,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     const t = today();
     const elapsed = Date.now() - R.shownAt;
     let got;
-    if (R.phase === 'main') {
+    const showing = R.mode.kind === 'show';
+    if (showing) {
+      got = { newCard: false, becameMastered: false, fast: false };
+      R.results.push(ok);
+    } else if (R.phase === 'main') {
       got = Core.recordAnswer(P, q, ok, elapsed, t);
       R.results.push(ok);
       R.answers.push({ template: !!q.template, itemId: q.itemId, situation: q.situation || null, pattern: q.pattern || '',
@@ -4567,7 +4603,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       got = Core.recordRetry(P, q, ok, t);
     }
     if (got.newCard) R.newCards.push(q.cardId || q.id);
-    Store.save(P);
+    if (!showing) Store.save(P);
     $('btnPreview').hidden = true;
 
     Array.prototype.forEach.call($('choices').querySelectorAll('.choice'), function (b) {
@@ -4610,7 +4646,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     const isLast = R.phase === 'main'
       ? (R.i === R.list.length - 1 && R.retry.length === 0)
       : (R.i === R.retry.length - 1);
-    const nextLabel = isLast ? 'けっかを みる ▶' : (R.phase === 'main' && R.i === R.list.length - 1 ? 'もういちど チャレンジへ ▶' : 'つぎへ ▶');
+    const nextLabel = showing ? '🔁 もういちど みる' : isLast ? 'けっかを みる ▶' : (R.phase === 'main' && R.i === R.list.length - 1 ? 'もういちど チャレンジへ ▶' : 'つぎへ ▶');
     let note = '';
     if (R.phase === 'main' && got.fast) note = '<p class="fb-note">⏱ はやすぎる こたえは「おぼえた」に かぞえないよ。よく よんで こたえてね。</p>';
     else if (R.phase === 'main' && got.becameMastered) note = '<p class="fb-note">🧠 この もんだいを おぼえたよ！</p>';
@@ -4777,6 +4813,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   function goNext() {
     Speech.stop();
     if (R.player) { R.player.stop(); R.player = null; }
+    if (R.mode.kind === 'show') { window.scrollTo(0, 0); startShow(R.mode.key); return; }
     R.i++;
     if (R.phase === 'main' && R.i >= R.list.length) {
       if (R.retry.length) { R.phase = 'retry'; R.i = 0; }
@@ -5032,7 +5069,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   Speech.init();
   let asked = false;
   try { asked = localStorage.getItem(Core.STORAGE_KEY + '_asked') === '1'; } catch (e) { asked = true; }
-  if (!P.profile && !asked) renderProfile(true);
+  let playKey = '';
+  try { playKey = new URLSearchParams(location.search).get('play') || ''; } catch (e) { playKey = ''; }
+  if (playKey && startShow(playKey)) { /* コーチの ページから ひらいた ときは、その 問題から はじめる */ }
+  else if (!P.profile && !asked) renderProfile(true);
   else {
     renderHome();
     // なまえが あれば、GAS の 記録を よみこんでから もういちど かく。おくれて いない 記録も おくる
