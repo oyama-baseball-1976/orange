@@ -296,9 +296,16 @@ ruby rt { font-size: 12px; }
 /* まもりの 問題：きみの しるしと、いく ばしょの なまえ */
 .pl-you-ring { fill: none; stroke: #ffd23d; stroke-width: 3; }
 .pl-you-label { font-size: 13px; font-weight: 900; fill: #ffd23d; paint-order: stroke; stroke: #2a2233; stroke-width: 4px; stroke-linejoin: round; }
-.pl-spot-label { font-size: 13px; font-weight: 900; fill: #fff; paint-order: stroke; stroke: #2a2233; stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+/* 番号の 印（グラウンドの 上）。ボタンの 番号と おなじ 見た目。どれも おなじ 色（こたえの ヒントに しない） */
+.pl-num-bg { fill: #f06a1e; stroke: #fff; stroke-width: 2.5; }
+.pl-num { font-size: 15px; font-weight: 900; fill: #fff; pointer-events: none; }
+.pl-num-line { stroke: #fff; stroke-width: 1.5; stroke-dasharray: 3 2; opacity: .85; }
+.pl-num-dot { fill: #fff; stroke: #f06a1e; stroke-width: 1.5; }
+.pl-tap:focus-visible .pl-num-bg, .pl-tap:hover .pl-num-bg { stroke: #ffd23d; stroke-width: 4; }
+.play-svg.locked .pl-num-bg, .play-svg.locked .pl-num { opacity: .55; }
+.choices .spot-choice { min-height: 52px; }
+.choices .spot-choice .mark { background: #f06a1e; }
 .pl-label.good { fill: #8be9ff; }
-.play-svg.locked .pl-spot-label { opacity: .4; }
 .def-cmp .oc-btns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .def-cmp .oc-btns.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .def-cmp .oc-btn { white-space: normal; font-size: 14px; line-height: 1.3; padding: 4px 6px; }
@@ -1475,7 +1482,7 @@ const Core = (function () {
       {
         id: 's6-01', stage: 6, type: 'spot', judge: true,
         q: 'きみは ファーストを まもる ひと。ランナーは いない。ショートに ゴロが とんだ。きみは どこへ いく？',
-        spots: [{ id: '1B', at: 'b1', label: 'ファースト ベース' }, { id: 'ball', at: [172, 128], label: 'ボールへ', lab: 'a' }, { id: 'stay', at: [234, 122], label: 'ここに いる', lab: [0, -54] }],
+        spots: [{ id: '1B', at: 'b1', label: 'ファースト ベース' }, { id: 'ball', at: [172, 128], label: 'ボールへ' }, { id: 'stay', at: [234, 122], label: 'ここに いる' }],
         answer: 0,
         explain: 'ボールは ショートが とる。きみは ファーストの ベースに はいって、ショートからの ボールを まつ（ベースカバー）。ベースに だれも いないと、ショートは なげる ところが なくて、バッターは セーフに なるよ。',
         card: { name: 'ベースカバー', icon: '🧤', point: 'ボールに いかない ひとは ベースに はいる' },
@@ -1497,7 +1504,7 @@ const Core = (function () {
       {
         id: 's6-02', stage: 6, type: 'spot', judge: true,
         q: 'きみは ピッチャー。ランナーは いない。ファーストと セカンドの あいだに ゴロが とんで、ファーストを まもる ひとが とりに いった。きみは どこへ いく？',
-        spots: [{ id: '1B', at: 'b1', label: 'ファースト ベース' }, { id: 'ball', at: [196, 142], label: 'ボールへ', lab: [18, 5, 'start'] }, { id: 'stay', at: [160, 162], label: 'ここに いる', lab: [-18, 5, 'end'] }],
+        spots: [{ id: '1B', at: 'b1', label: 'ファースト ベース' }, { id: 'ball', at: [196, 142], label: 'ボールへ' }, { id: 'stay', at: [160, 162], label: 'ここに いる' }],
         answer: 0,
         explain: 'ファーストを まもる ひとが ボールを とりに いくと、ファーストの ベースが あく。ピッチャーは ファーストの ベースへ はしって、ボールを うけとる（ベースカバー）。',
         card: { name: 'ピッチャーの ベースカバー', icon: '🏃', point: 'ファーストが とりに いったら ピッチャーが ベースへ' },
@@ -1522,7 +1529,7 @@ const Core = (function () {
       {
         id: 's6-03', stage: 6, type: 'spot', judge: true,
         q: 'きみは セカンドを まもる ひと。ランナーは ファースト。ショートに ゴロが とんだ。きみは どこへ いく？',
-        spots: [{ id: '2B', at: 'b2', label: 'セカンド ベース', lab: [-6, -19] }, { id: 'ball', at: [140, 124], label: 'ボールへ', lab: [18, 5, 'start'] }, { id: '1B', at: 'b1', label: 'ファースト ベース' }],
+        spots: [{ id: '2B', at: 'b2', label: 'セカンド ベース' }, { id: 'ball', at: [140, 124], label: 'ボールへ' }, { id: '1B', at: 'b1', label: 'ファースト ベース' }],
         answer: 0,
         explain: 'ファーストの ランナーは セカンドへ はしるしか ないので、ボールを もって セカンドの ベースを ふめば アウトに できる。ショートが とったら、セカンドを まもる ひとが セカンドの ベースに はいる（ベースカバー）。ファーストの ベースには、ファーストを まもる ひとが はいる。',
         card: { name: 'セカンドの ベースカバー', icon: '🔁', point: 'ショートが とったら セカンドを まもる ひとが セカンドへ' },
@@ -1547,7 +1554,7 @@ const Core = (function () {
       {
         id: 's6-04', stage: 6, type: 'spot', judge: true,
         q: 'きみは ショート。ランナーは ファースト。セカンドを まもる ひとに ゴロが とんだ。きみは どこへ いく？',
-        spots: [{ id: '2B', at: 'b2', label: 'セカンド ベース', lab: 'a' }, { id: 'ball', at: [180, 124], label: 'ボールへ', lab: [18, 5, 'start'] }, { id: '3B', at: 'b3', label: 'サード ベース' }],
+        spots: [{ id: '2B', at: 'b2', label: 'セカンド ベース' }, { id: 'ball', at: [180, 124], label: 'ボールへ' }, { id: '3B', at: 'b3', label: 'サード ベース' }],
         answer: 0,
         explain: 'ファーストの ランナーは セカンドへ はしるしか ないので、ボールを もって セカンドの ベースを ふめば アウトに できる。セカンドを まもる ひとが とったら、ショートが セカンドの ベースに はいる（ベースカバー）。',
         card: { name: 'ショートの ベースカバー', icon: '🔄', point: 'セカンドを まもる ひとが とったら ショートが セカンドへ' },
@@ -1574,7 +1581,7 @@ const Core = (function () {
       {
         id: 's6-05', stage: 6, type: 'spot', judge: true,
         q: 'きみは ライト。ランナーは いない。サードを まもる ひとに ゴロが とんだ。サードを まもる ひとは ファーストへ なげる。きみは どこへ いく？',
-        spots: [{ id: 'back1B', at: [290, 150], label: 'ファーストの うしろ', lab: [30, 28, 'end'] }, { id: 'ball', at: [196, 104], label: 'ボールへ' }, { id: 'stay', at: [254, 60], label: 'ここに いる', lab: [-18, 5, 'end'] }],
+        spots: [{ id: 'back1B', at: [290, 150], label: 'ファーストの うしろ' }, { id: 'ball', at: [110, 135], label: 'ボールへ' }, { id: 'stay', at: [254, 60], label: 'ここに いる' }],
         answer: 0,
         explain: 'ないや（ベースの ちかく）の ゴロで ファーストへ なげる ときは、ライトは ファーストの うしろへ はしる（バックアップ）。なげた ボールが それても とめられるので、バッターは つぎの ベースへ すすめない。',
         card: { name: 'ライトの バックアップ', icon: '🛡️', point: 'ファーストへ なげる ときは ファーストの うしろへ' },
@@ -1599,7 +1606,7 @@ const Core = (function () {
       {
         id: 's6-06', stage: 6, type: 'spot', judge: true,
         q: 'きみは センター。ランナーは ファースト。サードを まもる ひとに ゴロが とんだ。サードを まもる ひとは セカンドへ なげる。きみは どこへ いく？',
-        spots: [{ id: 'back2B', at: [194, 78], label: 'セカンドの うしろ', lab: [0, -19] }, { id: 'ball', at: [104, 120], label: 'ボールへ' }, { id: 'stay', at: [160, 38], label: 'ここに いる', lab: [-18, 5, 'end'] }],
+        spots: [{ id: 'back2B', at: [194, 78], label: 'セカンドの うしろ' }, { id: 'ball', at: [104, 120], label: 'ボールへ' }, { id: 'stay', at: [160, 38], label: 'ここに いる' }],
         answer: 0,
         explain: 'セカンドへ なげる ときは、センターは セカンドの うしろへ はしる（バックアップ）。なげた ボールが それても とめられるので、ランナーは サードへ すすめない。',
         card: { name: 'センターの バックアップ', icon: '🛡️', point: 'セカンドへ なげる ときは セカンドの うしろへ' },
@@ -1628,7 +1635,7 @@ const Core = (function () {
       {
         id: 's6-07', stage: 6, type: 'spot', judge: true,
         q: 'きみは ショート。ランナーは いない。レフトの よこを ぬける ながい あたり。バッターは セカンドへ むかう。きみは どこへ いく？',
-        spots: [{ id: 'relay', at: [128, 72], label: 'あいだ', lab: 'a' }, { id: '2B', at: 'b2', label: 'セカンド ベース', lab: 'a' }, { id: 'ball', at: [80, 74], label: 'ボールへ', lab: [-18, 5, 'end'] }],
+        spots: [{ id: 'relay', at: [128, 72], label: 'あいだ' }, { id: '2B', at: 'b2', label: 'セカンド ベース' }, { id: 'ball', at: [80, 74], label: 'ボールへ' }],
         answer: 0,
         explain: 'レフトの うしろ（フェンスの ちかく）から セカンドまでは とおいので、ショートが レフトと セカンドの あいだに はいって、ボールを つなぐ（ちゅうけい）。ボールが はやく もどるので、バッターは サードへ すすめない。セカンドの ベースには セカンドを まもる ひとが はいる。',
         card: { name: 'ショートの ちゅうけい', icon: '🔗', point: 'レフトの おくは ショートが あいだに はいる' },
@@ -1660,7 +1667,7 @@ const Core = (function () {
       {
         id: 's6-08', stage: 6, type: 'spot', judge: true,
         q: 'きみは セカンドを まもる ひと。ランナーは いない。ライトの よこを ぬける ながい あたり。バッターは セカンドへ むかう。きみは どこへ いく？',
-        spots: [{ id: 'relay', at: [192, 72], label: 'あいだ', lab: 'a' }, { id: '2B', at: 'b2', label: 'セカンド ベース', lab: 'a' }, { id: 'ball', at: [240, 74], label: 'ボールへ', lab: [18, 5, 'start'] }],
+        spots: [{ id: 'relay', at: [192, 72], label: 'あいだ' }, { id: '2B', at: 'b2', label: 'セカンド ベース' }, { id: 'ball', at: [240, 74], label: 'ボールへ' }],
         answer: 0,
         explain: 'ライトの うしろ（フェンスの ちかく）から セカンドまでは とおいので、セカンドを まもる ひとが ライトと セカンドの あいだに はいって、ボールを つなぐ（ちゅうけい）。ボールが はやく もどるので、バッターは サードへ すすめない。セカンドの ベースには ショートが はいる。',
         card: { name: 'セカンドの ちゅうけい', icon: '🔗', point: 'ライトの おくは セカンドを まもる ひとが あいだに はいる' },
@@ -1694,18 +1701,18 @@ const Core = (function () {
       {
         id: 's6-09', stage: 6, type: 'spot', judge: true,
         q: 'きみは センター。ランナーは いない。レフトの まえに ゴロの ヒット。レフトが ボールを とりに いく。きみは どこへ いく？',
-        spots: [{ id: 'backLF', at: [70, 66], label: 'レフトの うしろ', lab: [16, -14, 'start'] }, { id: 'ball', at: [104, 100], label: 'ボールへ' }, { id: 'stay', at: [160, 52], label: 'ここに いる', lab: [18, 5, 'start'] }],
+        spots: [{ id: 'backLF', at: [68, 58], label: 'レフトの うしろ' }, { id: 'ball', at: [94, 120], label: 'ボールへ' }, { id: 'stay', at: [160, 52], label: 'ここに いる' }],
         answer: 0,
         explain: 'レフトの ほうへ ボールが とんだら、センターは レフトの うしろへ はしる（バックアップ）。レフトが ボールを そらしても、すぐ ひろえるので、バッターは つぎの ベースへ すすめない。ボールが じぶんの ところに こなくても、しごとが あるよ。',
         card: { name: 'センターの バックアップ（レフト）', icon: '🛡️', point: 'レフトへの ボールは レフトの うしろへ' },
         scene: {
-          T: T, runners: [0], fielders: ['lf', 'cf', 'ss', '2b', '3b'], you: 'cf', youLab: [18, -12, 'start'], youSpeed: 12, pos: { lf: [72, 80], cf: [160, 52] },
+          T: T, runners: [0], fielders: ['lf', 'cf', 'ss', '2b', '3b'], you: 'cf', youLab: [18, -12, 'start'], youSpeed: 12, pos: { lf: [84, 98], cf: [160, 52] },
           base: [hit, { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: [80, 92], d: 900 }, { t: 200, type: 'field', who: 'lf', to: [80, 90], d: 600 },
-            { t: 900, type: 'label', text: 'そらした！', at: [80, 92], tone: 'info', d: 700 }, { t: 900, type: 'ball', kind: 'roll', to: [70, 66], d: 600 },
+            { t: 900, type: 'label', text: 'そらした！', at: [80, 92], tone: 'info', d: 700 }, { t: 900, type: 'ball', kind: 'roll', to: [68, 60], d: 600 },
             { t: 100, type: 'run', who: 0, to: 1, d: 1400 }],
           jobs: [{ t: T, type: 'field', who: '2b', to: 'b2', d: 400 }, { t: T, type: 'field', who: 'ss', to: [104, 104], d: 400 }],
           outcome: [
-            [{ t: 1500, type: 'sfx', name: 'catch' }, { t: 1500, type: 'label', text: 'とめた！', at: [70, 66], tone: 'good', d: 900 },
+            [{ t: 1500, type: 'sfx', name: 'catch' }, { t: 1500, type: 'label', text: 'とめた！', at: [68, 60], tone: 'good', d: 900 },
               { t: 1600, type: 'ball', kind: 'throw', from: 'cf', to: 'ss', d: 350, h: 14 }, { t: 1500, type: 'run', who: 0, to: 1.2, d: 300 }, { t: 1900, type: 'run', who: 0, to: 1, d: 300 },
               { t: 2200, type: 'label', text: 'ファーストで ストップ！', at: 'mid', tone: 'good' }],
             [{ t: 1500, type: 'ball', kind: 'roll', to: [60, 58], d: 400 }, { t: 1000, type: 'field', who: 'lf', to: [62, 62], d: 1300 },
@@ -1724,18 +1731,18 @@ const Core = (function () {
       {
         id: 's6-10', stage: 6, type: 'spot', judge: true,
         q: 'きみは センター。ランナーは いない。ライトの まえに ゴロの ヒット。ライトが ボールを とりに いく。きみは どこへ いく？',
-        spots: [{ id: 'backRF', at: [250, 66], label: 'ライトの うしろ', lab: [-16, -14, 'end'] }, { id: 'ball', at: [216, 100], label: 'ボールへ' }, { id: 'stay', at: [160, 52], label: 'ここに いる', lab: [-18, 5, 'end'] }],
+        spots: [{ id: 'backRF', at: [252, 58], label: 'ライトの うしろ' }, { id: 'ball', at: [226, 120], label: 'ボールへ' }, { id: 'stay', at: [160, 52], label: 'ここに いる' }],
         answer: 0,
         explain: 'ライトの ほうへ ボールが とんだら、センターは ライトの うしろへ はしる（バックアップ）。ライトが ボールを そらしても、すぐ ひろえるので、バッターは つぎの ベースへ すすめない。ボールが じぶんの ところに こなくても、しごとが あるよ。',
         card: { name: 'センターの バックアップ（ライト）', icon: '🛡️', point: 'ライトへの ボールは ライトの うしろへ' },
         scene: {
-          T: T, runners: [0], fielders: ['rf', 'cf', '2b', 'ss', '1b'], you: 'cf', youLab: [-18, -12, 'end'], youSpeed: 12, pos: { rf: [248, 80], cf: [160, 52] },
+          T: T, runners: [0], fielders: ['rf', 'cf', '2b', 'ss', '1b'], you: 'cf', youLab: [-18, -12, 'end'], youSpeed: 12, pos: { rf: [236, 98], cf: [160, 52] },
           base: [hit, { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: [240, 92], d: 900 }, { t: 200, type: 'field', who: 'rf', to: [240, 90], d: 600 },
-            { t: 900, type: 'label', text: 'そらした！', at: [240, 92], tone: 'info', d: 700 }, { t: 900, type: 'ball', kind: 'roll', to: [250, 66], d: 600 },
+            { t: 900, type: 'label', text: 'そらした！', at: [240, 92], tone: 'info', d: 700 }, { t: 900, type: 'ball', kind: 'roll', to: [252, 60], d: 600 },
             { t: 100, type: 'run', who: 0, to: 1, d: 1400 }],
           jobs: [{ t: T, type: 'field', who: 'ss', to: 'b2', d: 400 }],
           outcome: [
-            [{ t: 1500, type: 'sfx', name: 'catch' }, { t: 1500, type: 'label', text: 'とめた！', at: [250, 66], tone: 'good', d: 900 },
+            [{ t: 1500, type: 'sfx', name: 'catch' }, { t: 1500, type: 'label', text: 'とめた！', at: [252, 60], tone: 'good', d: 900 },
               { t: 1600, type: 'ball', kind: 'throw', from: 'cf', to: 'ss', d: 500, h: 14 }, { t: 1500, type: 'run', who: 0, to: 1.2, d: 300 }, { t: 1900, type: 'run', who: 0, to: 1, d: 300 },
               { t: 2200, type: 'label', text: 'ファーストで ストップ！', at: 'mid', tone: 'good' }],
             [{ t: 1500, type: 'ball', kind: 'roll', to: [260, 58], d: 400 }, { t: 1000, type: 'field', who: 'rf', to: [258, 62], d: 1300 },
@@ -1754,13 +1761,13 @@ const Core = (function () {
       {
         id: 's6-11', stage: 6, type: 'spot', judge: true,
         q: 'きみは レフト。ランナーは いない。レフトの まえの ゴロを、きみが うしろに そらして しまった！ センターが バックアップに きて いるので、センターが ボールを ひろう。きみは どこへ いく？',
-        spots: [{ id: 'relay', at: [96, 80], label: 'あいだ', lab: [18, 5, 'start'] }, { id: 'ball', at: [64, 64], label: 'ボールへ', lab: [-14, 26, 'start'] }, { id: 'stay', at: [96, 112], label: 'ここで とまる', lab: [0, 30] }],
+        spots: [{ id: 'relay', at: [116, 86], label: 'あいだ' }, { id: 'ball', at: [64, 64], label: 'ボールへ' }, { id: 'stay', at: [96, 112], label: 'ここで とまる' }],
         answer: 0,
-        explain: 'そらしても、しごとは おわらない。センターが ひろったら、きみは センターと ショートの あいだに はいって、ボールを つなぐ。ボールが はやく うちやに もどるので、バッターは サードへ すすめない（どこに はいるかは、きょりや チームの やくそくで かわる ことが あるよ）。',
+        explain: 'そらしても、しごとは おわらない。センターが ひろったら、きみは センターと ショートの あいだに はいって、ボールを つなぐ。ボールが はやく ないや（ベースの ちかく）に もどるので、バッターは サードへ すすめない（どこに はいるかは、きょりや チームの やくそくで かわる ことが あるよ）。',
         card: { name: 'そらしても とまらない（レフト）', icon: '💪', point: 'そらしたら センターと ショートの あいだに はいる' },
         scene: {
-          T: 1000, runners: [0], fielders: ['lf', 'cf', 'ss', '3b'], you: 'lf', youSpeed: 13, pos: { lf: [72, 80], cf: [160, 52] },
-          crowdLabel: '😵 そらした ひとが とまると', crowdNote: 'そらした ひとが とまると、ボールが うちやに もどるのが おそく なる。',
+          T: 1000, runners: [0], fielders: ['lf', 'cf', 'ss', '3b'], you: 'lf', youLab: [-20, -14, 'end'], youSpeed: 13, pos: { lf: [72, 80], cf: [160, 52], ss: [140, 124] },
+          crowdLabel: '😵 そらした ひとが とまると', crowdNote: 'そらした ひとが とまると、ボールが ないやに もどるのが おそく なる。',
           base: [hit, { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: [96, 112], d: 900 }, { t: 200, type: 'field', who: 'lf', to: [96, 112], d: 700 },
             { t: 900, type: 'label', text: 'そらした！', at: [160, 176], tone: 'info', d: 100 }, { t: 900, type: 'ball', kind: 'roll', to: [64, 62], d: 800 },
             { t: 300, type: 'field', who: 'cf', to: [68, 60], d: 1100 }, { t: 1750, type: 'sfx', name: 'catch' },
@@ -1788,13 +1795,13 @@ const Core = (function () {
       {
         id: 's6-12', stage: 6, type: 'spot', judge: true,
         q: 'きみは ライト。ランナーは いない。ライトの まえの ゴロを、きみが うしろに そらして しまった！ センターが バックアップに きて いるので、センターが ボールを ひろう。きみは どこへ いく？',
-        spots: [{ id: 'relay', at: [224, 80], label: 'あいだ', lab: [-18, 5, 'end'] }, { id: 'ball', at: [256, 64], label: 'ボールへ', lab: [14, 26, 'end'] }, { id: 'stay', at: [224, 112], label: 'ここで とまる', lab: [0, 30] }],
+        spots: [{ id: 'relay', at: [204, 86], label: 'あいだ' }, { id: 'ball', at: [256, 64], label: 'ボールへ' }, { id: 'stay', at: [224, 112], label: 'ここで とまる' }],
         answer: 0,
-        explain: 'そらしても、しごとは おわらない。センターが ひろったら、きみは センターと セカンドを まもる ひとの あいだに はいって、ボールを つなぐ。ボールが はやく うちやに もどるので、バッターは サードへ すすめない（どこに はいるかは、きょりや チームの やくそくで かわる ことが あるよ）。',
-        card: { name: 'そらしても とまらない（ライト）', icon: '💪', point: 'そらしたら センターと セカンドの あいだに はいる' },
+        explain: 'そらしても、しごとは おわらない。センターが ひろったら、きみは センターと セカンドを まもる ひとの あいだに はいって、ボールを つなぐ。ボールが はやく ないや（ベースの ちかく）に もどるので、バッターは サードへ すすめない（どこに はいるかは、きょりや チームの やくそくで かわる ことが あるよ）。',
+        card: { name: 'そらしても とまらない（ライト）', icon: '💪', point: 'そらしたら センターと セカンドを まもる ひとの あいだに はいる' },
         scene: {
-          T: 1000, runners: [0], fielders: ['rf', 'cf', '2b', 'ss', '1b'], you: 'rf', youSpeed: 13, pos: { rf: [248, 80], cf: [160, 52] },
-          crowdLabel: '😵 そらした ひとが とまると', crowdNote: 'そらした ひとが とまると、ボールが うちやに もどるのが おそく なる。',
+          T: 1000, runners: [0], fielders: ['rf', 'cf', '2b', 'ss', '1b'], you: 'rf', youLab: [20, -14, 'start'], youSpeed: 13, pos: { rf: [248, 80], cf: [160, 52], '2b': [180, 124] },
+          crowdLabel: '😵 そらした ひとが とまると', crowdNote: 'そらした ひとが とまると、ボールが ないやに もどるのが おそく なる。',
           base: [hit, { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: [224, 112], d: 900 }, { t: 200, type: 'field', who: 'rf', to: [224, 112], d: 700 },
             { t: 900, type: 'label', text: 'そらした！', at: [160, 176], tone: 'info', d: 100 }, { t: 900, type: 'ball', kind: 'roll', to: [256, 62], d: 800 },
             { t: 300, type: 'field', who: 'cf', to: [252, 60], d: 1100 }, { t: 1750, type: 'sfx', name: 'catch' },
@@ -1821,7 +1828,41 @@ const Core = (function () {
       }
     ];
   })();
-  DEFENSE_QUESTIONS.forEach(function (q) { q.rule = ''; q.answerIds = q.spots.map(function (s) { return s.id; }); QUESTIONS.push(q); });
+  // えらぶ ボタンの 文（spots の じゅん）。グラウンドには 番号の 印だけを だし、文は ボタンに だす
+  const SPOT_SAY = {
+    's6-01': ['ファースト ベースへ いく', 'ショートの ほうへ いく', 'いまの ばしょで まつ'],
+    's6-02': ['ファースト ベースへ いく', 'ボールの ほうへ いく', 'マウンドで まつ'],
+    's6-03': ['セカンド ベースへ いく', 'ショートの ほうへ いく', 'ファースト ベースへ いく'],
+    's6-04': ['セカンド ベースへ いく', 'ボールの ほうへ いく', 'サード ベースへ いく'],
+    's6-05': ['ファーストの うしろへ いく', 'サードの ほうへ いく', 'いまの ばしょで まつ'],
+    's6-06': ['セカンドの うしろへ いく', 'サードの ほうへ いく', 'いまの ばしょで まつ'],
+    's6-07': ['レフトと セカンド ベースの あいだへ いく', 'いそいで セカンド ベースに はいる', 'レフトと いっしょに ボールを おいかける'],
+    's6-08': ['ライトと セカンド ベースの あいだへ いく', 'いそいで セカンド ベースに はいる', 'ライトと いっしょに ボールを おいかける'],
+    's6-09': ['レフトの うしろへ いく', 'ボールを おいかける', 'いまの ばしょで まつ'],
+    's6-10': ['ライトの うしろへ いく', 'ボールを おいかける', 'いまの ばしょで まつ'],
+    's6-11': ['センターと ショートの あいだへ いく', 'センターと いっしょに ボールを おいかける', 'そらした ところで とまる'],
+    's6-12': ['センターと ないやの あいだへ いく', 'センターと いっしょに ボールを おいかける', 'そらした ところで とまる']
+  };
+  // 番号の 印の ずらし [x, y]（_dev/tests/marks_place.js で、人・ボール・ほかの 印・「きみ」と かさならない いちを もとめた）
+  const SPOT_MK = {
+    's6-01': [[0, 0], [16, 0], [0, 16]],
+    's6-02': [[0, 0], [-15, 6], [14, 14]],
+    's6-03': [[0, 0], [0, 0], [16, 0]],
+    's6-04': [[0, 0], [0, 0], [0, 0]],
+    's6-05': [[0, 0], [0, 0], [6, 15]],
+    's6-06': [[-11, 11], [11, 11], [6, 15]],
+    's6-07': [[0, 0], [0, 0], [0, 0]],
+    's6-08': [[0, 0], [0, 0], [0, 0]],
+    's6-09': [[0, 0], [11, 11], [6, 15]],
+    's6-10': [[0, 0], [-6, 15], [6, 15]],
+    's6-11': [[0, 0], [0, 0], [6, 15]],
+    's6-12': [[0, 0], [0, 0], [-6, 15]]
+  };
+  DEFENSE_QUESTIONS.forEach(function (q) {
+    q.rule = ''; q.answerIds = q.spots.map(function (s) { return s.id; });
+    q.spots.forEach(function (s, i) { s.say = SPOT_SAY[q.id][i]; s.mk = SPOT_MK[q.id][i]; });
+    QUESTIONS.push(q);
+  });
 
   const BY_ID = {};
   QUESTIONS.forEach(function (q) { BY_ID[q.id] = q; });
@@ -2140,6 +2181,8 @@ const Core = (function () {
      choice：null＝こたえる まえ（base だけ）、数＝spots の その ばしょへ いった とき、'crowd'＝みんなが ボールに あつまった とき */
   const YOU_SPEED = 7;   // きみが はしる はやさ（1てん あたり ミリ秒）
   function spotXY(spot) { return Array.isArray(spot.at) ? spot.at.slice() : FIELD.BASE[spot.at].slice(); }
+  // 番号の 印を おく ところ：ばしょ（spotXY）から mk だけ ずらす（人や ボールと かさならない ように）
+  function markXY(spot) { const p = spotXY(spot); return spot.mk ? [p[0] + spot.mk[0], p[1] + spot.mk[1]] : p; }
   function defenseSetupEnd(q) { return q.scene.T; }
   function defenseScene(q, choice) {
     const sc = q.scene;
@@ -2763,10 +2806,11 @@ const Core = (function () {
         const n = s.target, two = s.twoOuts, you = s.ball;
         const T = 1350;
         const spots = [
-          { id: 'H', at: 'H', label: 'ホーム', lab: [-18, 5, 'end'] },
-          { id: '3B', at: 'b3', label: 'サード', lab: [0, 28] },
-          { id: '2B', at: 'b2', label: 'セカンド', lab: [0, 28] },
-          { id: 'bench', at: [296, 212], label: 'なげずに ベンチへ', lab: [12, -19, 'end'] }
+          // mk：番号の 印の ずらし（ベースに 人が いるので よこへ）
+          { id: 'H', at: 'H', label: 'ホーム', say: 'ホームへ なげる', mk: [20, 0] },
+          { id: '3B', at: 'b3', label: 'サード', say: 'サードへ なげる', mk: [6, 15] },
+          { id: '2B', at: 'b2', label: 'セカンド', say: 'セカンドへ なげる', mk: [6, 15] },
+          { id: 'bench', at: [296, 212], label: 'なげずに ベンチへ', say: 'なげずに ベンチへ もどる' }
         ];
         const nextId = { 1: '2B', 2: '3B', 3: 'H' }[n];
         const answer = two ? 3 : spots.map(function (x) { return x.id; }).indexOf(nextId);
@@ -2899,7 +2943,7 @@ const Core = (function () {
   function answerText(q) {
     if (q.type === 'ox') return q.answer === 0 ? '○' : '×';
     if (q.type === 'tap') return NAME[q.answer];
-    if (q.type === 'spot') return q.spots[q.answer].label;
+    if (q.type === 'spot') return q.spots[q.answer].say;
     return q.choices[q.answer];
   }
   // こたえた あとの くらべる パネル：[{ outs, current, none, same, answer, explain, q }]。パターン問題 いがいは null
@@ -3371,7 +3415,8 @@ const Core = (function () {
   // えらぶ ボタンの ならびを きめる。○×は ならびを かえない
   function arrangeChoices(q, rng) {
     rng = rng || Math.random;
-    if (q.type === 'tap' || q.type === 'spot') return [];
+    if (q.type === 'tap') return [];
+    if (q.type === 'spot') return shuffle(q.spots.map(function (s, i) { return { text: s.say, idx: i, correct: i === q.answer }; }), rng);
     const list = q.choices.map(function (text, i) { return { text: text, idx: i, correct: i === q.answer }; });
     if (q.type === 'ox') return list;
     return shuffle(list, rng);
@@ -3495,7 +3540,7 @@ const Core = (function () {
     FIELD: FIELD, pathPoint: pathPoint, runnerPoint: runnerPoint, sceneAt: sceneAt, bsoAt: bsoAt, withOuts: withOuts, outsCompare: outsCompare, outsMatter: outsMatter,
     OUTS_MATTER: OUTS_MATTER, OUTS_PARTNERS: OUTS_PARTNERS, pairOuts: pairOuts, PAIR_RATE: PAIR_RATE, PAIR_FLIP_RATE: PAIR_FLIP_RATE, PATTERN_ANSWER: PATTERN_ANSWER, bucketOf: bucketOf, MAX_PER_TEMPLATE: MAX_PER_TEMPLATE, sceneDuration: sceneDuration, checkScene: checkScene, sfxBetween: sfxBetween,
     runnerAt: runnerAt, fielderAt: fielderAt, ballAt: ballAt, judgeScene: judgeScene, judgeSetupEnd: judgeSetupEnd,
-    defenseScene: defenseScene, defenseSetupEnd: defenseSetupEnd, spotXY: spotXY, YOU_SPEED: YOU_SPEED
+    defenseScene: defenseScene, defenseSetupEnd: defenseSetupEnd, spotXY: spotXY, markXY: markXY, YOU_SPEED: YOU_SPEED
   };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = Core;
@@ -3798,18 +3843,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       }
       if (scene.bso) html += bsoSVG(opts.focusOuts);
       // まもりの 問題：いく ばしょ（タップで こたえる）
+      // ばしょの 問題：グラウンドには 番号の 印だけ（文は 下の ボタン）。印を おしても こたえられる
       if (opts.spots) {
-        opts.spots.forEach(function (sp, i) {
+        opts.spots.forEach(function (sp) {
           const x = sp.xy[0], y = sp.xy[1];
-          let lx = x, ly = y + 28, anchor = 'middle';
-          if (Array.isArray(sp.lab)) { lx = x + sp.lab[0]; ly = y + sp.lab[1]; anchor = sp.lab[2] || 'middle'; }
-          else if (sp.lab === 'a') ly = y - 19;
-          else if (sp.lab === 'l') { lx = x - 18; ly = y + 5; anchor = 'end'; }
-          else if (sp.lab === 'r') { lx = x + 18; ly = y + 5; anchor = 'start'; }
-          html += '<g class="pl-tap" data-base="' + i + '" role="button" tabindex="0" aria-label="' + sp.label + (opts.spotVerb || 'へ いく') + '">' +
-            '<circle class="pl-ring" cx="' + x + '" cy="' + y + '" r="15"/>' +
-            '<circle cx="' + x + '" cy="' + y + '" r="24" fill="transparent"/>' +
-            '<text class="pl-spot-label" x="' + lx + '" y="' + ly + '" text-anchor="' + anchor + '">' + sp.label + '</text></g>';
+          const off = sp.at && Math.hypot(sp.at[0] - x, sp.at[1] - y) > 4;
+          html += '<g class="pl-tap pl-spot" data-base="' + sp.idx + '" data-num="' + sp.num + '" role="button" tabindex="0" aria-label="' + sp.num + '、' + sp.say + '">' +
+            (off ? '<line class="pl-num-line" x1="' + sp.at[0] + '" y1="' + sp.at[1] + '" x2="' + x + '" y2="' + y + '"/><circle class="pl-num-dot" cx="' + sp.at[0] + '" cy="' + sp.at[1] + '" r="2.5"/>' : '') +
+            '<circle cx="' + x + '" cy="' + y + '" r="20" fill="transparent"/>' +
+            '<circle class="pl-num-bg" cx="' + x + '" cy="' + y + '" r="11"/>' +
+            '<text class="pl-num" x="' + x + '" y="' + (y + 5.2) + '" text-anchor="middle">' + sp.num + '</text></g>';
         });
       }
       html += '<g class="pl-labels"></g></svg>';
@@ -3978,7 +4021,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
         playing: function () { return !!raf; },
         // こたえた あとに ベースへ しるし。ok＝せいかい（みどり）、false＝まちがい（あか）
         mark: function (n, ok) {
-          const xy = opts.spots ? opts.spots[n].xy : (n === 4 ? F.BASE.H : F.BASE['b' + n]);
+          const xy = opts.spots ? opts.spots.filter(function (s) { return s.idx === n; })[0].xy : (n === 4 ? F.BASE.H : F.BASE['b' + n]);
           const c = document.createElementNS(NS, 'circle');
           c.setAttribute('cx', xy[0]); c.setAttribute('cy', xy[1]); c.setAttribute('r', '17');
           c.setAttribute('class', 'pl-mark ' + (ok ? 'ok' : 'ng'));
@@ -4390,12 +4433,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   }
   function isTapType(q) { return q.type === 'tap' || q.type === 'spot'; }
   // まもりの 問題：いく ばしょの 一覧（Play に わたす）
+  // order：画面の ならび（spots の 番号の じゅん）。きまって いなければ そのまま
   function spotsOf(q) {
-    return q.spots.map(function (s) { return { xy: Core.spotXY(s), label: s.label, lab: s.lab }; });
+    const order = R.spotOrder && R.spotOrder.length === q.spots.length ? R.spotOrder : q.spots.map(function (s, i) { return i; });
+    return order.map(function (i, k) { const s = q.spots[i]; return { idx: i, num: k + 1, xy: Core.markXY(s), at: Core.spotXY(s), say: s.say }; });
   }
   function mountQuestion(field, q, choice, extra) {
     const opts = Object.assign({ onSfx: playSfx }, extra || {});
-    if (q.type === 'spot') return Play.mount(field, Core.defenseScene(q, choice), Object.assign(opts, { spots: spotsOf(q), focusOuts: Core.outsMatter(q), spotVerb: q.scene.throwTo ? 'へ なげる' : null }));
+    if (q.type === 'spot') return Play.mount(field, Core.defenseScene(q, choice), Object.assign(opts, { spots: spotsOf(q), focusOuts: Core.outsMatter(q) }));
     return Play.mount(field, Core.judgeScene(q, choice), Object.assign(opts, { tap: true, focusOuts: Core.outsMatter(q) }));
   }
   function playPreview() {
@@ -4445,10 +4490,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       box.appendChild(field);
       const hint = document.createElement('p');
       hint.className = 'tap-hint';
-      hint.textContent = q.type === 'spot' ? (q.scene.throwTo ? '👆 なげる ところを タップしてね' : '👆 きみが いく ばしょを タップしてね') : '👆 なげる ベースを タップしてね';
+      hint.textContent = q.type === 'spot' ? '👇 ボタンか まるい ばんごうを おしてね' : '👆 なげる ベースを タップしてね';
       box.appendChild(hint);
+      R.spotOrder = null;
+      if (q.type === 'spot') {
+        // ばんごうと 文の ボタン（ならびは まぜる）。グラウンドの 印と おなじ 番号
+        const list = Core.arrangeChoices(q);
+        R.spotOrder = list.map(function (c) { return c.idx; });
+        list.forEach(function (c, k) {
+          const b = document.createElement('button');
+          b.className = 'choice spot-choice';
+          b.setAttribute('data-idx', String(c.idx));
+          b.innerHTML = '<span class="mark">' + (k + 1) + '</span><span>' + esc(c.text) + '</span>';
+          b.onclick = function () { answer(c.idx, b); };
+          box.appendChild(b);
+        });
+      }
       R.player = mountQuestion(field, q, null);
-      R.player.onTap(function (base) { answer(base, null); });
+      R.player.onTap(function (base) { answer(base, $('choices').querySelector('.choice[data-idx="' + base + '"]')); });
     } else {
       const marks = ['A', 'B', 'C'];
       Core.arrangeChoices(q).forEach(function (c, k) {
@@ -4474,7 +4533,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   function speakQuestion() {
     const q = currentQ();
     const parts = [q.q];
-    if (isTapType(q)) { Speech.say(q.q); return; }
+    if (q.type === 'tap') { Speech.say(q.q); return; }
+    if (q.type === 'spot') {
+      Array.prototype.forEach.call($('choices').querySelectorAll('.spot-choice'), function (b, k) {
+        parts.push(['いち', 'に', 'さん', 'よん'][k] + '、' + q.spots[+b.getAttribute('data-idx')].say);
+      });
+      Speech.say(parts.join('。'));
+      return;
+    }
     Array.prototype.forEach.call($('choices').querySelectorAll('.choice'), function (b, k) {
       const i = +b.getAttribute('data-idx');
       parts.push(q.type === 'ox' ? (i === 0 ? 'まる、そう おもう' : 'ばつ、ちがう と おもう') : (['エー', 'ビー', 'シー'][k] + '、' + q.choices[i]));
@@ -4540,7 +4606,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     const ngsay = ['おしい！', 'ドンマイ！', 'つぎは できる！'];
     const title = ok ? oksay[Math.floor(Math.random() * oksay.length)] : ngsay[Math.floor(Math.random() * ngsay.length)];
     const ansText = q.type === 'ox' ? (q.answer === 0 ? '○（そう）' : '×（ちがう）')
-      : q.type === 'tap' ? BASE_NAME[q.answer] : q.type === 'spot' ? q.spots[q.answer].label : q.choices[q.answer];
+      : q.type === 'tap' ? BASE_NAME[q.answer] : q.type === 'spot' ? q.spots[q.answer].say : q.choices[q.answer];
     const isLast = R.phase === 'main'
       ? (R.i === R.list.length - 1 && R.retry.length === 0)
       : (R.i === R.retry.length - 1);
@@ -4644,12 +4710,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
         const mode = b.getAttribute('data-mode');
         Sound.tap();
         Array.prototype.forEach.call(box.querySelectorAll('.oc-btn'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
-        const answerLabel = q.spots[q.answer].label;
+        const answerLabel = q.spots[q.answer].say;
         $('dcNote').textContent = mode === 'ok'
-          ? 'きみは「' + answerLabel + '」へ。ほかの ひとも じぶんの しごとを しているから、うまく いくよ。'
+          ? 'ただしい うごきは「' + answerLabel + '」。ほかの ひとも じぶんの しごとを しているから、うまく いくよ。'
           : mode === 'crowd'
             ? (q.scene.crowdNote || 'みんなが ボールに あつまると、ベースや うしろが あいて しまう。')
-            : 'きみが「' + q.spots[idx].label + '」へ いった ときの うごき。';
+            : 'きみが えらんだ「' + q.spots[idx].say + '」の うごき。';
         showDefensePlay(q, mode === 'ok' ? q.answer : mode === 'crowd' ? 'crowd' : idx);
       };
     });
