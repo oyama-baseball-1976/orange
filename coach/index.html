@@ -86,7 +86,8 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbyt5yi-R9oXQoF25CdQh9uu
     font: inherit; font-size: 18px; font-weight: 800; text-decoration: none; text-align: center;
   }
   .btn.sub { background: var(--bg); color: var(--ink); border: 2px solid var(--ink); }
-  .btn small { font-weight: 600; font-size: 15px; }
+  .btn { flex-wrap: wrap; }
+  .btn small { flex-basis: 100%; font-weight: 600; font-size: 15px; line-height: 1.35; }
   .empty { padding: 14px; border-radius: 12px; background: var(--warn-bg); border: 2px solid #8a6100; }
   table { width: 100%; border-collapse: collapse; font-size: 16px; }
   th, td { text-align: left; padding: 10px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -275,7 +276,7 @@ const CoachCore = (function () {
       const p = C.pct(r.rate);
       return '<article class="card" data-tag="' + esc(r.key) + '">' +
         '<div class="card-head"><span class="rank" aria-label="' + (i + 1) + '位">' + (i + 1) + '</span><h3>' + esc(tagName(r.key)) + '</h3></div>' +
-        '<div class="nums"><span class="rate">' + p + '<small>%</small></span><span class="count">正答率・答えた数 ' + r.n + '回</span></div>' +
+        '<div class="nums"><span class="rate">' + p + '<small>%</small></span><span class="count">正答率（答えた数 ' + r.n + '回）</span></div>' +
         '<div class="bar" aria-hidden="true"><i style="width:' + p + '%"></i></div>' +
         trendHTML(r.trend) +
         '<h4>おすすめの練習</h4><ul>' + t.menu.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>' +
