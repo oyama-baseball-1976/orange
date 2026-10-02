@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<script>
+/* このページが 通信する ただ1つの 先（オレンジ ルールクイズ用の GAS。quiz/index.html と 同じ URL）。ここ 1か所で 決める */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyt5yi-R9oXQoF25CdQh9uu2Z7uMfEANcLqEdP_qtU2FF_e9pHmwiImLiXALC57iexfyg/exec';
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#c2410c">
+<title>指導者ページ | オレンジ</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #111111;
+    --sub: #3d3d3d;
+    --line: #9a9a9a;
+    --soft: #f3f3f1;
+    --brand: #c2410c;       /* 白地で 5.2:1 */
+    --brand-ink: #ffffff;
+    --bad: #b91c1c;
+    --good: #15803d;
+    --warn-bg: #fff4d6;
+    --bar: #c2410c;
+    --bar-bg: #e4e4e0;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
+    font-size: 18px; line-height: 1.55;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  header {
+    background: var(--brand); color: var(--brand-ink);
+    padding: 12px 16px; position: sticky; top: 0; z-index: 5;
+  }
+  header h1 { margin: 0; font-size: 20px; line-height: 1.3; }
+  #status { margin: 2px 0 0; font-size: 15px; }
+  main { max-width: 640px; margin: 0 auto; padding: 12px 16px 96px; }
+  .seg { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+  .seg-label { width: 100%; font-size: 15px; font-weight: 700; color: var(--sub); margin: 0; }
+  .seg button {
+    flex: 1 1 0; min-width: 0; min-height: 48px; padding: 6px 8px;
+    border: 2px solid var(--ink); background: var(--bg); color: var(--ink);
+    border-radius: 10px; font: inherit; font-size: 16px; font-weight: 700;
+  }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  h2 { font-size: 22px; margin: 18px 0 8px; line-height: 1.35; }
+  .note { font-size: 15px; color: var(--sub); margin: 6px 0; }
+  .card {
+    border: 2px solid var(--ink); border-radius: 14px; padding: 14px; margin: 12px 0;
+  }
+  .card-head { display: flex; align-items: center; gap: 10px; }
+  .rank {
+    flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%;
+    background: var(--brand); color: var(--brand-ink); font-weight: 800; font-size: 22px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card h3 { margin: 0; font-size: 24px; line-height: 1.3; }
+  .nums { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 10px 0 4px; }
+  .rate { font-size: 36px; font-weight: 800; line-height: 1.1; }
+  .rate small { font-size: 16px; font-weight: 700; }
+  .count { font-size: 16px; color: var(--sub); }
+  .trend { display: inline-block; font-size: 16px; font-weight: 700; padding: 2px 10px; border-radius: 8px; border: 2px solid currentColor; }
+  .trend.up { color: var(--good); }
+  .trend.down { color: var(--bad); }
+  .trend.flat, .trend.none { color: var(--sub); }
+  .bar { height: 10px; background: var(--bar-bg); border-radius: 5px; overflow: hidden; margin: 6px 0 10px; }
+  .bar i { display: block; height: 100%; background: var(--bar); }
+  .card h4 { font-size: 17px; margin: 12px 0 4px; }
+  .card ul { margin: 0; padding-left: 1.2em; }
+  .card li { margin: 4px 0; }
+  .talk {
+    margin: 4px 0 0; padding: 10px 12px; background: var(--soft); border-left: 6px solid var(--brand);
+    border-radius: 6px; font-size: 18px; font-weight: 700;
+  }
+  .checked { font-size: 14px; color: var(--sub); margin: 8px 0 0; }
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+    min-height: 56px; margin: 12px 0 0; padding: 8px 12px;
+    background: var(--brand); color: var(--brand-ink); border: none; border-radius: 12px;
+    font: inherit; font-size: 18px; font-weight: 800; text-decoration: none; text-align: center;
+  }
+  .btn.sub { background: var(--bg); color: var(--ink); border: 2px solid var(--ink); }
+  .btn small { font-weight: 600; font-size: 15px; }
+  .empty { padding: 14px; border-radius: 12px; background: var(--warn-bg); border: 2px solid #8a6100; }
+  table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  th, td { text-align: left; padding: 10px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 14px; color: var(--sub); }
+  td.num { text-align: right; white-space: nowrap; font-weight: 700; }
+  td.num small { display: block; font-weight: 400; color: var(--sub); font-size: 13px; }
+  .lack { color: var(--sub); font-weight: 600; font-size: 14px; }
+  .iname { font-weight: 700; }
+  .idetail { display: block; font-size: 13px; color: var(--sub); line-height: 1.4; }
+  .play { display: inline-block; margin-top: 4px; font-size: 15px; font-weight: 800; color: var(--brand); padding: 6px 0; }
+  nav.tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; background: var(--bg);
+    border-top: 2px solid var(--ink); padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    gap: 8px;
+  }
+  nav.tabs button {
+    flex: 1; min-height: 52px; border-radius: 10px; border: 2px solid var(--ink); background: var(--bg); color: var(--ink);
+    font: inherit; font-weight: 800; font-size: 17px;
+  }
+  nav.tabs button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .reload { background: transparent; color: var(--brand-ink); border: 2px solid var(--brand-ink); border-radius: 8px; font: inherit; font-size: 15px; font-weight: 700; padding: 4px 10px; min-height: 40px; }
+  .head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div class="head-row">
+    <h1>オレンジ 指導者ページ</h1>
+    <button class="reload" id="btnReload" type="button">更新</button>
+  </div>
+  <p id="status" role="status">読みこみ中…</p>
+</header>
+<main>
+  <div class="seg" role="group" aria-label="期間">
+    <p class="seg-label">期間</p>
+    <button type="button" data-period="recent" aria-pressed="true">直近2週間</button>
+    <button type="button" data-period="all" aria-pressed="false">全期間</button>
+  </div>
+  <div class="seg" role="group" aria-label="学年">
+    <p class="seg-label">学年</p>
+    <button type="button" data-band="all" aria-pressed="true">全体</button>
+    <button type="button" data-band="low" aria-pressed="false">低学年</button>
+    <button type="button" data-band="high" aria-pressed="false">高学年</button>
+  </div>
+
+  <section id="viewTop">
+    <h2>今日の練習：チームの苦手 上位3つ</h2>
+    <div id="top"></div>
+    <button class="btn sub" id="btnDetail" type="button">詳しく見る（全部の一覧）</button>
+  </section>
+
+  <section id="viewDetail" hidden>
+    <h2>考え方ごとの正答率（低い順）</h2>
+    <div id="tagTable"></div>
+    <h2>問題ごとの正答率（低い順）</h2>
+    <div id="itemTable"></div>
+  </section>
+
+  <p class="note" id="rules"></p>
+</main>
+<nav class="tabs" aria-label="画面">
+  <button type="button" data-view="top" aria-pressed="true">今日の練習</button>
+  <button type="button" data-view="detail" aria-pressed="false">詳しく見る</button>
+</nav>
+
+<script id="data">
+/* 練習メニュー・声かけ・問題の名前。_dev/練習メニュー.md と quiz/index.html から、node _dev/tools/build_coach.js で 作る（手で 書きかえない） */
+/* COACH_DATA:BEGIN */
+const COACH_DATA = {"tags":{"count":{"name":"ストライクとボール","menu":["ストライクゾーンあて。ひもやゴムでホームベースの上にゾーンを作り、コーチが投げたボールを、子供が「ストライク！」「ボール！」とジャッジする","打撃練習で、1球ごとにみんなでカウントを声に出す（「ワンボール・ワンストライク！」）"],"talk":"ボール4つでフォアボール、ストライク3つで三振。いまのカウント、言えるかな？","quiz":"s1-02","checked":false},"fair-foul":{"name":"フェアとファール","menu":["ライン際ゴロのジャッジ。コーチが一塁・三塁のライン際にボールを転がし、ボールが止まった所・野手がさわったときのボールの所を見て、子供が「フェア！」「ファール！」と言う","一塁・三塁ベースより先へ転がったボールは、ベースの横を通ったときの場所で決まることを、実際にボールを転がして見せる"],"talk":"ベースの手前は、止まったところや さわったところで決まるよ。ベースに当たったらフェアだよ","quiz":"s2-01","checked":false},"batting":{"name":"打つときのきまり","menu":["試合形式の打撃で、打順カードを持たせて、自分の前の人を言ってから打席に入る","ツーストライクからのバント練習で、ファールになったら三振になることを確かめる"],"talk":"打つ順番は、みんなで決めた順番だよ。自分の前の人を覚えておこう","quiz":"s2-10","checked":false},"dropped3":{"name":"振り逃げ","menu":["キャッチャーが3つめのストライクをワンバウンドで捕ったら、バッターは一塁へ走る（一塁が空いているか、ツーアウトのとき）。キャッチャーはバッターにタッチするか、一塁へ投げる。低学年の大会のきまりで振り逃げをしないこともあるので、チームで確かめる","「一塁が空いているか」「ツーアウトか」をコーチが言ってから始め、走れるときと走れないときを両方やる"],"talk":"三振でも、キャッチャーが捕れなかったら走れることがあるよ。一塁が空いているか、ツーアウトかを見よう","quiz":"dropped-third-strike:f0-o1","checked":false},"running":{"name":"走るときのきまり","menu":["ベースランニング。ベースは必ず踏む。前のランナーを追いこさない","一塁の駆け抜け。一塁は走り抜けてよいことを、実際に走って確かめる"],"talk":"ベースは必ず踏もう。前のランナーは追いこさないよ","quiz":"s3-04","checked":false},"tagup":{"name":"タッチアップ","menu":["外野フライのタッチアップ。ランナーはベースについて待ち、野手がボールにさわった瞬間（捕りはじめた瞬間）に、コーチの「いま！」でスタートする","早く離れすぎたときは、ボールをもとのベースに送って審判にアピールすればアウトになることを、守備側もいっしょに練習する"],"talk":"三塁ランナーは、ツーアウトでないときの深いフライなら、ベースについて待とう。捕った瞬間にスタートだよ","quiz":"tag-up:o1","checked":false},"force-tag":{"name":"フォースとタッチ","menu":["「ふむ？タッチ？」ノック。ランナーの位置を変えながらゴロを打ち、捕った子が「ベース！」か「タッチ！」と声に出してからプレーする","ランナー役を置いて、後ろのランナーやバッターに押し出されるときはベースを踏むだけ、そうでないときはタッチ、を歩いて確かめる。バッターが先にアウトになると押し出しがなくなり、タッチが必要になることも確かめる"],"talk":"後ろのランナーやバッターに押し出されるときは、ベースを踏むだけでアウト。そうでなければタッチしよう","quiz":"force-or-tag:r12-t2","checked":false},"fly-catch":{"name":"フライとキャッチ","menu":["2人1組のフライ捕り。地面に落ちる前に捕ればアウト、ワンバウンドはアウトではないことを確かめる","捕ったあと、グラブからボールを落とさずに持っていられるかも見る（こぼしても、地面に落ちる前にもう一度捕ればアウト）"],"talk":"地面に落ちる前に捕ったらアウト。地面に落としたらアウトにならないよ","quiz":"s4-02","checked":false},"infield-fly":{"name":"インフィールドフライ","menu":["状況カード。コーチが「ワンアウト、ランナー一塁・二塁、内野にフライ」などと言い、インフィールドフライになるかを、子供が手で○×で答える（条件：ノーアウトかワンアウト、一塁・二塁か満塁、内野手が普通に捕れるフェアのフライ。ライナーとバントは入らない）","審判役の子が、手を上げて「インフィールドフライ！」とコールする"],"talk":"ノーアウトかワンアウトで一塁と二塁にランナーがいるとき、内野の高いフライは、フェアならバッターアウトだよ","quiz":"infield-fly-rule:f1-o1","checked":false},"award":{"name":"進めるベースの数","menu":["フォアボール・デッドボールで、押し出されるランナーだけが1つ進むことを、ランナーを置いて歩いて確かめる","ホームランやエンタイトルツーベースのときに進めるベースの数を、コーチが言って、子供がそこまで歩く"],"talk":"フォアボールのときは、後ろから押されるランナーは1つ進むよ。押されないランナーは進まなくていいよ","quiz":"s3-08","checked":false},"manner":{"name":"試合のきまり","menu":["紅白戦で、スリーアウトになったら全員ですぐ攻守交代する","プレーは審判が「タイム」をかけたら止まることを、紅白戦で審判役が実際にタイムをかけて確かめる"],"talk":"判定に文句は言わない。タイムは審判がかけるよ","quiz":"s4-09","checked":false},"throw":{"name":"どこに投げる","menu":["「どこ投げ」ノック。打つ前にコーチがランナーとアウトの数を言い、守備の子全員で「ボールが来たらセカンド！」などと声に出してから打つ","捕ったら、ベースを踏むだけでアウトにできるところ（フォースのランナー）へ投げる。どこでアウトを取るか（迷ったら一塁、など）はチームの約束どおりに"],"talk":"ボールが来る前に、どこに投げるか決めておこう","quiz":"where-to-throw:r12","checked":false},"cover":{"name":"ベースカバー","menu":["内野の人は、ゴロを捕りに行かないなら、空いたベースに入る。一塁手がゴロを捕りに行ったら、ピッチャーが一塁へ走って入る","ランナー一塁で、ショートゴロならセカンドを守る人が二塁へ入る。ゴロの方向を変えて、誰が入るかを声で確かめる"],"talk":"ボールを捕りに行かない人は、空いているベースに入ろう","quiz":"s6-02","checked":false},"backup":{"name":"バックアップ","menu":["内野ゴロで一塁へ送球するとき、ライトが一塁の後ろへ走る。送球の先の、後ろへ回る","わざと送球をそらして、バックアップの人が止めるところまでやる"],"talk":"ボールが行く先の、後ろに回ろう。そらしても止められるよ","quiz":"s6-05","checked":false},"relay":{"name":"中継","menu":["外野から内野へのリレー送球。外野手と内野の間に中継の人が入り、つないで投げる。チームに分かれて速さをくらべる","中継の人は、両手を上げて「ここ！」と声を出し、投げる人に場所を知らせる"],"talk":"遠いときは、間に入った人に投げてつなごう","quiz":"s6-07","checked":false},"baserun":{"name":"走塁の判断","menu":["一塁ランナーを置き、コーチが「フライ」「ゴロ」と言って打球を出す。ランナーは進むか、とちゅうで待つかを判断する","一塁ランナーは、ツーアウト未満のフライならとちゅうで待ち、捕られたらもどる、落ちたら進む。ツーアウトなら打った瞬間に走る（三塁ランナーの深いフライはタッチアップ。「タッチアップ」の練習で）"],"talk":"一塁ランナーは、フライのとき とちゅうで待とう。ツーアウトなら すぐ走るよ","quiz":"runner-decision:fly-o1","checked":false},"outs":{"name":"アウトの数","menu":["プレーの前に、守備も攻撃も全員で、いまのアウトの数を指で出して声に出す（「ワンアウト！」）","同じ打球で、ノーアウトとツーアウトのときの動きのちがいをくらべる"],"talk":"プレーの前に、いまアウトはいくつか、指で出して確かめよう","quiz":"runner-decision:fly-o2","checked":false},"outfield":{"name":"外野の仕事","menu":["外野手どうしのバックアップ。となりの外野手が捕りに行ったら、その後ろへ回る","ボールをそらしても、止まらずに次の動き（ボールを追う・間に入ってつなぐ）をする。どう動くかはチームの約束どおりに"],"talk":"エラーしても止まらない。すぐ次の動きをしよう","quiz":"s6-09","checked":false},"after-fly":{"name":"フライのあと","menu":["外野フライを捕ったら、ランナーが進もうとしている塁へすぐ投げる。ランナー三塁ならホームの方へ（とどかないときは、間に入った人へ）。ランナーが早く飛び出していたら、もとの塁へ投げて審判にアピールする","ツーアウトでフライを捕ったら、チェンジなので投げずにベンチへもどることも確かめる"],"talk":"フライを捕ったら、ランナーが行こうとしている塁へすぐ投げよう。ツーアウトならチェンジだよ","quiz":"throw-after-fly:r3-o1","checked":false}},"items":{"s1-01":{"name":"フォアボール（s1-01）","detail":"ボールが いくつに なると フォアボール？","tags":["count"],"play":"s1-01"},"s1-02":{"name":"さんしん（s1-02）","detail":"ストライクが いくつに なると さんしん？","tags":["count"],"play":"s1-02"},"s1-03":{"name":"ねばる ファール（s1-03）","detail":"2ストライクから ファールを うった。これで さんしんに なる？","tags":["count"],"play":"s1-03"},"s1-04":{"name":"からぶり（s1-04）","detail":"バットを ふったけど、ボールに あたらなかった。これは？","tags":["count"],"play":"s1-04"},"s1-05":{"name":"みのがし（s1-05）","detail":"ストライクゾーンを とおった ボールを、バッターが ふらずに みおくった。これは？","tags":["count"],"play":"s1-05"},"s1-06":{"name":"ワンバウンド（s1-06）","detail":"じめんで ワンバウンドした ボールを、バッターが ふらずに みおくった。これは「ボール」？","tags":["count"],"play":"s1-06"},"s1-07":{"name":"ファールチップ（s1-07）","detail":"2ストライクから、バットに かすった ボールを キャッチャーが そのまま しっかり とった（ファールチップ）。バッターは？","tags":["count"],"play":"s1-07"},"s1-08":{"name":"デッドボール（s1-08）","detail":"ストライクゾーンから はずれた ボールが、よけようと した バッターの からだに あたった。バッターは？","tags":["count","award"],"play":"s1-08"},"s1-09":{"name":"フルカウント（s1-09）","detail":"3ボール 2ストライク。つぎの ボールを みおくって「ボール」。バッターは？","tags":["count"],"play":"s1-09"},"s1-10":{"name":"スリーバント（s1-10）","detail":"2ストライクから バントを して、ファールに なった。バッターは アウト？","tags":["count","batting"],"play":"s1-10"},"s2-01":{"name":"ベースに あたる（s2-01）","detail":"うった ボールが ファーストの ベースに あたって、ファールゾーンへ とんでいった。これは？","tags":["fair-foul"],"play":"s2-01"},"s2-02":{"name":"ラインの うえ（s2-02）","detail":"うった ボールが、ファーストの ベースより とおく（がいやがわ）で、ファールラインの うえに おちた。これは フェア？","tags":["fair-foul"],"play":"s2-02"},"s2-03":{"name":"ころがる ゴロ（s2-03）","detail":"ゴロが フェアゾーンを ころがって、ファーストの ベースより てまえで ファールゾーンへ でて とまった。これは？","tags":["fair-foul"],"play":"s2-03"},"s2-04":{"name":"ホームラン（s2-04）","detail":"うった ボールが、フェアの まま とんで フェンスを こえた。これは？","tags":["award"],"play":"s2-04"},"s2-05":{"name":"ベースを ふむ（s2-05）","detail":"ホームランの ときは、ベースを ふまないで ホームへ かえって いい？","tags":["running"],"play":"s2-05"},"s2-06":{"name":"エンタイトル ツーベース（s2-06）","detail":"うった ボールが、フェアゾーンで バウンドしてから フェンスを こえた。これは？","tags":["award"],"play":"s2-06"},"s2-07":{"name":"ファーストへ ダッシュ（s2-07）","detail":"フェアの ボールを うった！ バッターは まず どこへ はしる？","tags":["running"],"play":"s2-07"},"s2-08":{"name":"かけぬけ（s2-08）","detail":"ファーストを かけぬけて、ベースを とおりすぎた。すぐ もどれば、タッチされても アウトに ならない？","tags":["running"],"play":"s2-08"},"s2-09":{"name":"ファールフライ（s2-09）","detail":"ファールゾーンに あがった フライを、やしゅが じめんに おちる まえに とった。バッターは？","tags":["fly-catch","fair-foul"],"play":"s2-09"},"s2-10":{"name":"だじゅん（s2-10）","detail":"バッターが うつ じゅんばんは、どう きまる？","tags":["batting"],"play":"s2-10"},"dropped-third-strike:f0-o0":{"name":"ふりにげが できるか","detail":"ノーアウトで ランナーは いない。3つめの ストライク！ でも キャッチャーが ボールを とれなかった。バッターは ファーストに はしって …","tags":["dropped3"],"play":"dropped-third-strike:f0-o0"},"dropped-third-strike:f0-o1":{"name":"ふりにげが できるか","detail":"ワンアウトで ランナーは いない。3つめの ストライク！ でも キャッチャーが ボールを とれなかった。バッターは ファーストに はしって …","tags":["dropped3"],"play":"dropped-third-strike:f0-o1"},"dropped-third-strike:f0-o2":{"name":"ふりにげが できるか","detail":"ツーアウトで ランナーは いない。3つめの ストライク！ でも キャッチャーが ボールを とれなかった。バッターは ファーストに はしって …","tags":["dropped3"],"play":"dropped-third-strike:f0-o2"},"dropped-third-strike:f1-o0":{"name":"ふりにげが できるか","detail":"ノーアウトで ランナーは ファースト。3つめの ストライク！ でも キャッチャーが ボールを とれなかった。バッターは ファーストに はしっ…","tags":["dropped3"],"play":"dropped-third-strike:f1-o0"},"dropped-third-strike:f1-o1":{"name":"ふりにげが できるか","detail":"ワンアウトで ランナーは ファースト。3つめの ストライク！ でも キャッチャーが ボールを とれなかった。バッターは ファーストに はしっ…","tags":["dropped3"],"play":"dropped-third-strike:f1-o1"},"dropped-third-strike:f1-o2":{"name":"ふりにげが できるか","detail":"ツーアウトで ランナーは ファースト。3つめの ストライク！ でも キャッチャーが ボールを とれなかった。バッターは ファーストに はしっ…","tags":["dropped3"],"play":"dropped-third-strike:f1-o2"},"s3-01":{"name":"タッチアウト（s3-01）","detail":"ランナーが ベースから はなれている ときに、ボールを もった やしゅに タッチされた。ランナーは？","tags":["force-tag"],"play":"s3-01"},"s3-02":{"name":"ベースは あんぜん（s3-02）","detail":"ランナーは セカンドだけ。ピッチャーが セカンドへ けんせいして、ベースに ついている ランナーに タッチした。これで アウト？","tags":["force-tag"],"play":"s3-02"},"s3-03":{"name":"タッチアップ（s3-03）","detail":"フライが とられた。ランナーが つぎの ベースへ すすむには？","tags":["tagup"],"play":"s3-03"},"s3-04":{"name":"おいこし きんし（s3-04）","detail":"まえを はしる ランナーを、うしろの ランナーが おいこした。おいこした ランナーは アウト？","tags":["running"],"play":"s3-04"},"s3-05":{"name":"だきゅうに あたる（s3-05）","detail":"うった ボールが、ピッチャーいがいの ないやしゅを とおりすぎる まえに（やしゅが さわる まえに）、フェアゾーンで ランナーに あたった。…","tags":["running"],"play":"s3-05"},"s3-06":{"name":"やしゅが ゆうせん（s3-06）","detail":"ゴロを とろうと している やしゅに、ランナーが ぶつかって じゃまを した。どうなる？","tags":["running"],"play":"s3-06"},"s3-07":{"name":"はしる みち（s3-07）","detail":"タッチから にげようとして、ランナーが はしる みちから よこへ 3フィート（やく 90センチ）より おおきく はなれた。どうなる？","tags":["running"],"play":"s3-07"},"s3-08":{"name":"おしだし（s3-08）","detail":"ランナーが まんるい（ファースト・セカンド・サード）。バッターが フォアボール。サードの ランナーは？","tags":["award"],"play":"s3-08"},"s3-09":{"name":"ボーク（s3-09）","detail":"ランナーが いる とき、ピッチャーが「ボーク」を した。ランナーは？","tags":["award"],"play":"s3-09"},"s3-10":{"name":"ボールが ベンチへ（s3-10）","detail":"ショートが ファーストへ なげた ボールが それて、ベンチの なかに はいった。ランナーは すすめる？","tags":["award"],"play":"s3-10"},"tag-up:o0":{"name":"フライの ときの サードランナー","detail":"ノーアウトで ランナーは サード。レフトの おくへ たかい フライが あがった！ しろい わの ランナー（サードに いる）は どう する？","tags":["tagup"],"play":"tag-up:o0"},"tag-up:o1":{"name":"フライの ときの サードランナー","detail":"ワンアウトで ランナーは サード。レフトの おくへ たかい フライが あがった！ しろい わの ランナー（サードに いる）は どう する？","tags":["tagup"],"play":"tag-up:o1"},"tag-up:o2":{"name":"フライの ときの サードランナー","detail":"ツーアウトで ランナーは サード。レフトの おくへ たかい フライが あがった！ しろい わの ランナー（サードに いる）は どう する？","tags":["tagup"],"play":"tag-up:o2"},"runner-decision:fly-o0":{"name":"ランナーの はんだん","detail":"きみは ファーストの ランナー（ランナーは きみ だけ）。ノーアウト。バッターが レフトに たかい フライを うちあげた！ どう する？","tags":["baserun","outs"],"play":"runner-decision:fly-o0"},"runner-decision:force-o0":{"name":"ランナーの はんだん","detail":"きみは ファーストの ランナー（ランナーは きみ だけ）。ノーアウト。バッターが サードを まもる ひとの まえに ゆるい ゴロ（ボテボテの…","tags":["baserun","outs"],"play":"runner-decision:force-o0"},"runner-decision:g2-o0":{"name":"ランナーの はんだん","detail":"きみは セカンドの ランナー（ランナーは きみ だけ）。ノーアウト。バッターが サードを まもる ひとに ゴロを うった！ どう する？","tags":["baserun","outs"],"play":"runner-decision:g2-o0"},"runner-decision:fly-o1":{"name":"ランナーの はんだん","detail":"きみは ファーストの ランナー（ランナーは きみ だけ）。ワンアウト。バッターが レフトに たかい フライを うちあげた！ どう する？","tags":["baserun","outs"],"play":"runner-decision:fly-o1"},"runner-decision:force-o1":{"name":"ランナーの はんだん","detail":"きみは ファーストの ランナー（ランナーは きみ だけ）。ワンアウト。バッターが サードを まもる ひとの まえに ゆるい ゴロ（ボテボテの…","tags":["baserun","outs"],"play":"runner-decision:force-o1"},"runner-decision:g2-o1":{"name":"ランナーの はんだん","detail":"きみは セカンドの ランナー（ランナーは きみ だけ）。ワンアウト。バッターが サードを まもる ひとに ゴロを うった！ どう する？","tags":["baserun","outs"],"play":"runner-decision:g2-o1"},"runner-decision:fly-o2":{"name":"ランナーの はんだん","detail":"きみは ファーストの ランナー（ランナーは きみ だけ）。ツーアウト。バッターが レフトに たかい フライを うちあげた！ どう する？","tags":["baserun","outs"],"play":"runner-decision:fly-o2"},"runner-decision:force-o2":{"name":"ランナーの はんだん","detail":"きみは ファーストの ランナー（ランナーは きみ だけ）。ツーアウト。バッターが サードを まもる ひとの まえに ゆるい ゴロ（ボテボテの…","tags":["baserun","outs"],"play":"runner-decision:force-o2"},"runner-decision:g2-o2":{"name":"ランナーの はんだん","detail":"きみは セカンドの ランナー（ランナーは きみ だけ）。ツーアウト。バッターが サードを まもる ひとに ゴロを うった！ どう する？","tags":["baserun","outs"],"play":"runner-decision:g2-o2"},"s4-01":{"name":"スリーアウト（s4-01）","detail":"アウトが 3つに なったら？","tags":["manner"],"play":"s4-01"},"s4-02":{"name":"フライアウト（s4-02）","detail":"フェアゾーンに あがった フライを、やしゅが じめんに おちる まえに とった。バッターは？","tags":["fly-catch"],"play":"s4-02"},"s4-03":{"name":"しっかり キャッチ（s4-03）","detail":"フライを グラブに いれたけど、すぐに おとして しまった。これは？","tags":["fly-catch"],"play":"s4-03"},"s4-04":{"name":"タッチの しかた（s4-04）","detail":"ランナーに タッチする ときは、どう する？","tags":["force-tag"],"play":"s4-04"},"s4-05":{"name":"フォースアウト（s4-05）","detail":"ランナーは ファーストだけ。ないやゴロ。ランナーが つく まえに、ボールを もって セカンドの ベースを ふんだ。ファーストから きた ラン…","tags":["force-tag"],"play":"s4-05"},"s4-06":{"name":"タッチプレー（s4-06）","detail":"ランナーは セカンドだけ。ないやゴロで ランナーが サードへ はしった。ボールを もって サードの ベースを ふむだけで アウト？","tags":["force-tag"],"play":"s4-06"},"s4-07":{"name":"ファーストで アウト（s4-07）","detail":"ゴロを とって ファーストへ なげた。バッターより さきに、ボールを もった ファーストを まもる ひとが ベースを ふんだ。バッターは？","tags":["force-tag"],"play":"s4-07"},"s4-08":{"name":"インフィールド フライ（s4-08）","detail":"ノーアウトか ワンアウトで、ランナーが ファーストと セカンド。ないやに たかい フライが あがり、しんぱんが「インフィールドフライ」と い…","tags":["infield-fly"],"play":"s4-08"},"s4-09":{"name":"タイム（s4-09）","detail":"プレーの とちゅうで、せんしゅが「タイム！」と さけんだ。これだけで プレーは とまる？","tags":["manner"],"play":"s4-09"},"s4-10":{"name":"しんぱんを だいじに（s4-10）","detail":"しんぱんの はんてい（ストライクや アウト・セーフ）に なっとくが いかない。せんしゅは どうする？","tags":["manner"],"play":"s4-10"},"force-or-tag:r1-t1":{"name":"フォースか タッチか","detail":"ノーアウトで ランナーは ファースト。ショートが ゴロを とった。しろい わの ランナー（ファーストに いた）は セカンドへ はしった。この…","tags":["force-tag"],"play":"force-or-tag:r1-t1"},"force-or-tag:r2-t2":{"name":"フォースか タッチか","detail":"ノーアウトで ランナーは セカンド。ショートが ゴロを とった。しろい わの ランナー（セカンドに いた）は サードへ はしった。この ラン…","tags":["force-tag"],"play":"force-or-tag:r2-t2"},"force-or-tag:r3-t3":{"name":"フォースか タッチか","detail":"ノーアウトで ランナーは サード。ショートが ゴロを とった。しろい わの ランナー（サードに いた）は ホームへ はしった。この ランナー…","tags":["force-tag"],"play":"force-or-tag:r3-t3"},"force-or-tag:r12-t1":{"name":"フォースか タッチか","detail":"ノーアウトで ランナーは ファーストと セカンド。ショートが ゴロを とった。しろい わの ランナー（ファーストに いた）は セカンドへ は…","tags":["force-tag"],"play":"force-or-tag:r12-t1"},"force-or-tag:r12-t2":{"name":"フォースか タッチか","detail":"ノーアウトで ランナーは ファーストと セカンド。ショートが ゴロを とった。しろい わの ランナー（セカンドに いた）は サードへ はしっ…","tags":["force-tag"],"play":"force-or-tag:r12-t2"},"force-or-tag:r13-t1":{"name":"フォースか タッチか","detail":"ノーアウトで ランナーは ファーストと サード。ショートが ゴロを とった。しろい わの ランナー（ファーストに いた）は セカンドへ はし…","tags":["force-tag"],"play":"force-or-tag:r13-t1"},"force-or-tag:r13-t3":{"name":"フォースか タッチか","detail":"ノーアウトで ランナーは ファーストと サード。ショートが ゴロを とった。しろい わの ランナー（サードに いた）は ホームへ はしった。…","tags":["force-tag"],"play":"force-or-tag:r13-t3"},"force-or-tag:r23-t2":{"name":"フォースか タッチか","detail":"ノーアウトで ランナーは セカンドと サード。ショートが ゴロを とった。しろい わの ランナー（セカンドに いた）は サードへ はしった。…","tags":["force-tag"],"play":"force-or-tag:r23-t2"},"force-or-tag:r23-t3":{"name":"フォースか タッチか","detail":"ノーアウトで ランナーは セカンドと サード。ショートが ゴロを とった。しろい わの ランナー（サードに いた）は ホームへ はしった。こ…","tags":["force-tag"],"play":"force-or-tag:r23-t3"},"force-or-tag:r123-t1":{"name":"フォースか タッチか","detail":"ノーアウトで ランナーは まんるい。ショートが ゴロを とった。しろい わの ランナー（ファーストに いた）は セカンドへ はしった。この …","tags":["force-tag"],"play":"force-or-tag:r123-t1"},"force-or-tag:r123-t2":{"name":"フォースか タッチか","detail":"ノーアウトで ランナーは まんるい。ショートが ゴロを とった。しろい わの ランナー（セカンドに いた）は サードへ はしった。この ラン…","tags":["force-tag"],"play":"force-or-tag:r123-t2"},"force-or-tag:r123-t3":{"name":"フォースか タッチか","detail":"ノーアウトで ランナーは まんるい。ショートが ゴロを とった。しろい わの ランナー（サードに いた）は ホームへ はしった。この ランナ…","tags":["force-tag"],"play":"force-or-tag:r123-t3"},"force-removed:r1-first":{"name":"バッターが さきに アウトに なると","detail":"ノーアウトで ランナーは ファースト。ファーストを まもる ひとが ゴロを とり、さきに ファーストの ベースを ふんで バッターを アウト…","tags":["force-tag"],"play":"force-removed:r1-first"},"force-removed:r1-second":{"name":"バッターが さきに アウトに なると","detail":"ノーアウトで ランナーは ファースト。ファーストを まもる ひとが ゴロを とり、すぐに セカンドへ なげた（バッターは まだ アウトに な…","tags":["force-tag"],"play":"force-removed:r1-second"},"force-removed:r12-first":{"name":"バッターが さきに アウトに なると","detail":"ノーアウトで ランナーは ファーストと セカンド。ファーストを まもる ひとが ゴロを とり、さきに ファーストの ベースを ふんで バッタ…","tags":["force-tag"],"play":"force-removed:r12-first"},"force-removed:r12-second":{"name":"バッターが さきに アウトに なると","detail":"ノーアウトで ランナーは ファーストと セカンド。ファーストを まもる ひとが ゴロを とり、すぐに セカンドへ なげた（バッターは まだ …","tags":["force-tag"],"play":"force-removed:r12-second"},"force-removed:r123-first":{"name":"バッターが さきに アウトに なると","detail":"ノーアウトで ランナーは まんるい。ファーストを まもる ひとが ゴロを とり、さきに ファーストの ベースを ふんで バッターを アウトに…","tags":["force-tag"],"play":"force-removed:r123-first"},"force-removed:r123-second":{"name":"バッターが さきに アウトに なると","detail":"ノーアウトで ランナーは まんるい。ファーストを まもる ひとが ゴロを とり、すぐに セカンドへ なげた（バッターは まだ アウトに なっ…","tags":["force-tag"],"play":"force-removed:r123-second"},"infield-fly-rule:f0-o0":{"name":"インフィールドフライに なるか","detail":"ノーアウトで ランナーは いない。バッターが ないやに たかい フライを うちあげた。フェアゾーンで、ないやしゅが ふつうに とれそう。これ…","tags":["infield-fly"],"play":"infield-fly-rule:f0-o0"},"infield-fly-rule:f0-o1":{"name":"インフィールドフライに なるか","detail":"ワンアウトで ランナーは いない。バッターが ないやに たかい フライを うちあげた。フェアゾーンで、ないやしゅが ふつうに とれそう。これ…","tags":["infield-fly"],"play":"infield-fly-rule:f0-o1"},"infield-fly-rule:f0-o2":{"name":"インフィールドフライに なるか","detail":"ツーアウトで ランナーは いない。バッターが ないやに たかい フライを うちあげた。フェアゾーンで、ないやしゅが ふつうに とれそう。これ…","tags":["infield-fly"],"play":"infield-fly-rule:f0-o2"},"infield-fly-rule:f1-o0":{"name":"インフィールドフライに なるか","detail":"ノーアウトで ランナーは ファーストと セカンド。バッターが ないやに たかい フライを うちあげた。フェアゾーンで、ないやしゅが ふつうに…","tags":["infield-fly"],"play":"infield-fly-rule:f1-o0"},"infield-fly-rule:f1-o1":{"name":"インフィールドフライに なるか","detail":"ワンアウトで ランナーは ファーストと セカンド。バッターが ないやに たかい フライを うちあげた。フェアゾーンで、ないやしゅが ふつうに…","tags":["infield-fly"],"play":"infield-fly-rule:f1-o1"},"infield-fly-rule:f1-o2":{"name":"インフィールドフライに なるか","detail":"ツーアウトで ランナーは ファーストと セカンド。バッターが ないやに たかい フライを うちあげた。フェアゾーンで、ないやしゅが ふつうに…","tags":["infield-fly"],"play":"infield-fly-rule:f1-o2"},"throw-after-fly:r1-o0":{"name":"フライの あと どこへ なげる","detail":"きみは レフト。ランナーは ファーストに いる。ノーアウト。ランナーは ベースに ついて、タッチアップの じゅんびを して いる。とおくまで…","tags":["after-fly","outs"],"play":"throw-after-fly:r1-o0"},"throw-after-fly:r1-o1":{"name":"フライの あと どこへ なげる","detail":"きみは レフト。ランナーは ファーストに いる。ワンアウト。ランナーは ベースに ついて、タッチアップの じゅんびを して いる。とおくまで…","tags":["after-fly","outs"],"play":"throw-after-fly:r1-o1"},"throw-after-fly:r1-o2":{"name":"フライの あと どこへ なげる","detail":"きみは レフト。ランナーは ファーストに いる。ツーアウト。たかい フライを きみが とった！ どこへ なげる？","tags":["after-fly","outs"],"play":"throw-after-fly:r1-o2"},"throw-after-fly:r2-o0":{"name":"フライの あと どこへ なげる","detail":"きみは レフト。ランナーは セカンドに いる。ノーアウト。ランナーは ベースに ついて、タッチアップの じゅんびを して いる。とおくまで …","tags":["after-fly","outs"],"play":"throw-after-fly:r2-o0"},"throw-after-fly:r2-o1":{"name":"フライの あと どこへ なげる","detail":"きみは レフト。ランナーは セカンドに いる。ワンアウト。ランナーは ベースに ついて、タッチアップの じゅんびを して いる。とおくまで …","tags":["after-fly","outs"],"play":"throw-after-fly:r2-o1"},"throw-after-fly:r2-o2":{"name":"フライの あと どこへ なげる","detail":"きみは レフト。ランナーは セカンドに いる。ツーアウト。たかい フライを きみが とった！ どこへ なげる？","tags":["after-fly","outs"],"play":"throw-after-fly:r2-o2"},"throw-after-fly:r3-o0":{"name":"フライの あと どこへ なげる","detail":"きみは レフト。ランナーは サードに いる。ノーアウト。ランナーは ベースに ついて、タッチアップの じゅんびを して いる。とおくまで と…","tags":["after-fly","outs"],"play":"throw-after-fly:r3-o0"},"throw-after-fly:r3-o1":{"name":"フライの あと どこへ なげる","detail":"きみは レフト。ランナーは サードに いる。ワンアウト。ランナーは ベースに ついて、タッチアップの じゅんびを して いる。とおくまで と…","tags":["after-fly","outs"],"play":"throw-after-fly:r3-o1"},"throw-after-fly:r3-o2":{"name":"フライの あと どこへ なげる","detail":"きみは レフト。ランナーは サードに いる。ツーアウト。たかい フライを きみが とった！ どこへ なげる？","tags":["after-fly","outs"],"play":"throw-after-fly:r3-o2"},"s5-01":{"name":"ファーストへ なげる（s5-01）","detail":"ランナーは いない。ショートが ゴロを とった。バッターを、ベースを ふむだけで アウトに するには、どこに なげる？","tags":["throw","force-tag"],"play":"s5-01"},"s5-02":{"name":"セカンドで フォース（s5-02）","detail":"ランナーは ファーストだけ。セカンドを まもる ひとが ゴロを とった。ファーストの ランナーを、ベースを ふむだけで アウトに するには、…","tags":["throw","force-tag"],"play":"s5-02"},"s5-03":{"name":"サードで フォース（s5-03）","detail":"ランナーは ファーストと セカンド。ショートが ゴロを とった。セカンドの ランナーを、ベースを ふむだけで アウトに するには、どこに な…","tags":["throw","force-tag"],"play":"s5-03"},"s5-04":{"name":"ホームで フォース（s5-04）","detail":"ノーアウト まんるい。ピッチャーが ゴロを とった。サードの ランナーを、ベースを ふむだけで アウトに するには、どこに なげる？","tags":["throw","force-tag"],"play":"s5-04"},"s5-05":{"name":"もとの ベースへ なげる（s5-05）","detail":"ワンアウトで ランナーは セカンド。ランナーが とびだした ところで、ショートが ライナーを ダイレクトで とった。ランナーは まだ もどっ…","tags":["throw","tagup"],"play":"s5-05"},"s5-06":{"name":"フライの あとは もとの ベース（s5-06）","detail":"ワンアウトで ランナーは ファースト。センターが フライを とった。ランナーは セカンドの ちかくまで はしっていた。ランナーを、ベースを …","tags":["throw","tagup"],"play":"s5-06"},"s5-07":{"name":"フォースに ならない ランナー（s5-07）","detail":"ランナーは セカンドだけ。セカンドを まもる ひとが ゴロを とった。バッターを、ベースを ふむだけで アウトに するには、どこに なげる？","tags":["throw","force-tag"],"play":"s5-07"},"s5-08":{"name":"とびとびの ランナー（s5-08）","detail":"ランナーは ファーストと サード。ショートが ゴロを とった。ファーストの ランナーを、ベースを ふむだけで アウトに するには、どこに な…","tags":["throw","force-tag"],"play":"s5-08"},"where-to-throw:r":{"name":"どこに なげる（フォースの ランナー）","detail":"ノーアウトで ランナーは いない。ショートが ゴロを とった。しろい わの バッターを、ベースを ふむだけで アウトに するには、どこに な…","tags":["throw","force-tag"],"play":"where-to-throw:r"},"where-to-throw:r1":{"name":"どこに なげる（フォースの ランナー）","detail":"ノーアウトで ランナーは ファースト。ショートが ゴロを とった。しろい わの ファーストの ランナーを、ベースを ふむだけで アウトに す…","tags":["throw","force-tag"],"play":"where-to-throw:r1"},"where-to-throw:r2":{"name":"どこに なげる（フォースの ランナー）","detail":"ノーアウトで ランナーは セカンド。ショートが ゴロを とった。しろい わの バッターを、ベースを ふむだけで アウトに するには、どこに …","tags":["throw","force-tag"],"play":"where-to-throw:r2"},"where-to-throw:r3":{"name":"どこに なげる（フォースの ランナー）","detail":"ノーアウトで ランナーは サード。ショートが ゴロを とった。しろい わの バッターを、ベースを ふむだけで アウトに するには、どこに な…","tags":["throw","force-tag"],"play":"where-to-throw:r3"},"where-to-throw:r12":{"name":"どこに なげる（フォースの ランナー）","detail":"ノーアウトで ランナーは ファーストと セカンド。ショートが ゴロを とった。しろい わの セカンドの ランナーを、ベースを ふむだけで ア…","tags":["throw","force-tag"],"play":"where-to-throw:r12"},"where-to-throw:r13":{"name":"どこに なげる（フォースの ランナー）","detail":"ノーアウトで ランナーは ファーストと サード。ショートが ゴロを とった。しろい わの ファーストの ランナーを、ベースを ふむだけで ア…","tags":["throw","force-tag"],"play":"where-to-throw:r13"},"where-to-throw:r23":{"name":"どこに なげる（フォースの ランナー）","detail":"ノーアウトで ランナーは セカンドと サード。ショートが ゴロを とった。しろい わの バッターを、ベースを ふむだけで アウトに するには…","tags":["throw","force-tag"],"play":"where-to-throw:r23"},"where-to-throw:r123":{"name":"どこに なげる（フォースの ランナー）","detail":"ノーアウトで ランナーは まんるい。ショートが ゴロを とった。しろい わの サードの ランナーを、ベースを ふむだけで アウトに するには…","tags":["throw","force-tag"],"play":"where-to-throw:r123"},"s6-01":{"name":"ベースカバー（s6-01）","detail":"きみは ファーストを まもる ひと。ランナーは いない。ショートに ゴロが とんだ。きみは どこへ いく？","tags":["cover"],"play":"s6-01"},"s6-02":{"name":"ピッチャーの ベースカバー（s6-02）","detail":"きみは ピッチャー。ランナーは いない。ファーストと セカンドの あいだに ゴロが とんで、ファーストを まもる ひとが とりに いった。き…","tags":["cover"],"play":"s6-02"},"s6-03":{"name":"セカンドの ベースカバー（s6-03）","detail":"きみは セカンドを まもる ひと。ランナーは ファースト。ショートに ゴロが とんだ。きみは どこへ いく？","tags":["cover"],"play":"s6-03"},"s6-04":{"name":"ショートの ベースカバー（s6-04）","detail":"きみは ショート。ランナーは ファースト。セカンドを まもる ひとに ゴロが とんだ。きみは どこへ いく？","tags":["cover"],"play":"s6-04"},"s6-05":{"name":"ライトの バックアップ（s6-05）","detail":"きみは ライト。ランナーは いない。サードを まもる ひとに ゴロが とんだ。サードを まもる ひとは ファーストへ なげる。きみは どこへ…","tags":["backup"],"play":"s6-05"},"s6-06":{"name":"センターの バックアップ（s6-06）","detail":"きみは センター。ランナーは ファースト。サードを まもる ひとに ゴロが とんだ。サードを まもる ひとは セカンドへ なげる。きみは ど…","tags":["backup"],"play":"s6-06"},"s6-07":{"name":"ショートの ちゅうけい（s6-07）","detail":"きみは ショート。ランナーは いない。レフトの よこを ぬける ながい あたり。バッターは セカンドへ むかう。きみは どこへ いく？","tags":["relay"],"play":"s6-07"},"s6-08":{"name":"セカンドの ちゅうけい（s6-08）","detail":"きみは セカンドを まもる ひと。ランナーは いない。ライトの よこを ぬける ながい あたり。バッターは セカンドへ むかう。きみは どこ…","tags":["relay"],"play":"s6-08"},"s6-09":{"name":"センターの バックアップ（レフト）（s6-09）","detail":"きみは センター。ランナーは いない。レフトの まえに ゴロの ヒット。レフトが ボールを とりに いく。きみは どこへ いく？","tags":["outfield","backup"],"play":"s6-09"},"s6-10":{"name":"センターの バックアップ（ライト）（s6-10）","detail":"きみは センター。ランナーは いない。ライトの まえに ゴロの ヒット。ライトが ボールを とりに いく。きみは どこへ いく？","tags":["outfield","backup"],"play":"s6-10"},"s6-11":{"name":"そらしても とまらない（レフト）（s6-11）","detail":"きみは レフト。ランナーは いない。レフトの まえの ゴロを、きみが うしろに そらして しまった！ センターが バックアップに きて いる…","tags":["outfield","relay"],"play":"s6-11"},"s6-12":{"name":"そらしても とまらない（ライト）（s6-12）","detail":"きみは ライト。ランナーは いない。ライトの まえの ゴロを、きみが うしろに そらして しまった！ センターが バックアップに きて いる…","tags":["outfield","relay"],"play":"s6-12"},"dropped-third-strike":{"name":"ふりにげが できるか（まえの版）","detail":"まえの版のクイズで答えた記録です。開くと、今のクイズの同じ種類の問題が出ます。","tags":["dropped3"],"play":"dropped-third-strike"},"force-or-tag":{"name":"フォースか タッチか（まえの版）","detail":"まえの版のクイズで答えた記録です。開くと、今のクイズの同じ種類の問題が出ます。","tags":["force-tag"],"play":"force-or-tag"},"where-to-throw":{"name":"どこに なげる（フォースの ランナー）（まえの版）","detail":"まえの版のクイズで答えた記録です。開くと、今のクイズの同じ種類の問題が出ます。","tags":["throw","force-tag"],"play":"where-to-throw"},"tag-up":{"name":"フライの ときの サードランナー（まえの版）","detail":"まえの版のクイズで答えた記録です。開くと、今のクイズの同じ種類の問題が出ます。","tags":["tagup"],"play":"tag-up"},"force-removed":{"name":"バッターが さきに アウトに なると（まえの版）","detail":"まえの版のクイズで答えた記録です。開くと、今のクイズの同じ種類の問題が出ます。","tags":["force-tag"],"play":"force-removed"},"infield-fly-rule":{"name":"インフィールドフライに なるか（まえの版）","detail":"まえの版のクイズで答えた記録です。開くと、今のクイズの同じ種類の問題が出ます。","tags":["infield-fly"],"play":"infield-fly-rule"},"runner-decision":{"name":"ランナーの はんだん（まえの版）","detail":"まえの版のクイズで答えた記録です。開くと、今のクイズの同じ種類の問題が出ます。","tags":["baserun","outs"],"play":"runner-decision"},"throw-after-fly":{"name":"フライの あと どこへ なげる（まえの版）","detail":"まえの版のクイズで答えた記録です。開くと、今のクイズの同じ種類の問題が出ます。","tags":["after-fly","outs"],"play":"throw-after-fly"},"f001":{"name":"まえの版の問題（f001）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f002":{"name":"まえの版の問題（f002）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f003":{"name":"まえの版の問題（f003）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f004":{"name":"まえの版の問題（f004）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f005":{"name":"まえの版の問題（f005）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f006":{"name":"まえの版の問題（f006）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f007":{"name":"まえの版の問題（f007）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f008":{"name":"まえの版の問題（f008）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f009":{"name":"まえの版の問題（f009）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f010":{"name":"まえの版の問題（f010）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f011":{"name":"まえの版の問題（f011）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f012":{"name":"まえの版の問題（f012）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f013":{"name":"まえの版の問題（f013）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f014":{"name":"まえの版の問題（f014）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f015":{"name":"まえの版の問題（f015）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f016":{"name":"まえの版の問題（f016）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f017":{"name":"まえの版の問題（f017）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f018":{"name":"まえの版の問題（f018）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f019":{"name":"まえの版の問題（f019）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f020":{"name":"まえの版の問題（f020）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f021":{"name":"まえの版の問題（f021）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f022":{"name":"まえの版の問題（f022）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f023":{"name":"まえの版の問題（f023）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f024":{"name":"まえの版の問題（f024）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f025":{"name":"まえの版の問題（f025）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f026":{"name":"まえの版の問題（f026）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""},"f027":{"name":"まえの版の問題（f027）","detail":"まえの版のクイズの問題です。今のクイズでは開けません。","tags":[],"play":""}}};
+/* COACH_DATA:END */
+</script>
+
+<script id="core">
+/* 集計の 判定（画面に よらない 計算）。_dev/tests/coach.test.js で Node から テストする */
+const CoachCore = (function () {
+  const MIN_N = 10;            // これより 答えた 数が 少ない 考え方・問題は「データ不足」。上位3つに 入れない
+  const TREND_POINTS = 5;      // 先週と くらべて この ポイント以上 ちがえば「良くなった／悪くなった」
+  const TOP = 3;
+
+  function rate(x) { return x && x.n ? x.ok / x.n : null; }
+  function pct(r) { return r === null ? '' : Math.round(r * 100); }
+  function enough(x) { return !!x && x.n >= MIN_N; }
+
+  // 正答率の 低い 順。同じなら 答えた 数の 多い 順、それも 同じなら キーの 順。データ不足は うしろ（答えた 数の 多い 順）
+  function order(a, b) {
+    if (a.enough !== b.enough) return a.enough ? -1 : 1;
+    if (a.enough) {
+      if (a.rate !== b.rate) return a.rate - b.rate;
+      if (a.n !== b.n) return b.n - a.n;
+    } else if (a.n !== b.n) return b.n - a.n;
+    return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+  }
+
+  function rows(box, names) {
+    return Object.keys(box || {}).filter(function (k) { return !names || names[k]; }).map(function (k) {
+      const x = box[k];
+      return { key: k, n: x.n, ok: x.ok, fast: x.fast || 0, rate: rate(x), enough: enough(x) };
+    }).sort(order);
+  }
+
+  function slice(report, band, period) {
+    const b = report && report.bands && report.bands[band];
+    return (b && b[period]) || { tags: {}, items: {} };
+  }
+
+  // 先週との くらべ（今日までの 7日 と その前の 7日）。どちらかが データ不足なら 'none'
+  function trend(report, band, tag) {
+    const b = report && report.bands && report.bands[band];
+    const now = b && b.week && b.week.tags[tag];
+    const prev = b && b.prevWeek && b.prevWeek.tags[tag];
+    if (!enough(now) || !enough(prev)) return { kind: 'none', diff: null };
+    const diff = Math.round(rate(now) * 100) - Math.round(rate(prev) * 100);
+    if (diff >= TREND_POINTS) return { kind: 'up', diff: diff };
+    if (diff <= -TREND_POINTS) return { kind: 'down', diff: diff };
+    return { kind: 'flat', diff: diff };
+  }
+
+  // クイズで 見せる 問題：その 考え方の 問題の うち、データが 足りて いて 正答率が いちばん 低い もの。なければ 練習メニュー.md の「クイズ：」
+  function playKeyFor(report, band, period, tag, data) {
+    const items = slice(report, band, period).items;
+    const list = rows(items).filter(function (r) {
+      const it = data.items[r.key];
+      return r.enough && it && it.play && it.tags.indexOf(tag) >= 0;
+    });
+    if (list.length) return data.items[list[0].key].play;
+    return (data.tags[tag] && data.tags[tag].quiz) || '';
+  }
+
+  // 上位3つ（苦手）：データが 足りて いる 考え方を 正答率の 低い 順に 3つ
+  function top(report, band, period, data) {
+    return rows(slice(report, band, period).tags, data.tags).filter(function (r) { return r.enough; }).slice(0, TOP).map(function (r) {
+      return Object.assign(r, { trend: trend(report, band, r.key), play: playKeyFor(report, band, period, r.key, data) });
+    });
+  }
+
+  function tagRows(report, band, period, data) { return rows(slice(report, band, period).tags, data.tags); }
+  function itemRows(report, band, period) { return rows(slice(report, band, period).items); }
+  function fastCount(report, band, period) {
+    const items = slice(report, band, period).items;
+    return Object.keys(items).reduce(function (s, k) { return s + (items[k].fast || 0); }, 0);
+  }
+  function playUrl(key) { return '../quiz/index.html?play=' + encodeURIComponent(key); }
+
+  return { MIN_N: MIN_N, TREND_POINTS: TREND_POINTS, rate: rate, pct: pct, rows: rows, trend: trend, top: top,
+    tagRows: tagRows, itemRows: itemRows, playKeyFor: playKeyFor, fastCount: fastCount, playUrl: playUrl };
+})();
+</script>
+
+<script id="app">
+(function () {
+  const C = CoachCore, D = COACH_DATA;
+  const $ = function (id) { return document.getElementById(id); };
+  const CACHE = 'orange_coach_cache_v1';   // チーム全体の 集計だけを この 端末に 残す（電波が 弱い ときに 使う）
+  const S = { period: 'recent', band: 'all', view: 'top', report: null, at: '' };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+  }
+  function tagName(k) { return (D.tags[k] && D.tags[k].name) || k; }
+  function itemName(k) { return (D.items[k] && D.items[k].name) || ('問題 ' + k); }
+  function itemDetail(k) { return (D.items[k] && D.items[k].detail) || ''; }
+
+  function trendHTML(t) {
+    if (t.kind === 'up') return '<span class="trend up">↑ 先週より 良くなった（+' + t.diff + '）</span>';
+    if (t.kind === 'down') return '<span class="trend down">↓ 先週より 悪くなった（' + t.diff + '）</span>';
+    if (t.kind === 'flat') return '<span class="trend flat">→ 先週と ほぼ同じ</span>';
+    return '<span class="trend none">先週との比較：データ不足</span>';
+  }
+  function playBtn(key, label) {
+    if (!key) return '';
+    return '<a class="btn" target="_blank" rel="noopener" href="' + esc(C.playUrl(key)) + '">▶ ' + esc(label) +
+      '<small>（' + esc(itemName(key)) + '）</small></a>';
+  }
+
+  function drawTop() {
+    const list = S.report ? C.top(S.report, S.band, S.period, D) : [];
+    if (!S.report) { $('top').innerHTML = '<p class="empty">データを読みこめていません。電波のよい所で「更新」を押してください。</p>'; return; }
+    if (!list.length) {
+      $('top').innerHTML = '<p class="empty">この期間・学年では、答えた数が' + C.MIN_N + '回以上の考え方がまだありません。' +
+        (S.period === 'recent' ? '期間を「全期間」にすると出るかもしれません。' : '') + '</p>';
+      return;
+    }
+    $('top').innerHTML = list.map(function (r, i) {
+      const t = D.tags[r.key] || { menu: [], talk: '', checked: false };
+      const p = C.pct(r.rate);
+      return '<article class="card" data-tag="' + esc(r.key) + '">' +
+        '<div class="card-head"><span class="rank" aria-label="' + (i + 1) + '位">' + (i + 1) + '</span><h3>' + esc(tagName(r.key)) + '</h3></div>' +
+        '<div class="nums"><span class="rate">' + p + '<small>%</small></span><span class="count">正答率・答えた数 ' + r.n + '回</span></div>' +
+        '<div class="bar" aria-hidden="true"><i style="width:' + p + '%"></i></div>' +
+        trendHTML(r.trend) +
+        '<h4>おすすめの練習</h4><ul>' + t.menu.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>' +
+        '<h4>子供への声かけ</h4><p class="talk">「' + esc(t.talk) + '」</p>' +
+        playBtn(r.play, 'クイズで見せる') +
+        '<p class="checked">' + (t.checked ? '✔ 練習メニューはチームで確認ずみ' : '練習メニューは案です（まだチームで確認していません）') + '</p>' +
+        '</article>';
+    }).join('');
+  }
+
+  function rateCells(r) {
+    if (!r.enough) return '<td class="num"><span class="lack">データ不足</span><small>' + r.n + '回</small></td>';
+    return '<td class="num">' + C.pct(r.rate) + '%<small>' + r.n + '回</small></td>';
+  }
+  function drawDetail() {
+    if (!S.report) { $('tagTable').innerHTML = ''; $('itemTable').innerHTML = '<p class="empty">データを読みこめていません。</p>'; return; }
+    const tags = C.tagRows(S.report, S.band, S.period, D);
+    $('tagTable').innerHTML = tags.length ? '<table><thead><tr><th>考え方</th><th style="text-align:right">正答率・答えた数</th></tr></thead><tbody>' +
+      tags.map(function (r) { return '<tr data-tag="' + esc(r.key) + '"><td class="iname">' + esc(tagName(r.key)) + '</td>' + rateCells(r) + '</tr>'; }).join('') +
+      '</tbody></table>' : '<p class="empty">この期間・学年のデータはまだありません。</p>';
+    const items = C.itemRows(S.report, S.band, S.period);
+    $('itemTable').innerHTML = items.length ? '<table><thead><tr><th>問題</th><th style="text-align:right">正答率・答えた数</th></tr></thead><tbody>' +
+      items.map(function (r) {
+        const it = D.items[r.key];
+        return '<tr data-item="' + esc(r.key) + '"><td><span class="iname">' + esc(itemName(r.key)) + '</span>' +
+          (itemDetail(r.key) ? '<span class="idetail">' + esc(itemDetail(r.key)) + '</span>' : '') +
+          (it && it.play ? '<a class="play" target="_blank" rel="noopener" href="' + esc(C.playUrl(it.play)) + '">▶ クイズで見せる</a>' : '') +
+          '</td>' + rateCells(r) + '</tr>';
+      }).join('') + '</tbody></table>' : '<p class="empty">この期間・学年のデータはまだありません。</p>';
+  }
+
+  function drawRules() {
+    if (!S.report) { $('rules').textContent = ''; return; }
+    const rg = S.report.ranges || {};
+    const range = S.period === 'recent' && rg.recent ? '直近2週間（' + rg.recent.from + '〜' + rg.recent.to + '）' : '全期間';
+    $('rules').textContent = range + '・' + { all: '全体', low: '低学年（1〜3年）', high: '高学年（4〜6年）' }[S.band] +
+      'のチーム全体の集計です。2秒未満の答え（' + C.fastCount(S.report, S.band, S.period) + '回）は除いています。答えた数が' + C.MIN_N +
+      '回未満は「データ不足」として、上位3つに入れません。先週との比較は、今日までの7日とその前の7日をくらべています。';
+  }
+
+  function draw() {
+    document.querySelectorAll('[data-period]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-period') === S.period)); });
+    document.querySelectorAll('[data-band]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-band') === S.band)); });
+    document.querySelectorAll('[data-view]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-view') === S.view)); });
+    $('viewTop').hidden = S.view !== 'top';
+    $('viewDetail').hidden = S.view !== 'detail';
+    if (S.view === 'top') drawTop(); else drawDetail();
+    drawRules();
+  }
+
+  function stamp(d) {
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2);
+  }
+  function load() {
+    $('status').textContent = '読みこみ中…';
+    const ok = typeof GAS_URL === 'string' && /^https:\/\/script\.google\.com\//.test(GAS_URL);
+    const req = ok ? fetch(GAS_URL + '?action=coach').then(function (r) { return r.json(); }) : Promise.reject(new Error('no url'));
+    return Promise.race([req, new Promise(function (res, rej) { setTimeout(function () { rej(new Error('timeout')); }, 15000); })])
+      .then(function (j) {
+        if (!j || !j.ok || !j.bands) throw new Error('bad');
+        S.report = j; S.at = stamp(new Date());
+        try { localStorage.setItem(CACHE, JSON.stringify({ at: S.at, report: j })); } catch (e) { /* 保存できなくても 表示は できる */ }
+        $('status').textContent = S.at + ' の最新データ';
+      })
+      .catch(function () {
+        let c = null;
+        try { c = JSON.parse(localStorage.getItem(CACHE) || 'null'); } catch (e) { c = null; }
+        if (c && c.report) { S.report = c.report; S.at = c.at; $('status').textContent = '読みこめませんでした。' + c.at + ' のデータを表示しています'; }
+        else $('status').textContent = '読みこめませんでした。電波のよい所で「更新」を押してください';
+      })
+      .then(draw);
+  }
+
+  document.querySelectorAll('[data-period]').forEach(function (b) { b.onclick = function () { S.period = b.getAttribute('data-period'); draw(); }; });
+  document.querySelectorAll('[data-band]').forEach(function (b) { b.onclick = function () { S.band = b.getAttribute('data-band'); draw(); }; });
+  document.querySelectorAll('[data-view]').forEach(function (b) { b.onclick = function () { S.view = b.getAttribute('data-view'); window.scrollTo(0, 0); draw(); }; });
+  $('btnDetail').onclick = function () { S.view = 'detail'; window.scrollTo(0, 0); draw(); };
+  $('btnReload').onclick = load;
+  draw();
+  load();
+})();
+</script>
+</body>
+</html>
