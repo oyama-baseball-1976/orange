@@ -345,7 +345,17 @@ ruby rt { font-size: 12px; }
 .today-btn { font-size: 22px; min-height: 64px; }
 .sync-line { font-size: 14px; color: var(--muted); margin: 8px 0 0; font-weight: 700; }
 .profile-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-.profile-row .who { flex: 1; font-weight: 900; }
+.profile-row .who { flex: 1; min-width: 0; font-weight: 900; line-height: 1.25; }
+.who-name { display: block; overflow-wrap: anywhere; }
+.who-grade { display: block; font-size: 14px; color: var(--muted); white-space: nowrap; }
+.pf-list { display: flex; flex-direction: column; gap: 8px; margin: 0 0 16px; }
+.pf-row { display: flex; gap: 8px; align-items: stretch; }
+.pf-pick { flex: 1; min-width: 0; min-height: 60px; text-align: left; padding: 8px 14px; border-radius: 14px; border: 3px solid var(--line); background: var(--card); color: var(--ink); font-family: inherit; font-size: 20px; font-weight: 900; }
+.pf-pick.on { border-color: var(--orange); background: var(--orange-soft); }
+.pf-pick .pf-name { display: block; overflow-wrap: anywhere; line-height: 1.25; }
+.pf-pick small { display: block; font-size: 14px; color: var(--muted); font-weight: 800; }
+.pf-del { flex: 0 0 auto; min-width: 64px; min-height: 60px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); color: var(--red); font-family: inherit; font-size: 16px; font-weight: 900; }
+.pf-sub { font-size: 17px; font-weight: 900; margin: 4px 0 8px; }
 .mini-btn { min-height: 40px; padding: 4px 12px; border-radius: 999px; border: 2px solid var(--line); background: var(--card); font-size: 15px; font-weight: 800; }
 .bucket-tag { font-size: 14px; font-weight: 900; color: var(--blue-dark); min-height: 22px; }
 @media (prefers-color-scheme: dark) { .bucket-tag { color: var(--blue); } }
@@ -584,7 +594,12 @@ ruby rt { font-size: 12px; }
   <!-- ===== なまえの とうろく（ニックネームと 学年だけ） ===== -->
   <section id="scr-profile" class="screen" hidden>
     <div class="card">
-      <p class="sec-title">なまえを おしえてね</p>
+      <p class="sec-title" id="pfTitle">なまえを おしえてね</p>
+      <div id="pfListWrap" hidden>
+        <p class="pf-sub">この たんまつで あそんだ ひと</p>
+        <div class="pf-list" id="pfList"></div>
+        <p class="pf-sub">あたらしい なまえ</p>
+      </div>
       <p class="warn">⚠ ほんみょうは いれないでね</p>
       <div class="field-row">
         <label for="pfNick">ニックネーム（12もじ まで）</label>
@@ -653,6 +668,17 @@ ruby rt { font-size: 12px; }
 </div>
 
 <!-- ===== きろくを けす かくにん ===== -->
+<div class="modal" id="delModal" hidden role="dialog" aria-modal="true" aria-labelledby="delTitle">
+  <div class="modal-box plain">
+    <p class="sec-title" id="delTitle"></p>
+    <p id="delText"></p>
+    <p class="warn" id="delPending" hidden></p>
+    <div class="btn-row">
+      <button class="btn" id="delNo">やめる</button>
+      <button class="btn danger" id="delYes">けす</button>
+    </div>
+  </div>
+</div>
 <div class="modal" id="confirmModal" hidden role="dialog" aria-modal="true" aria-labelledby="cfTitle">
   <div class="modal-box plain">
     <p class="sec-title" id="cfTitle">ほんとうに けしますか？</p>
@@ -3169,6 +3195,100 @@ const Core = (function () {
     return m;
   }
 
+  /* ---------- きょうだいで 1台：名前ごとの 記録 ----------
+     いま あそんで いる 子の 記録は STORAGE_KEY（いままでと おなじ 形）。ほかの 子の 記録は PLAYERS_KEY に 名前ごとに あずける。
+     名前なしで あそんだ 記録は '' で あずける。送りそびれた 記録（outbox）は、それぞれの 子の 記録の 中に のこす */
+  const PLAYERS_KEY = 'orange_beta_players';
+  function emptyPlayers() { return { v: 1, saved: {}, order: [] }; }
+  function playerKey(p) { return p && p.profile ? p.profile.nickname : ''; }
+  function hasPlay(p) { return p.rounds > 0 || Object.keys(p.srs).length > 0 || p.outbox.length > 0; }
+  function sanitizePlayers(raw) {
+    const st = emptyPlayers();
+    if (!raw || typeof raw !== 'object') return st;
+    if (raw.saved && typeof raw.saved === 'object') {
+      Object.keys(raw.saved).forEach(function (k) {
+        const p = sanitize(raw.saved[k]);
+        if (playerKey(p) === k) st.saved[k] = p;   // 名前と 中身が あわない ものは つかわない
+      });
+    }
+    if (Array.isArray(raw.order)) {
+      st.order = raw.order.filter(function (k, i, a) { return typeof k === 'string' && k && a.indexOf(k) === i; });
+    }
+    return st;
+  }
+  function touchOrder(st, name) {
+    if (!name) return;
+    st.order = [name].concat(st.order.filter(function (k) { return k !== name; }));
+  }
+  // この 端末の 名前の 一覧（いまの 子が さいしょ、あとは あそんだ じゅん）
+  function listPlayers(active, store) {
+    const st = sanitizePlayers(store);
+    const cur = playerKey(active);
+    const names = Object.keys(st.saved).filter(function (k) { return k && k !== cur; });
+    names.sort(function (a, b) {
+      const ia = st.order.indexOf(a), ib = st.order.indexOf(b);
+      return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib) || (a < b ? -1 : 1);
+    });
+    const list = names.map(function (k) {
+      const p = st.saved[k];
+      return { nickname: k, grade: p.profile.grade, current: false, pending: p.outbox.length };
+    });
+    if (cur) list.unshift({ nickname: cur, grade: active.profile.grade, current: true, pending: active.outbox.length });
+    return list;
+  }
+  // 名前を きりかえる。target は { nickname, grade }（名前なしは null）。
+  // かえりは { active: あたらしい いまの 記録, store: あずかり, from: 'same'|'saved'|'new'|'inherit' }
+  function switchPlayer(active, store, target) {
+    const cur = sanitize(active);
+    const st = sanitizePlayers(store);
+    const from = playerKey(cur);
+    const to = target ? target.nickname : '';
+    const profile = target ? { nickname: target.nickname, grade: target.grade } : null;
+    if (from === to) {
+      cur.profile = profile;
+      touchOrder(st, to);
+      return { active: cur, store: st, from: 'same' };
+    }
+    // 名前なしで あそんだ 記録は、この 端末で はじめて つける 名前に ひきつぐ（名前の 一覧が まだ からの とき）
+    const named = Object.keys(st.saved).filter(function (k) { return k; });
+    if (!from && target && !named.length && !st.saved[to]) {
+      cur.profile = profile;
+      touchOrder(st, to);
+      return { active: cur, store: st, from: hasPlay(cur) ? 'inherit' : 'new' };
+    }
+    if (from || hasPlay(cur)) st.saved[from] = cur;
+    touchOrder(st, from);
+    const saved = st.saved[to];
+    const next = saved ? sanitize(saved) : emptyProgress();
+    delete st.saved[to];
+    next.profile = profile;
+    next.sound = cur.sound;
+    touchOrder(st, to);
+    return { active: next, store: st, from: saved ? 'saved' : 'new' };
+  }
+  // この 端末から 名前を けす（GAS の 記録は けさない）。いまの 子を けしたら 名前なしに もどる
+  function removePlayer(active, store, nickname) {
+    const cur = sanitize(active);
+    const st = sanitizePlayers(store);
+    st.order = st.order.filter(function (k) { return k !== nickname; });
+    if (nickname && playerKey(cur) === nickname) {
+      const anon = st.saved[''];
+      delete st.saved[''];
+      const next = anon ? sanitize(anon) : emptyProgress();
+      next.profile = null;
+      next.sound = cur.sound;
+      return { active: next, store: st, removedCurrent: true };
+    }
+    delete st.saved[nickname];
+    return { active: cur, store: st, removedCurrent: false };
+  }
+  // GAS から うけとった 記録を、その 子の 記録に あわせる（端末だけの 設定は のこす）
+  function mergeRemote(p, remote) {
+    const m = mergeProgress(p, remote);
+    m.sound = p.sound; m.profile = p.profile; m.outbox = p.outbox.slice();
+    return m;
+  }
+
   /* ---------- 習熟 ---------- */
   function srsOf(p, key) { return p.srs[key] || null; }
   function isMastered(r) { return !!r && r.b >= MASTER_BOX; }
@@ -3541,6 +3661,8 @@ const Core = (function () {
     STAGES: STAGES, RANKS: RANKS, QUESTIONS: QUESTIONS, BY_ID: BY_ID, TAGS: TAGS,
     TEMPLATES: TEMPLATES, TEMPLATE_BY_ID: TEMPLATE_BY_ID, UNITS: UNITS, UNIT_BY_KEY: UNIT_BY_KEY,
     dateStr: dateStr, addDays: addDays, fiscalYear: fiscalYear, streak: streak, lastDays: lastDays,
+    PLAYERS_KEY: PLAYERS_KEY, emptyPlayers: emptyPlayers, sanitizePlayers: sanitizePlayers, playerKey: playerKey, listPlayers: listPlayers,
+    switchPlayer: switchPlayer, removePlayer: removePlayer, mergeRemote: mergeRemote,
     emptyProgress: emptyProgress, sanitize: sanitize, cleanProfile: cleanProfile, syncPart: syncPart, mergeProgress: mergeProgress,
     srsOf: srsOf, isMastered: isMastered, masteredCount: masteredCount, applyAnswer: applyAnswer,
     recentAccuracy: recentAccuracy, planMix: planMix,
@@ -3596,8 +3718,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       try { localStorage.removeItem(Core.STORAGE_KEY); } catch (e) { /* なにもしない */ }
     }
   };
+  // ほかの 子の 記録（名前ごとの あずかり）
+  const Players = {
+    load: function () {
+      try {
+        const s = localStorage.getItem(Core.PLAYERS_KEY);
+        return Core.sanitizePlayers(s ? JSON.parse(s) : null);
+      } catch (e) { return Core.emptyPlayers(); }
+    },
+    save: function (st) {
+      try { localStorage.setItem(Core.PLAYERS_KEY, JSON.stringify(st)); } catch (e) { /* 保存できなくても続ける */ }
+    },
+    clear: function () {
+      try { localStorage.removeItem(Core.PLAYERS_KEY); } catch (e) { /* なにもしない */ }
+    }
+  };
 
   let P = Store.load();
+  let PS = Players.load();
 
   /* ---------- 効果音（端末の中で合成する。音声ファイルは使わない） ---------- */
   const Sound = {
@@ -4178,38 +4316,55 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     }
   };
 
-  // GAS から うけとった 記録を、端末の 記録と あわせる（端末だけの 設定は のこす）
-  function adoptRemote(remote) {
-    const keep = { sound: P.sound, profile: P.profile, outbox: P.outbox };
-    P = Core.mergeProgress(P, remote);
-    P.sound = keep.sound; P.profile = keep.profile; P.outbox = keep.outbox;
-    Store.save(P);
+  // GAS から うけとった 記録を、その 名前の 子の 記録にだけ あわせる（いまの 子でも、あずかって いる 子でも）。
+  // 問いあわせて いる あいだに 名前が かわっても、ほかの 子の 記録には まぜない
+  function adoptFor(nick, remote) {
+    if (!nick) return;
+    if (Core.playerKey(P) === nick) { P = Core.mergeRemote(P, remote); Store.save(P); }
+    else if (PS.saved[nick]) { PS.saved[nick] = Core.mergeRemote(PS.saved[nick], remote); Players.save(PS); }
   }
 
   let syncState = 'local';   // 'local'（つうしん していない） / 'ok' / 'offline'
   function pullProgress() {
     if (!P.profile) { syncState = 'local'; return Promise.resolve(false); }
-    return Net.post({ type: 'progress', nickname: P.profile.nickname })
+    const nick = P.profile.nickname;
+    const mine = function () { return Core.playerKey(P) === nick; };
+    return Net.post({ type: 'progress', nickname: nick })
       .then(function (j) {
         if (!j || !j.ok) throw new Error('bad');
-        if (j.progress) adoptRemote(j.progress);
-        syncState = 'ok';
+        if (j.progress) adoptFor(nick, j.progress);
+        if (mine()) syncState = 'ok';
         return true;
       })
-      .catch(function () { syncState = 'offline'; return false; });
+      .catch(function () { if (mine()) syncState = 'offline'; return false; });
   }
 
-  // たまっている 記録を ふるい じゅんに おくる。おくれた ものは outbox から けす
+  // たまっている 記録を ふるい じゅんに おくる。いまの 子の ぶんの あとに、あずかって いる 子の ぶんも おくる。
+  // 送る 中身は あそんだ ときに 作った まま（あそんだ ときの 名前）。おくれた ものは その 子の outbox から けし、
+  // 返事の 記録は その 名前の 子の 記録にだけ あわせる
   let flushing = null;
+  function outboxOwner(nick) { return Core.playerKey(P) === nick ? P : PS.saved[nick]; }
+  function nextSend() {
+    if (P.profile && P.outbox.length) return { owner: Core.playerKey(P), body: P.outbox[0] };
+    const ks = Object.keys(PS.saved);
+    for (let i = 0; i < ks.length; i++) if (ks[i] && PS.saved[ks[i]].outbox.length) return { owner: ks[i], body: PS.saved[ks[i]].outbox[0] };
+    return null;
+  }
+  function dropSent(owner, body) {
+    const p = outboxOwner(owner);
+    if (!p) return;
+    p.outbox = p.outbox.filter(function (b) { return b !== body && !(b.session && body.session && b.session.session_id === body.session.session_id); });
+    if (p === P) Store.save(P); else Players.save(PS);
+  }
   function flushOutbox() {
     if (flushing) return flushing;
     const step = function () {
-      if (!P.outbox.length) return Promise.resolve(true);
-      const body = P.outbox[0];
-      return Net.post(body).then(function (j) {
+      const job = nextSend();
+      if (!job) return Promise.resolve(true);
+      return Net.post(job.body).then(function (j) {
         if (!j || !j.ok) throw new Error('bad');
-        P.outbox.shift();
-        if (j.progress) adoptRemote(j.progress); else Store.save(P);
+        dropSent(job.owner, job.body);
+        if (j.progress) adoptFor(job.body.session ? job.body.session.nickname : job.owner, j.progress);
         return step();
       });
     };
@@ -4309,7 +4464,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     $('btnNigate').hidden = ng === 0;
     $('btnNigate').textContent = '💪 にがて チャレンジ（' + ng + 'もん）';
     $('syncLine').textContent = syncText();
-    $('profileLine').textContent = P.profile ? P.profile.nickname + '（' + P.profile.grade + 'ねんせい）' : 'なまえは まだ ないよ';
+    $('profileLine').innerHTML = P.profile
+      ? '<span class="who-name">' + esc(P.profile.nickname) + '</span><span class="who-grade">' + P.profile.grade + 'ねんせい</span>'
+      : '<span class="who-name">なまえは まだ ないよ</span>';
     renderStamps();
     show('scr-home');
     playMapRun();
@@ -4317,11 +4474,26 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
 
   /* ---------- なまえの とうろく（ニックネームと 学年だけ） ---------- */
   function renderProfile(first) {
-    $('pfNick').value = P.profile ? P.profile.nickname : '';
+    const list = Core.listPlayers(P, PS);
+    $('pfListWrap').hidden = list.length === 0;
+    $('pfTitle').textContent = list.length ? 'だれが あそぶ？' : 'なまえを おしえてね';
+    $('pfList').innerHTML = list.map(function (x) {
+      return '<div class="pf-row"><button class="pf-pick' + (x.current ? ' on' : '') + '" data-nick="' + esc(x.nickname) + '" data-grade="' + x.grade + '"' +
+        (x.current ? ' aria-current="true"' : '') + '><span class="pf-name">' + esc(x.nickname) + '</span><small>' + x.grade + 'ねんせい' +
+        (x.current ? '・いま あそんでいる' : '') + '</small></button>' +
+        '<button class="pf-del" data-nick="' + esc(x.nickname) + '" aria-label="' + esc(x.nickname) + ' を けす">けす</button></div>';
+    }).join('');
+    Array.prototype.forEach.call($('pfList').querySelectorAll('.pf-pick'), function (b) {
+      b.onclick = function () { Sound.tap(); switchTo({ nickname: b.getAttribute('data-nick'), grade: +b.getAttribute('data-grade') }); };
+    });
+    Array.prototype.forEach.call($('pfList').querySelectorAll('.pf-del'), function (b) {
+      b.onclick = function () { askRemove(b.getAttribute('data-nick')); };
+    });
+    $('pfNick').value = list.length ? '' : (P.profile ? P.profile.nickname : '');
     const sel = $('pfGrade');
     sel.innerHTML = '<option value="">えらんでね</option>';
     for (let g = 1; g <= 6; g++) sel.innerHTML += '<option value="' + g + '">' + g + 'ねんせい</option>';
-    sel.value = P.profile ? String(P.profile.grade) : '';
+    sel.value = !list.length && P.profile ? String(P.profile.grade) : '';
     $('pfErrNick').hidden = true; $('pfErrGrade').hidden = true;
     $('pfSkip').textContent = first ? 'なまえなしで あそぶ（この たんまつだけ）' : 'やめる';
     $('pfSkip').onclick = function () {
@@ -4336,8 +4508,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     $('pfErrNick').hidden = !pr.errors.nickname; $('pfErrNick').textContent = pr.errors.nickname || '';
     $('pfErrGrade').hidden = !pr.errors.grade; $('pfErrGrade').textContent = pr.errors.grade || '';
     if (!pr.ok) return;
-    P.profile = { nickname: pr.nickname, grade: pr.grade };
-    Store.save(P);
+    switchTo({ nickname: pr.nickname, grade: pr.grade });
+  }
+
+  // 名前を きりかえる：いまの 子の 記録を あずけて、えらんだ 子の 記録を だす。その 名前の GAS の 記録が あれば よみこむ
+  function switchTo(target) {
+    const r = Core.switchPlayer(P, PS, target);
+    P = r.active; PS = r.store;
+    Store.save(P); Players.save(PS);
+    syncState = 'local';
     try { localStorage.setItem(Core.STORAGE_KEY + '_asked', '1'); } catch (e) { /* なにもしない */ }
     $('pfSave').disabled = true;
     toast('きろくを よみこんでいるよ…');
@@ -4346,6 +4525,27 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       toast(syncState === 'ok' ? 'よみこみ おわり！' : 'つうしん できないので この たんまつの きろくで あそぶよ');
       flushOutbox().then(renderHome, renderHome);
     });
+  }
+
+  // この 端末から 名前を けす（かくにん してから）。GAS の 記録は けさない
+  function askRemove(nick) {
+    const x = Core.listPlayers(P, PS).filter(function (y) { return y.nickname === nick; })[0];
+    if (!x) return;
+    $('delTitle').textContent = '「' + nick + '」を けしますか？';
+    $('delText').textContent = 'この たんまつの「' + nick + '」の カード・ほし・おぼえた もんだいが きえます。チームの スプレッドシートの きろくは のこるので、おなじ ニックネームを いれれば よみこめます。';
+    $('delPending').hidden = !x.pending;
+    $('delPending').textContent = 'まだ おくれて いない きろくが ' + x.pending + 'かい ぶん あります。けすと おくれなく なります。';
+    $('delModal').hidden = false;
+    $('delNo').focus();
+    $('delYes').onclick = function () {
+      const r = Core.removePlayer(P, PS, nick);
+      P = r.active; PS = r.store;
+      Store.save(P); Players.save(PS);
+      if (r.removedCurrent) syncState = 'local';
+      $('delModal').hidden = true;
+      toast('「' + nick + '」を この たんまつから けしました');
+      renderProfile(false);
+    };
   }
 
   /* ---------- ランキング（せいかいの かず ・ おぼえた かず） ---------- */
@@ -5047,8 +5247,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     $('cardModal').onclick = function (e) { if (e.target === $('cardModal')) closeCard(); };
     $('btnReset').onclick = function () { $('confirmModal').hidden = false; $('cfNo').focus(); };
     $('cfNo').onclick = function () { $('confirmModal').hidden = true; };
+    $('delNo').onclick = function () { $('delModal').hidden = true; };
     $('cfYes').onclick = function () {
       Store.clear();
+      Players.clear();
+      PS = Core.emptyPlayers();
       try { localStorage.removeItem(Core.STORAGE_KEY + '_asked'); } catch (e) { /* なにもしない */ }
       P = Core.emptyProgress();
       syncState = 'local';
@@ -5061,6 +5264,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       if (e.key !== 'Escape') return;
       if (!$('cardModal').hidden) closeCard();
       if (!$('confirmModal').hidden) $('confirmModal').hidden = true;
+      if (!$('delModal').hidden) $('delModal').hidden = true;
     });
   }
 
@@ -5079,6 +5283,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     if (P.profile) pullProgress().then(function () { return flushOutbox(); }).then(function () {
       if (document.body.getAttribute('data-screen') === 'scr-home') renderHome();
     });
+    // いまは 名前なしでも、あずかって いる 子の 送りそびれは おくる（その 子の 名前で）
+    else if (nextSend()) flushOutbox();
   }
 })();
 </script>
