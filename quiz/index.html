@@ -344,8 +344,8 @@ ruby rt { font-size: 12px; }
 /* ---------- 学習版 ---------- */
 .today-btn { font-size: 22px; min-height: 64px; }
 .sync-line { font-size: 14px; color: var(--muted); margin: 8px 0 0; font-weight: 700; }
-.profile-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-.profile-row .who { flex: 1; min-width: 0; font-weight: 900; line-height: 1.25; }
+.profile-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.profile-row .who { flex: 1 1 100%; min-width: 0; font-weight: 900; line-height: 1.25; }
 .who-name { display: block; overflow-wrap: anywhere; }
 .who-grade { display: block; font-size: 14px; color: var(--muted); white-space: nowrap; }
 .pf-list { display: flex; flex-direction: column; gap: 8px; margin: 0 0 16px; }
@@ -353,6 +353,7 @@ ruby rt { font-size: 12px; }
 .pf-pick { flex: 1; min-width: 0; min-height: 60px; text-align: left; padding: 8px 14px; border-radius: 14px; border: 3px solid var(--line); background: var(--card); color: var(--ink); font-family: inherit; font-size: 20px; font-weight: 900; }
 .pf-pick.on { border-color: var(--orange); background: var(--orange-soft); }
 .pf-pick .pf-name { display: block; overflow-wrap: anywhere; line-height: 1.25; }
+.pf-pick .nw { white-space: nowrap; }
 .pf-pick small { display: block; font-size: 14px; color: var(--muted); font-weight: 800; }
 .pf-del { flex: 0 0 auto; min-width: 64px; min-height: 60px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); color: var(--red); font-family: inherit; font-size: 16px; font-weight: 900; }
 .pf-sub { font-size: 17px; font-weight: 900; margin: 4px 0 8px; }
@@ -4480,7 +4481,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     $('pfList').innerHTML = list.map(function (x) {
       return '<div class="pf-row"><button class="pf-pick' + (x.current ? ' on' : '') + '" data-nick="' + esc(x.nickname) + '" data-grade="' + x.grade + '"' +
         (x.current ? ' aria-current="true"' : '') + '><span class="pf-name">' + esc(x.nickname) + '</span><small>' + x.grade + 'ねんせい' +
-        (x.current ? '・いま あそんでいる' : '') + '</small></button>' +
+        (x.current ? '・<span class="nw">いま あそんでいる</span>' : '') + '</small></button>' +
         '<button class="pf-del" data-nick="' + esc(x.nickname) + '" aria-label="' + esc(x.nickname) + ' を けす">けす</button></div>';
     }).join('');
     Array.prototype.forEach.call($('pfList').querySelectorAll('.pf-pick'), function (b) {
