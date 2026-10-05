@@ -111,6 +111,15 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbyt5yi-R9oXQoF25CdQh9uu
   .reload { background: transparent; color: var(--brand-ink); border: 2px solid var(--brand-ink); border-radius: 8px; font: inherit; font-size: 15px; font-weight: 700; padding: 4px 10px; min-height: 40px; }
   .head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   [hidden] { display: none !important; }
+  .filters { border: 2px solid var(--ink); border-radius: 14px; padding: 4px 12px 10px; margin: 4px 0 8px; }
+  .filters summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; min-height: 48px; padding: 10px 0 4px; font-weight: 800; font-size: 18px; cursor: pointer; }
+  .filters .fsum { font-size: 15px; font-weight: 700; color: var(--sub); }
+  .field { margin: 8px 0; }
+  .field select { width: 100%; min-height: 52px; font: inherit; font-size: 17px; font-weight: 700; padding: 6px 10px; border: 2px solid var(--ink); border-radius: 10px; background: var(--bg); color: var(--ink); }
+  .seg.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .seg.grid3 .seg-label { grid-column: 1 / -1; }
+  .few { font-weight: 700; }
+  td .lack.few { white-space: normal; display: inline-block; max-width: 9em; text-align: right; }
 </style>
 </head>
 <body>
@@ -122,17 +131,30 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbyt5yi-R9oXQoF25CdQh9uu
   <p id="status" role="status">読みこみ中…</p>
 </header>
 <main>
-  <div class="seg" role="group" aria-label="期間">
-    <p class="seg-label">期間</p>
-    <button type="button" data-period="recent" aria-pressed="true">直近2週間</button>
-    <button type="button" data-period="all" aria-pressed="false">全期間</button>
-  </div>
-  <div class="seg" role="group" aria-label="学年">
-    <p class="seg-label">学年</p>
-    <button type="button" data-band="all" aria-pressed="true">全体</button>
-    <button type="button" data-band="low" aria-pressed="false">低学年</button>
-    <button type="button" data-band="high" aria-pressed="false">高学年</button>
-  </div>
+  <details class="filters" id="filters" open>
+    <summary><span>しぼりこみ</span><span class="fsum" id="filterSum"></span></summary>
+    <div class="field">
+      <label class="seg-label" for="fYear">年度（4月〜翌年3月）</label>
+      <select id="fYear"></select>
+    </div>
+    <div class="seg grid3" role="group" aria-label="学年">
+      <p class="seg-label">学年（遊んだときの学年）</p>
+      <button type="button" data-grade="all" aria-pressed="true">全学年</button>
+      <button type="button" data-grade="low" aria-pressed="false">低学年</button>
+      <button type="button" data-grade="high" aria-pressed="false">高学年</button>
+      <button type="button" data-grade="1" aria-pressed="false">1年</button>
+      <button type="button" data-grade="2" aria-pressed="false">2年</button>
+      <button type="button" data-grade="3" aria-pressed="false">3年</button>
+      <button type="button" data-grade="4" aria-pressed="false">4年</button>
+      <button type="button" data-grade="5" aria-pressed="false">5年</button>
+      <button type="button" data-grade="6" aria-pressed="false">6年</button>
+    </div>
+    <div class="seg" role="group" aria-label="期間">
+      <p class="seg-label">期間</p>
+      <button type="button" data-period="recent" aria-pressed="true">直近2週間</button>
+      <button type="button" data-period="all" aria-pressed="false">全期間</button>
+    </div>
+  </details>
 
   <section id="viewTop">
     <h2>今日の練習：チームの苦手 上位3つ</h2>
@@ -141,9 +163,15 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbyt5yi-R9oXQoF25CdQh9uu
   </section>
 
   <section id="viewDetail" hidden>
-    <h2>考え方ごとの正答率（低い順）</h2>
+    <div class="seg" role="group" aria-label="並び替え">
+      <p class="seg-label">並び替え</p>
+      <button type="button" data-sort="rate" aria-pressed="true">正答率が低い順</button>
+      <button type="button" data-sort="count" aria-pressed="false">答えた数が多い順</button>
+      <button type="button" data-sort="name" aria-pressed="false">名前順</button>
+    </div>
+    <h2>考え方ごとの正答率</h2>
     <div id="tagTable"></div>
-    <h2>問題ごとの正答率（低い順）</h2>
+    <h2>問題ごとの正答率</h2>
     <div id="itemTable"></div>
   </section>
 
@@ -165,40 +193,70 @@ const COACH_DATA = {"tags":{"count":{"name":"ストライクとボール","menu"
 /* 集計の 判定（画面に よらない 計算）。_dev/tests/coach.test.js で Node から テストする */
 const CoachCore = (function () {
   const MIN_N = 10;            // これより 答えた 数が 少ない 考え方・問題は「データ不足」。上位3つに 入れない
+  const MIN_KIDS = 3;          // 答えた 子が これより 少ない 集計は 出さない（GAS も 数字を 返さないが、ページでも たしかめる）
   const TREND_POINTS = 5;      // 先週と くらべて この ポイント以上 ちがえば「良くなった／悪くなった」
   const TOP = 3;
+  const FEW = 'にんずうが すくないので ひょうじしません';
+  const GRADES = ['all', 'low', 'high', '1', '2', '3', '4', '5', '6'];
 
   function rate(x) { return x && x.n ? x.ok / x.n : null; }
   function pct(r) { return r === null ? '' : Math.round(r * 100); }
-  function enough(x) { return !!x && x.n >= MIN_N; }
+  // 出して よい 集計か（3人以上・数字が ある）
+  function shown(x) { return !!x && !x.hidden && typeof x.n === 'number' && (x.kids || 0) >= MIN_KIDS; }
+  function enough(x) { return shown(x) && x.n >= MIN_N; }
 
-  // 正答率の 低い 順。同じなら 答えた 数の 多い 順、それも 同じなら キーの 順。データ不足は うしろ（答えた 数の 多い 順）
-  function order(a, b) {
-    if (a.enough !== b.enough) return a.enough ? -1 : 1;
-    if (a.enough) {
-      if (a.rate !== b.rate) return a.rate - b.rate;
-      if (a.n !== b.n) return b.n - a.n;
-    } else if (a.n !== b.n) return b.n - a.n;
-    return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+  // 年度（4月はじまり）。'yyyy-mm-dd' か Date
+  function fiscalYear(d) {
+    const s = typeof d === 'string' ? d : d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-01';
+    const y = +s.slice(0, 4), m = +s.slice(5, 7);
+    return m >= 4 ? y : y - 1;
   }
 
-  function rows(box, names) {
-    return Object.keys(box || {}).filter(function (k) { return !names || names[k]; }).map(function (k) {
-      const x = box[k];
-      return { key: k, n: x.n, ok: x.ok, fast: x.fast || 0, rate: rate(x), enough: enough(x) };
-    }).sort(order);
+  // 保存して いた 条件を そろえる（まちがった 値は きまりの 値に）
+  function normalizeFilter(raw, currentYear) {
+    raw = raw && typeof raw === 'object' ? raw : {};
+    const year = raw.year === 'all' ? 'all' : (/^\d{4}$/.test(String(raw.year)) ? Number(raw.year) : currentYear);
+    return {
+      year: year,
+      grade: GRADES.indexOf(String(raw.grade)) >= 0 ? String(raw.grade) : 'all',
+      period: raw.period === 'all' ? 'all' : 'recent',
+      sort: ['rate', 'count', 'name'].indexOf(raw.sort) >= 0 ? raw.sort : 'rate'
+    };
+  }
+  function query(f) {
+    return 'action=coach&year=' + encodeURIComponent(String(f.year)) + '&grade=' + encodeURIComponent(f.grade) + '&period=' + encodeURIComponent(f.period);
   }
 
-  function slice(report, band, period) {
-    const b = report && report.bands && report.bands[band];
-    return (b && b[period]) || { tags: {}, items: {} };
+  // 1行ぶん。status：'ok'（出せる）・'lack'（10回未満）・'few'（3人未満。数字なし）
+  function row(key, x) {
+    if (!shown(x)) return { key: key, status: 'few', n: null, ok: null, rate: null, kids: x ? x.kids || 0 : 0, fast: 0 };
+    return { key: key, status: x.n >= MIN_N ? 'ok' : 'lack', n: x.n, ok: x.ok, rate: rate(x), kids: x.kids, fast: x.fast || 0 };
+  }
+  const RANK = { ok: 0, lack: 1, few: 2 };
+  function byKey(a, b) { return a.key < b.key ? -1 : a.key > b.key ? 1 : 0; }
+  // 並び替え。rate：正答率の 低い 順（データ不足・少人数は うしろ）、count：答えた 数の 多い 順（少人数は うしろ）、name：名前の 順
+  function sortRows(list, sort, nameOf) {
+    const name = function (r) { return String(nameOf ? nameOf(r.key) : r.key); };
+    return list.slice().sort(function (a, b) {
+      if (sort === 'name') return name(a).localeCompare(name(b), 'ja') || byKey(a, b);
+      if (sort === 'count') {
+        if ((a.status === 'few') !== (b.status === 'few')) return a.status === 'few' ? 1 : -1;
+        return (b.n || 0) - (a.n || 0) || byKey(a, b);
+      }
+      if (a.status !== b.status) return RANK[a.status] - RANK[b.status];
+      if (a.status === 'ok') return a.rate - b.rate || b.n - a.n || byKey(a, b);
+      return (b.n || 0) - (a.n || 0) || byKey(a, b);
+    });
+  }
+  function rows(box, names, sort, nameOf) {
+    const list = Object.keys(box || {}).filter(function (k) { return !names || names[k]; }).map(function (k) { return row(k, box[k]); });
+    return sortRows(list, sort || 'rate', nameOf);
   }
 
-  // 先週との くらべ（今日までの 7日 と その前の 7日）。どちらかが データ不足なら 'none'
-  function trend(report, band, tag) {
-    const b = report && report.bands && report.bands[band];
-    const now = b && b.week && b.week.tags[tag];
-    const prev = b && b.prevWeek && b.prevWeek.tags[tag];
+  // 先週との くらべ。どちらかの 週が データ不足・少人数なら 'none'
+  function trend(report, tag) {
+    const now = report && report.week && report.week.tags[tag];
+    const prev = report && report.prevWeek && report.prevWeek.tags[tag];
     if (!enough(now) || !enough(prev)) return { kind: 'none', diff: null };
     const diff = Math.round(rate(now) * 100) - Math.round(rate(prev) * 100);
     if (diff >= TREND_POINTS) return { kind: 'up', diff: diff };
@@ -206,34 +264,33 @@ const CoachCore = (function () {
     return { kind: 'flat', diff: diff };
   }
 
-  // クイズで 見せる 問題：その 考え方の 問題の うち、データが 足りて いて 正答率が いちばん 低い もの。なければ 練習メニュー.md の「クイズ：」
-  function playKeyFor(report, band, period, tag, data) {
-    const items = slice(report, band, period).items;
-    const list = rows(items).filter(function (r) {
+  // クイズで 見せる 問題：その 考え方の 問題の うち、出せて データが 足りて いて 正答率が いちばん 低い もの。なければ 練習メニュー.md の「クイズ：」
+  function playKeyFor(report, tag, data) {
+    const list = rows(report && report.items).filter(function (r) {
       const it = data.items[r.key];
-      return r.enough && it && it.play && it.tags.indexOf(tag) >= 0;
+      return r.status === 'ok' && it && it.play && it.tags.indexOf(tag) >= 0;
     });
     if (list.length) return data.items[list[0].key].play;
     return (data.tags[tag] && data.tags[tag].quiz) || '';
   }
 
-  // 上位3つ（苦手）：データが 足りて いる 考え方を 正答率の 低い 順に 3つ
-  function top(report, band, period, data) {
-    return rows(slice(report, band, period).tags, data.tags).filter(function (r) { return r.enough; }).slice(0, TOP).map(function (r) {
-      return Object.assign(r, { trend: trend(report, band, r.key), play: playKeyFor(report, band, period, r.key, data) });
+  // 上位3つ（苦手）：3人以上・10回以上の 考え方を 正答率の 低い 順に 3つ
+  function top(report, data) {
+    return rows(report && report.tags, data.tags, 'rate').filter(function (r) { return r.status === 'ok'; }).slice(0, TOP).map(function (r) {
+      return Object.assign(r, { trend: trend(report, r.key), play: playKeyFor(report, r.key, data) });
     });
   }
-
-  function tagRows(report, band, period, data) { return rows(slice(report, band, period).tags, data.tags); }
-  function itemRows(report, band, period) { return rows(slice(report, band, period).items); }
-  function fastCount(report, band, period) {
-    const items = slice(report, band, period).items;
-    return Object.keys(items).reduce(function (s, k) { return s + (items[k].fast || 0); }, 0);
+  function fastCount(report) {
+    const items = (report && report.items) || {};
+    return Object.keys(items).reduce(function (s, k) { return s + (shown(items[k]) ? items[k].fast || 0 : 0); }, 0);
   }
   function playUrl(key) { return '../quiz/index.html?play=' + encodeURIComponent(key); }
+  function gradeLabel(g) { return { all: '全学年', low: '低学年（1〜3年）', high: '高学年（4〜6年）' }[g] || g + '年'; }
+  function yearLabel(y) { return y === 'all' ? '全年度' : y + '年度'; }
 
-  return { MIN_N: MIN_N, TREND_POINTS: TREND_POINTS, rate: rate, pct: pct, rows: rows, trend: trend, top: top,
-    tagRows: tagRows, itemRows: itemRows, playKeyFor: playKeyFor, fastCount: fastCount, playUrl: playUrl };
+  return { MIN_N: MIN_N, MIN_KIDS: MIN_KIDS, TREND_POINTS: TREND_POINTS, FEW: FEW, rate: rate, pct: pct, shown: shown,
+    fiscalYear: fiscalYear, normalizeFilter: normalizeFilter, query: query, rows: rows, sortRows: sortRows, trend: trend, top: top,
+    playKeyFor: playKeyFor, fastCount: fastCount, playUrl: playUrl, gradeLabel: gradeLabel, yearLabel: yearLabel };
 })();
 </script>
 
@@ -241,15 +298,23 @@ const CoachCore = (function () {
 (function () {
   const C = CoachCore, D = COACH_DATA;
   const $ = function (id) { return document.getElementById(id); };
-  const CACHE = 'orange_coach_cache_v1';   // チーム全体の 集計だけを この 端末に 残す（電波が 弱い ときに 使う）
-  const S = { period: 'recent', band: 'all', view: 'top', report: null, at: '' };
+  // この 端末に 残す もの：えらんだ 条件と、チーム全体の 集計（電波が 弱い ときに つかう）。子どもごとの 情報は ない
+  const FILTER_KEY = 'orange_coach_filter_v1';
+  const CACHE_KEY = 'orange_coach_cache_v2';
+  const CACHE_MAX = 12;
+  const S = { view: 'top', report: null, at: '', years: [], f: null, loading: 0 };
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
   }
+  function readJSON(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } }
+  function writeJSON(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) { /* 保存できなくても 表示は できる */ } }
   function tagName(k) { return (D.tags[k] && D.tags[k].name) || k; }
   function itemName(k) { return (D.items[k] && D.items[k].name) || ('問題 ' + k); }
   function itemDetail(k) { return (D.items[k] && D.items[k].detail) || ''; }
+
+  const thisYear = C.fiscalYear(new Date());
+  S.f = C.normalizeFilter(readJSON(FILTER_KEY), thisYear);
 
   function trendHTML(t) {
     if (t.kind === 'up') return '<span class="trend up">↑ 先週より 良くなった（+' + t.diff + '）</span>';
@@ -262,13 +327,15 @@ const CoachCore = (function () {
     return '<a class="btn" target="_blank" rel="noopener" href="' + esc(C.playUrl(key)) + '">▶ ' + esc(label) +
       '<small>（' + esc(itemName(key)) + '）</small></a>';
   }
+  const few = function () { return '<p class="empty few">' + C.FEW + '</p>'; };
 
   function drawTop() {
-    const list = S.report ? C.top(S.report, S.band, S.period, D) : [];
     if (!S.report) { $('top').innerHTML = '<p class="empty">データを読みこめていません。電波のよい所で「更新」を押してください。</p>'; return; }
+    if (!C.shown(S.report.total)) { $('top').innerHTML = few(); return; }
+    const list = C.top(S.report, D);
     if (!list.length) {
-      $('top').innerHTML = '<p class="empty">この期間・学年では、答えた数が' + C.MIN_N + '回以上の考え方がまだありません。' +
-        (S.period === 'recent' ? '期間を「全期間」にすると出るかもしれません。' : '') + '</p>';
+      $('top').innerHTML = '<p class="empty">この条件では、答えた数が' + C.MIN_N + '回以上で、答えた子が' + C.MIN_KIDS + '人以上の考え方がまだありません。' +
+        (S.f.period === 'recent' ? '期間を「全期間」にすると出るかもしれません。' : '') + '</p>';
       return;
     }
     $('top').innerHTML = list.map(function (r, i) {
@@ -276,7 +343,7 @@ const CoachCore = (function () {
       const p = C.pct(r.rate);
       return '<article class="card" data-tag="' + esc(r.key) + '">' +
         '<div class="card-head"><span class="rank" aria-label="' + (i + 1) + '位">' + (i + 1) + '</span><h3>' + esc(tagName(r.key)) + '</h3></div>' +
-        '<div class="nums"><span class="rate">' + p + '<small>%</small></span><span class="count">正答率（答えた数 ' + r.n + '回）</span></div>' +
+        '<div class="nums"><span class="rate">' + p + '<small>%</small></span><span class="count">正答率（答えた数 ' + r.n + '回・' + r.kids + '人）</span></div>' +
         '<div class="bar" aria-hidden="true"><i style="width:' + p + '%"></i></div>' +
         trendHTML(r.trend) +
         '<h4>おすすめの練習</h4><ul>' + t.menu.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>' +
@@ -287,71 +354,112 @@ const CoachCore = (function () {
     }).join('');
   }
 
-  function rateCells(r) {
-    if (!r.enough) return '<td class="num"><span class="lack">データ不足</span><small>' + r.n + '回</small></td>';
-    return '<td class="num">' + C.pct(r.rate) + '%<small>' + r.n + '回</small></td>';
+  function rateCell(r) {
+    if (r.status === 'few') return '<td class="num"><span class="lack few">' + C.FEW + '</span></td>';
+    if (r.status === 'lack') return '<td class="num"><span class="lack">データ不足</span><small>' + r.n + '回・' + r.kids + '人</small></td>';
+    return '<td class="num">' + C.pct(r.rate) + '%<small>' + r.n + '回・' + r.kids + '人</small></td>';
   }
   function drawDetail() {
     if (!S.report) { $('tagTable').innerHTML = ''; $('itemTable').innerHTML = '<p class="empty">データを読みこめていません。</p>'; return; }
-    const tags = C.tagRows(S.report, S.band, S.period, D);
-    $('tagTable').innerHTML = tags.length ? '<table><thead><tr><th>考え方</th><th style="text-align:right">正答率・答えた数</th></tr></thead><tbody>' +
-      tags.map(function (r) { return '<tr data-tag="' + esc(r.key) + '"><td class="iname">' + esc(tagName(r.key)) + '</td>' + rateCells(r) + '</tr>'; }).join('') +
-      '</tbody></table>' : '<p class="empty">この期間・学年のデータはまだありません。</p>';
-    const items = C.itemRows(S.report, S.band, S.period);
-    $('itemTable').innerHTML = items.length ? '<table><thead><tr><th>問題</th><th style="text-align:right">正答率・答えた数</th></tr></thead><tbody>' +
+    if (!C.shown(S.report.total)) { $('tagTable').innerHTML = few(); $('itemTable').innerHTML = ''; return; }
+    const head = '<table><thead><tr><th>__</th><th style="text-align:right">正答率・答えた数</th></tr></thead><tbody>';
+    const tags = C.rows(S.report.tags, D.tags, S.f.sort, tagName);
+    $('tagTable').innerHTML = tags.length ? head.replace('__', '考え方') +
+      tags.map(function (r) { return '<tr data-tag="' + esc(r.key) + '"><td class="iname">' + esc(tagName(r.key)) + '</td>' + rateCell(r) + '</tr>'; }).join('') +
+      '</tbody></table>' : '<p class="empty">この条件のデータはまだありません。</p>';
+    const items = C.rows(S.report.items, null, S.f.sort, itemName);
+    $('itemTable').innerHTML = items.length ? head.replace('__', '問題') +
       items.map(function (r) {
         const it = D.items[r.key];
         return '<tr data-item="' + esc(r.key) + '"><td><span class="iname">' + esc(itemName(r.key)) + '</span>' +
           (itemDetail(r.key) ? '<span class="idetail">' + esc(itemDetail(r.key)) + '</span>' : '') +
           (it && it.play ? '<a class="play" target="_blank" rel="noopener" href="' + esc(C.playUrl(it.play)) + '">▶ クイズで見せる</a>' : '') +
-          '</td>' + rateCells(r) + '</tr>';
-      }).join('') + '</tbody></table>' : '<p class="empty">この期間・学年のデータはまだありません。</p>';
+          '</td>' + rateCell(r) + '</tr>';
+      }).join('') + '</tbody></table>' : '<p class="empty">この条件のデータはまだありません。</p>';
   }
 
+  function summary() {
+    return C.yearLabel(S.f.year) + '・' + C.gradeLabel(S.f.grade) + '・' + (S.f.period === 'recent' ? '直近2週間' : '全期間');
+  }
   function drawRules() {
+    $('filterSum').textContent = summary();
     if (!S.report) { $('rules').textContent = ''; return; }
     const rg = S.report.ranges || {};
-    const range = S.period === 'recent' && rg.recent ? '直近2週間（' + rg.recent.from + '〜' + rg.recent.to + '）' : '全期間';
-    $('rules').textContent = range + '・' + { all: '全体', low: '低学年（1〜3年）', high: '高学年（4〜6年）' }[S.band] +
-      'のチーム全体の集計です。2秒未満の答え（' + C.fastCount(S.report, S.band, S.period) + '回）は除いています。答えた数が' + C.MIN_N +
-      '回未満は「データ不足」として、上位3つに入れません。先週との比較は、今日までの7日とその前の7日をくらべています。';
+    const range = S.f.period === 'recent' && rg.recent ? '直近2週間（' + rg.recent.from + '〜' + rg.recent.to + '）' : '全期間';
+    $('rules').textContent = C.yearLabel(S.f.year) + '・' + C.gradeLabel(S.f.grade) + '・' + range + 'のチーム全体の集計です。' +
+      '答えた子が' + C.MIN_KIDS + '人未満の集計は出しません。2秒未満の答え（' + C.fastCount(S.report) + '回）は除いています。' +
+      '答えた数が' + C.MIN_N + '回未満は「データ不足」として、上位3つに入れません。先週との比較は、今日までの7日とその前の7日をくらべています。' +
+      '年度は遊んだ日、学年は遊んだときに入力されていた学年で分けています。';
+  }
+  function drawYears() {
+    const ys = S.years.concat([thisYear]).concat(S.f.year === 'all' ? [] : [S.f.year])
+      .filter(function (y, i, a) { return a.indexOf(y) === i; }).sort(function (a, b) { return b - a; });
+    $('fYear').innerHTML = '<option value="all">全年度</option>' + ys.map(function (y) {
+      return '<option value="' + y + '">' + y + '年度（' + y + '年4月〜' + (y + 1) + '年3月）</option>';
+    }).join('');
+    $('fYear').value = String(S.f.year);
   }
 
   function draw() {
-    document.querySelectorAll('[data-period]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-period') === S.period)); });
-    document.querySelectorAll('[data-band]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-band') === S.band)); });
-    document.querySelectorAll('[data-view]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-view') === S.view)); });
+    const press = function (attr, val) {
+      document.querySelectorAll('[' + attr + ']').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute(attr) === val)); });
+    };
+    press('data-grade', S.f.grade); press('data-period', S.f.period); press('data-sort', S.f.sort); press('data-view', S.view);
+    drawYears();
     $('viewTop').hidden = S.view !== 'top';
     $('viewDetail').hidden = S.view !== 'detail';
     if (S.view === 'top') drawTop(); else drawDetail();
     drawRules();
   }
 
-  function stamp(d) {
-    return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2);
+  function stamp(d) { return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function cacheGet(q) { const c = readJSON(CACHE_KEY); return c && c.items && c.items[q] ? c.items[q] : null; }
+  function cachePut(q, v) {
+    const c = readJSON(CACHE_KEY) || { order: [], items: {} };
+    c.items = c.items || {}; c.order = (c.order || []).filter(function (k) { return k !== q; });
+    c.order.unshift(q); c.items[q] = v;
+    c.order.slice(CACHE_MAX).forEach(function (k) { delete c.items[k]; });
+    c.order = c.order.slice(0, CACHE_MAX);
+    writeJSON(CACHE_KEY, c);
   }
+
   function load() {
+    const q = C.query(S.f);
+    const my = ++S.loading;
     $('status').textContent = '読みこみ中…';
     const ok = typeof GAS_URL === 'string' && /^https:\/\/script\.google\.com\//.test(GAS_URL);
-    const req = ok ? fetch(GAS_URL + '?action=coach').then(function (r) { return r.json(); }) : Promise.reject(new Error('no url'));
+    const req = ok ? fetch(GAS_URL + '?' + q).then(function (r) { return r.json(); }) : Promise.reject(new Error('no url'));
     return Promise.race([req, new Promise(function (res, rej) { setTimeout(function () { rej(new Error('timeout')); }, 15000); })])
       .then(function (j) {
-        if (!j || !j.ok || !j.bands) throw new Error('bad');
-        S.report = j; S.at = stamp(new Date());
-        try { localStorage.setItem(CACHE, JSON.stringify({ at: S.at, report: j })); } catch (e) { /* 保存できなくても 表示は できる */ }
+        if (my !== S.loading) return;
+        if (!j || !j.ok || !j.tags || !j.items) throw new Error('bad');
+        S.report = j; S.at = stamp(new Date()); S.years = j.years || [];
+        cachePut(q, { at: S.at, report: j });
         $('status').textContent = S.at + ' の最新データ';
       })
       .catch(function () {
-        let c = null;
-        try { c = JSON.parse(localStorage.getItem(CACHE) || 'null'); } catch (e) { c = null; }
-        if (c && c.report) { S.report = c.report; S.at = c.at; $('status').textContent = '読みこめませんでした。' + c.at + ' のデータを表示しています'; }
-        else $('status').textContent = '読みこめませんでした。電波のよい所で「更新」を押してください';
+        if (my !== S.loading) return;
+        const c = cacheGet(q);
+        if (c && c.report) { S.report = c.report; S.at = c.at; S.years = c.report.years || []; $('status').textContent = '読みこめませんでした。' + c.at + ' のデータを表示しています'; }
+        else { S.report = null; $('status').textContent = '読みこめませんでした。電波のよい所で「更新」を押してください'; }
       })
-      .then(draw);
+      .then(function () { if (my === S.loading) draw(); });
   }
 
-  document.querySelectorAll('[data-period]').forEach(function (b) { b.onclick = function () { S.period = b.getAttribute('data-period'); draw(); }; });
-  document.querySelectorAll('[data-band]').forEach(function (b) { b.onclick = function () { S.band = b.getAttribute('data-band'); draw(); }; });
+  // 条件を かえたら 保存して 読みなおす（並び替えは 読みなおさない）
+  function setFilter(part) {
+    const next = C.normalizeFilter(Object.assign({}, S.f, part), thisYear);
+    const reload = C.query(next) !== C.query(S.f);
+    S.f = next;
+    writeJSON(FILTER_KEY, S.f);
+    if (reload) { S.report = null; const c = cacheGet(C.query(S.f)); if (c) { S.report = c.report; S.at = c.at; } draw(); load(); }
+    else draw();
+  }
+
+  document.querySelectorAll('[data-grade]').forEach(function (b) { b.onclick = function () { setFilter({ grade: b.getAttribute('data-grade') }); }; });
+  document.querySelectorAll('[data-period]').forEach(function (b) { b.onclick = function () { setFilter({ period: b.getAttribute('data-period') }); }; });
+  document.querySelectorAll('[data-sort]').forEach(function (b) { b.onclick = function () { setFilter({ sort: b.getAttribute('data-sort') }); }; });
+  $('fYear').onchange = function () { setFilter({ year: $('fYear').value === 'all' ? 'all' : Number($('fYear').value) }); };
   document.querySelectorAll('[data-view]').forEach(function (b) { b.onclick = function () { S.view = b.getAttribute('data-view'); window.scrollTo(0, 0); draw(); }; });
   $('btnDetail').onclick = function () { S.view = 'detail'; window.scrollTo(0, 0); draw(); };
   $('btnReload').onclick = load;
