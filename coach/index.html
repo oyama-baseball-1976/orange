@@ -131,8 +131,8 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbyt5yi-R9oXQoF25CdQh9uu
   <p id="status" role="status">読みこみ中…</p>
 </header>
 <main>
-  <details class="filters" id="filters" open>
-    <summary><span>しぼりこみ</span><span class="fsum" id="filterSum"></span></summary>
+  <details class="filters" id="filters">
+    <summary><span>しぼりこみ ▾</span><span class="fsum" id="filterSum"></span></summary>
     <div class="field">
       <label class="seg-label" for="fYear">年度（4月〜翌年3月）</label>
       <select id="fYear"></select>
@@ -395,7 +395,7 @@ const CoachCore = (function () {
     const ys = S.years.concat([thisYear]).concat(S.f.year === 'all' ? [] : [S.f.year])
       .filter(function (y, i, a) { return a.indexOf(y) === i; }).sort(function (a, b) { return b - a; });
     $('fYear').innerHTML = '<option value="all">全年度</option>' + ys.map(function (y) {
-      return '<option value="' + y + '">' + y + '年度（' + y + '年4月〜' + (y + 1) + '年3月）</option>';
+      return '<option value="' + y + '">' + y + '年度</option>';
     }).join('');
     $('fYear').value = String(S.f.year);
   }
