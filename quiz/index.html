@@ -357,6 +357,8 @@ ruby rt { font-size: 12px; }
 .pf-pick small { display: block; font-size: 14px; color: var(--muted); font-weight: 800; }
 .pf-del { flex: 0 0 auto; min-width: 64px; min-height: 60px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); color: var(--red); font-family: inherit; font-size: 16px; font-weight: 900; }
 .pf-sub { font-size: 17px; font-weight: 900; margin: 4px 0 8px; }
+.rk-help { margin: 10px 0 4px; padding-left: 1.2em; font-size: 15px; font-weight: 700; color: var(--muted); line-height: 1.55; }
+.rk-help li { margin: 2px 0; }
 .gc-grades { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 10px 0 0; }
 .gc-grades .btn { margin: 0; min-height: 56px; padding: 6px 4px; font-size: 17px; }
 .mini-btn { min-height: 40px; padding: 4px 12px; border-radius: 999px; border: 2px solid var(--line); background: var(--card); font-size: 15px; font-weight: 800; }
@@ -364,6 +366,7 @@ ruby rt { font-size: 12px; }
 @media (prefers-color-scheme: dark) { .bucket-tag { color: var(--blue); } }
 .q-tools { display: flex; flex-wrap: wrap; gap: 8px; }
 .preview-btn { border-color: var(--orange); color: var(--orange-dark); }
+.pl-zone { font-size: 12px; font-weight: 900; fill: #fff; paint-order: stroke; stroke: #14381c; stroke-width: 3px; }
 @media (prefers-color-scheme: dark) { .preview-btn { color: var(--orange); } }
 /* アウトの ランプを めだたせる（アウトの かずで こたえが かわる 問題） */
 .pl-bso.focus-o .bso-row[data-k="o"] .bso-hl { fill: rgba(255, 77, 77, .22); stroke: #ff4d4d; stroke-width: 1.6; animation: oGlow 1.2s ease-in-out infinite alternate; }
@@ -625,9 +628,13 @@ ruby rt { font-size: 12px; }
     <div class="card">
       <p class="sec-title">🏆 ランキング</p>
       <div class="tabs">
-        <button class="tab on" id="rkTabMastered" aria-pressed="true">🧠 おぼえた かず</button>
-        <button class="tab" id="rkTabCorrect" aria-pressed="false">⭕ せいかいの かず</button>
+        <button class="tab on" id="rkTabCorrect" aria-pressed="true">⭕ せいかいの かず</button>
+        <button class="tab" id="rkTabMastered" aria-pressed="false">🧠 おぼえた かず</button>
       </div>
+      <ul class="rk-help" id="rkHelp">
+        <li>⭕ せいかいの かず：これまでに せいかいした かず</li>
+        <li>🧠 おぼえた かず：おなじ もんだいに 3かい つづけて せいかいすると「おぼえた」に なるよ。まちがえると、また はじめから。</li>
+      </ul>
       <div id="rankList"></div>
     </div>
   </section>
@@ -809,7 +816,17 @@ const Core = (function () {
       choices: OX, answer: 0,
       explain: 'じめんに ついた ボールを みおくったら ボール。でも、ふったら ストライクに なるよ。',
       card: { name: 'ワンバウンド', icon: '🏀', point: 'バウンドした ボールは みおくれば ボール' },
-      rule: '定義「ボール」'
+      rule: '定義「ボール」',
+      scene: {
+        bso: { b: 1, s: 1, o: 0 },
+        runners: [0], fielders: ['p', 'c'], steps: [
+        { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: [160, 204], d: 380 },
+        { t: 380, type: 'ball', kind: 'throw', to: 'c', d: 260, h: 7 },
+        { t: 380, type: 'label', text: 'ワンバウンド！', at: [160, 196], tone: 'info', d: 400 },
+        { t: 640, type: 'sfx', name: 'catch' },
+        { t: 900, type: 'bso', b: 2, s: 1 },
+        { t: 900, type: 'label', text: 'ボール！', at: 'H', tone: 'info' }
+      ] }
     },
     {
       id: 's1-07', stage: 1, type: 'choice',
@@ -817,7 +834,18 @@ const Core = (function () {
       choices: ['さんしんで アウト', 'ファールで そのまま', 'ボール'], answer: 0,
       explain: 'ファールチップは ストライク。2ストライクからなら さんしんで アウト。キャッチャーが おとしたら、ただの ファールだよ。',
       card: { name: 'ファールチップ', icon: '🧤', point: 'かすって そのまま とったら ストライク' },
-      rule: '定義「ファウルチップ」、5.09(a)(2)'
+      rule: '定義「ファウルチップ」、5.09(a)(2)',
+      scene: {
+        bso: { b: 1, s: 2, o: 0 },
+        runners: [0], fielders: ['p', 'c'], steps: [
+        { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: 'H', d: 420 },
+        { t: 420, type: 'sfx', name: 'bat' },
+        { t: 420, type: 'ball', kind: 'liner', to: 'c', d: 140 },
+        { t: 420, type: 'label', text: 'かすった！', at: [160, 200], tone: 'info', d: 380 },
+        { t: 560, type: 'sfx', name: 'catch' },
+        { t: 900, type: 'out', who: 0 },
+        { t: 900, type: 'label', text: 'さんしん！ アウト', at: 'H', tone: 'out' }
+      ] }
     },
     {
       id: 's1-08', stage: 1, type: 'choice',
@@ -870,7 +898,20 @@ const Core = (function () {
       choices: ['フェア', 'ファール', 'やりなおし'], answer: 0,
       explain: 'ファーストや サードの ベースに あたった ボールは フェア。ベースは フェアの なかまだよ。',
       card: { name: 'ベースに あたる', icon: '💎', point: 'ベースに あたれば フェア' },
-      rule: '定義「フェアボール」'
+      rule: '定義「フェアボール」',
+      scene: {
+        bso: { b: 0, s: 0, o: 0 }, lines: 'R',
+        runners: [0], fielders: ['p'], steps: [
+        { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: 'H', d: 400 },
+        { t: 400, type: 'sfx', name: 'bat' },
+        { t: 400, type: 'ball', kind: 'grounder', from: 'H', to: [214, 180], d: 350 },
+        { t: 750, type: 'ball', kind: 'roll', to: 'b1', d: 250 },
+        { t: 1000, type: 'ball', kind: 'throw', to: [304, 188], d: 600, h: 10 },
+        { t: 1600, type: 'ball', kind: 'roll', to: [312, 198], d: 400 },
+        { t: 450, type: 'run', who: 0, to: 0.6, d: 1550 },
+        { t: 2100, type: 'label', text: 'ベースに あたったら フェア！', at: 'b1', tone: 'safe', d: 1300 },
+        { t: 2000, type: 'run', who: 0, to: 1, d: 700 }
+      ] }
     },
     {
       id: 's2-02', stage: 2, type: 'ox',
@@ -878,7 +919,19 @@ const Core = (function () {
       choices: OX, answer: 0,
       explain: 'ベースより とおくでは、おちた ところで きまる。しろい ラインの うえは フェアの なかまだよ。（ベースより てまえは、とまった ところで きまる）',
       card: { name: 'ラインの うえ', icon: '📏', point: 'ベースより とおくで ラインの うえに おちたら フェア' },
-      rule: '定義「フェアボール」'
+      rule: '定義「フェアボール」',
+      scene: {
+        bso: { b: 0, s: 0, o: 0 }, lines: 'R',
+        runners: [0], fielders: ['p', 'rf'], steps: [
+        { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: 'H', d: 400 },
+        { t: 400, type: 'sfx', name: 'bat' },
+        { t: 400, type: 'ball', kind: 'fly', from: 'H', to: [290, 133.5], d: 1000, h: 60 },
+        { t: 1400, type: 'ball', kind: 'throw', to: [306, 122.6], d: 450, h: 8 },
+        { t: 700, type: 'field', who: 'rf', to: [270, 114], d: 1100 },
+        { t: 450, type: 'run', who: 0, to: 0.7, d: 1400 },
+        { t: 1950, type: 'label', text: 'ラインの うえは フェア！', at: [276, 160], tone: 'safe', d: 1300 },
+        { t: 1850, type: 'run', who: 0, to: 1, d: 600 }
+      ] }
     },
     {
       id: 's2-03', stage: 2, type: 'choice',
@@ -886,7 +939,19 @@ const Core = (function () {
       choices: ['ファール', 'フェア', 'ホームラン'], answer: 0,
       explain: 'ファーストや サードの ベースより てまえ（ホームがわ）では、ボールが とまった ところ、または やしゅが さわった ところで きまる。ファールゾーンで とまったら ファールだよ。',
       card: { name: 'ころがる ゴロ', icon: '🌀', point: 'ベースの てまえは とまった ところで きまる' },
-      rule: '定義「ファウルボール」'
+      rule: '定義「ファウルボール」',
+      scene: {
+        bso: { b: 0, s: 0, o: 0 }, lines: 'R',
+        runners: [0], fielders: ['p'], steps: [
+        { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: 'H', d: 400 },
+        { t: 400, type: 'sfx', name: 'bat' },
+        { t: 400, type: 'ball', kind: 'grounder', from: 'H', to: [212, 177], d: 600 },
+        { t: 1000, type: 'ball', kind: 'roll', to: [240, 183], d: 900 },
+        { t: 450, type: 'run', who: 0, to: 0.45, d: 1450 },
+        { t: 2050, type: 'bso', b: 0, s: 1 },
+        { t: 2050, type: 'label', text: 'ファール！', at: 'mid', tone: 'info', d: 1400 },
+        { t: 2050, type: 'run', who: 0, to: 0, d: 700 }
+      ] }
     },
     {
       id: 's2-04', stage: 2, type: 'choice',
@@ -2291,8 +2356,9 @@ const Core = (function () {
   // こたえる まえの「さいせい」で みせて よい ところ（ミリ秒）。こたえが わかる ところ（けっかの もじ・うごき）の てまえで とめる。
   // ない 問題は、アニメ そのものが こたえに なるので さいせいしない
   const PREVIEW_OF = {
+    's1-06': 800, 's1-07': 800, 's2-01': 2000, 's2-02': 1850, 's2-03': 1950,
     's1-08': 480, 's1-09': 550, 's2-04': 1600, 's2-06': 1350, 's2-07': 450, 's2-08': 1300, 's2-09': 1500,
-    's3-01': 600, 's3-02': 600, 's3-04': 1000, 's3-05': 950, 's3-06': 700, 's3-07': 1000, 's3-08': 550, 's3-10': 1000,
+    's3-01': 600, 's3-02': 600, 's3-03': 1100, 's3-04': 1000, 's3-05': 950, 's3-06': 700, 's3-07': 1000, 's3-08': 550, 's3-10': 1000,
     's4-02': 1200, 's4-03': 1290, 's4-05': 1100, 's4-06': 1150, 's4-07': 1150, 's4-08': 450
   };
   QUESTIONS.forEach(function (q) {
@@ -3978,6 +4044,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
         '<path d="M152 218 h16 v5 l-8 6 l-8 -6 z" fill="#fff" stroke="#2b2b2b" stroke-width="1"/>';
     }
 
+    // フェアと ファールの 問題：ファールラインを ふとく して、りょうがわに ゾーンの なまえを だす（どちらにも おなじ ように だすので こたえは わからない）
+    function linesSVG(lines) {
+      if (lines !== 'R') return '';
+      return '<g class="pl-lines" aria-hidden="true">' +
+        '<path d="M160 222 L340 100" stroke="#14381c" stroke-width="7" stroke-linecap="round"/>' +
+        '<path d="M160 222 L340 100" stroke="#fff" stroke-width="4" stroke-linecap="round"/>' +
+        '<text class="pl-zone" x="212" y="88" text-anchor="middle">フェアゾーン</text>' +
+        '<text class="pl-zone" x="282" y="214" text-anchor="middle">ファールゾーン</text>' +
+        '</g>';
+    }
+
     // スコアボード：うえから B（みどり）・S（きいろ）・O（あか）。球場と おなじ ならびと いろ
     const BSO_ROWS = [['b', 'B', 3, '#35d46a'], ['s', 'S', 2, '#ffd23f'], ['o', 'O', 2, '#ff4d4d']];
     const LAMP_OFF = '#3b4654';
@@ -4007,7 +4084,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
 
     function mount(box, scene, opts) {
       opts = opts || {};
-      let html = '<svg viewBox="0 0 320 250" xmlns="' + NS + '" class="play-svg" role="img" aria-label="ダイヤモンドの ようす">' + fieldSVG();
+      let html = '<svg viewBox="0 0 320 250" xmlns="' + NS + '" class="play-svg" role="img" aria-label="ダイヤモンドの ようす">' + fieldSVG() + linesSVG(scene.lines);
       html += '<g class="pl-marks"></g>';
       (scene.fielders || []).forEach(function (f) { html += '<g class="pl-fielder" data-f="' + f + '">' + figure('fielder') + '</g>'; });
       (scene.runners || []).forEach(function (r) { html += '<g class="pl-runner" data-r="' + r + '">' + figure('runner') + '</g>'; });
@@ -4588,8 +4665,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   }
 
   /* ---------- ランキング（せいかいの かず ・ おぼえた かず） ---------- */
-  let rankRows = null, rankBy = 'mastered';
+  let rankRows = null, rankBy = 'correct';
   function renderRanking() {
+    rankBy = 'correct';   // ひらいた ときは いつも「せいかいの かず」から
     show('scr-rank');
     drawRanking('よみこみちゅう…');
     Net.get({ action: 'ranking', level: 'beta' }).then(function (j) {
