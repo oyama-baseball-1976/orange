@@ -357,6 +357,8 @@ ruby rt { font-size: 12px; }
 .pf-pick small { display: block; font-size: 14px; color: var(--muted); font-weight: 800; }
 .pf-del { flex: 0 0 auto; min-width: 64px; min-height: 60px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); color: var(--red); font-family: inherit; font-size: 16px; font-weight: 900; }
 .pf-sub { font-size: 17px; font-weight: 900; margin: 4px 0 8px; }
+.gc-grades { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 10px 0 0; }
+.gc-grades .btn { margin: 0; min-height: 56px; padding: 6px 4px; font-size: 17px; }
 .mini-btn { min-height: 40px; padding: 4px 12px; border-radius: 999px; border: 2px solid var(--line); background: var(--card); font-size: 15px; font-weight: 800; }
 .bucket-tag { font-size: 14px; font-weight: 900; color: var(--blue-dark); min-height: 22px; }
 @media (prefers-color-scheme: dark) { .bucket-tag { color: var(--blue); } }
@@ -669,6 +671,19 @@ ruby rt { font-size: 12px; }
 </div>
 
 <!-- ===== きろくを けす かくにん ===== -->
+<div class="modal" id="gradeModal" hidden role="dialog" aria-modal="true" aria-labelledby="gcTitle">
+  <div class="modal-box plain">
+    <p class="sec-title" id="gcTitle"></p>
+    <div class="btn-row" id="gcAsk">
+      <button class="btn primary" id="gcYes">なった</button>
+      <button class="btn" id="gcNo">ちがう</button>
+    </div>
+    <div id="gcPick" hidden>
+      <p class="pf-sub" id="gcPickText">いまの がくねんを えらんでね</p>
+      <div class="gc-grades" id="gcGrades"></div>
+    </div>
+  </div>
+</div>
 <div class="modal" id="delModal" hidden role="dialog" aria-modal="true" aria-labelledby="delTitle">
   <div class="modal-box plain">
     <p class="sec-title" id="delTitle"></p>
@@ -3084,7 +3099,7 @@ const Core = (function () {
   function emptyProgress() {
     return {
       v: 2, stages: {}, srs: {}, cards: {}, days: [], rounds: 0, recent: [],
-      stats: { correct: 0, answers: 0 }, updated: '', sound: true, profile: null, outbox: []
+      stats: { correct: 0, answers: 0 }, updated: '', sound: true, profile: null, outbox: [], gradeYear: null
     };
   }
 
@@ -3148,6 +3163,7 @@ const Core = (function () {
       const pr = cleanProfile(raw.profile.nickname, raw.profile.grade);
       if (pr.ok) p.profile = { nickname: pr.nickname, grade: pr.grade };
     }
+    if (isInt(raw.gradeYear) && raw.gradeYear >= 2000 && raw.gradeYear <= 2100) p.gradeYear = raw.gradeYear;
     if (Array.isArray(raw.outbox)) {
       p.outbox = raw.outbox.filter(function (x) { return x && typeof x === 'object' && x.type === 'session'; }).slice(-10);
     }
@@ -3286,8 +3302,28 @@ const Core = (function () {
   // GAS から うけとった 記録を、その 子の 記録に あわせる（端末だけの 設定は のこす）
   function mergeRemote(p, remote) {
     const m = mergeProgress(p, remote);
-    m.sound = p.sound; m.profile = p.profile; m.outbox = p.outbox.slice();
+    m.sound = p.sound; m.profile = p.profile; m.outbox = p.outbox.slice(); m.gradeYear = p.gradeYear;
     return m;
+  }
+
+  /* ---------- 新しい 年度の 学年の かくにん ----------
+     gradeYear：その 名前で 学年を たしかめた（入れた）年度。名前ごとの 記録に もつので、きょうだいでも べつべつ。
+     gradeYear が ない ふるい 記録は、さいごに 遊んだ 日の 年度で かわりに する */
+  function gradeBaseYear(p) {
+    if (isInt(p.gradeYear)) return p.gradeYear;
+    const last = p.days.length ? p.days[p.days.length - 1] : '';
+    return last ? fiscalYear(last) : null;
+  }
+  // 新しい 年度に なってから はじめて 遊ぶ ときだけ true（名前なし・まだ 遊んで いない 名前は たしかめない）
+  function needsGradeCheck(p, today) {
+    if (!p || !p.profile) return false;
+    const base = gradeBaseYear(p);
+    return base !== null && base < fiscalYear(today);
+  }
+  // 学年を きめた（なった／えらびなおした／名前の 画面で 入れた）。この 年度は もう きかない
+  function setGrade(p, grade, today) {
+    if (p.profile && grade >= 1 && grade <= 6) p.profile.grade = grade;
+    p.gradeYear = fiscalYear(today);
   }
 
   /* ---------- 習熟 ---------- */
@@ -3664,6 +3700,7 @@ const Core = (function () {
     dateStr: dateStr, addDays: addDays, fiscalYear: fiscalYear, streak: streak, lastDays: lastDays,
     PLAYERS_KEY: PLAYERS_KEY, emptyPlayers: emptyPlayers, sanitizePlayers: sanitizePlayers, playerKey: playerKey, listPlayers: listPlayers,
     switchPlayer: switchPlayer, removePlayer: removePlayer, mergeRemote: mergeRemote,
+    needsGradeCheck: needsGradeCheck, setGrade: setGrade,
     emptyProgress: emptyProgress, sanitize: sanitize, cleanProfile: cleanProfile, syncPart: syncPart, mergeProgress: mergeProgress,
     srsOf: srsOf, isMastered: isMastered, masteredCount: masteredCount, applyAnswer: applyAnswer,
     recentAccuracy: recentAccuracy, planMix: planMix,
@@ -4509,13 +4546,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     $('pfErrNick').hidden = !pr.errors.nickname; $('pfErrNick').textContent = pr.errors.nickname || '';
     $('pfErrGrade').hidden = !pr.errors.grade; $('pfErrGrade').textContent = pr.errors.grade || '';
     if (!pr.ok) return;
-    switchTo({ nickname: pr.nickname, grade: pr.grade });
+    switchTo({ nickname: pr.nickname, grade: pr.grade }, true);
   }
 
   // 名前を きりかえる：いまの 子の 記録を あずけて、えらんだ 子の 記録を だす。その 名前の GAS の 記録が あれば よみこむ
-  function switchTo(target) {
+  function switchTo(target, typed) {
     const r = Core.switchPlayer(P, PS, target);
     P = r.active; PS = r.store;
+    if (typed) Core.setGrade(P, target.grade, today());
     Store.save(P); Players.save(PS);
     syncState = 'local';
     try { localStorage.setItem(Core.STORAGE_KEY + '_asked', '1'); } catch (e) { /* なにもしない */ }
@@ -4593,7 +4631,34 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     return '💪 にがて チャレンジ';
   }
 
+  // 新しい 年度に なって はじめて 遊ぶ ときは、学年を たしかめてから はじめる
+  function askGrade(then) {
+    const g = P.profile.grade;
+    const done = function (grade) {
+      Core.setGrade(P, grade, today());
+      Store.save(P);
+      $('gradeModal').hidden = true;
+      toast(grade + 'ねんせいで あそぶよ');
+      then();
+    };
+    $('gcTitle').textContent = g < 6 ? '4がつに なったよ。がくねんは ' + (g + 1) + 'ねんせいに なった？' : '4がつに なったよ。いまの がくねんを えらんでね';
+    $('gcAsk').hidden = g >= 6;
+    $('gcPick').hidden = g < 6;
+    $('gcPickText').hidden = g >= 6;
+    let html = '';
+    for (let k = 1; k <= 6; k++) html += '<button class="btn' + (k === g ? ' primary' : '') + '" data-grade="' + k + '">' + k + 'ねんせい</button>';
+    $('gcGrades').innerHTML = html;
+    Array.prototype.forEach.call($('gcGrades').querySelectorAll('button'), function (b) {
+      b.onclick = function () { Sound.tap(); done(+b.getAttribute('data-grade')); };
+    });
+    $('gcYes').onclick = function () { Sound.tap(); done(g + 1); };
+    $('gcNo').onclick = function () { Sound.tap(); $('gcAsk').hidden = true; $('gcPick').hidden = false; $('gcPickText').hidden = false; };
+    $('gradeModal').hidden = false;
+    (g < 6 ? $('gcYes') : $('gcGrades').querySelector('button')).focus();
+  }
+
   function startRound(mode) {
+    if (Core.needsGradeCheck(P, today())) { askGrade(function () { renderHome(); startRound(mode); }); return; }
     Sound.ensure();
     const list = Core.buildRound(P, mode, today());
     if (!list.length) { renderHome(); return; }
