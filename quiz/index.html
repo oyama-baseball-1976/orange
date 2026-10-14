@@ -2411,6 +2411,69 @@ const Core = (function () {
   }
   function uniq(list) { return list.filter(function (x, i) { return list.indexOf(x) === i; }); }
 
+  /* ---------- ランナーの はんだん：2だんかい（runner-decision の g2 → g2t） ----------
+     1だんかいめ（ツーアウト みまんで セカンドの ランナー、ショートか サードを まもる ひとへの ゴロ）は、
+     やしゅが ゴロを とって ファーストへ なげる しゅんかん（G2_STOP）で とまる。2だんかいめは その ようすから はじめる */
+  const G2_STOP = 900;            // 1だんかいめの アニメの おわり（ランナーが ベースに もどり、やしゅが なげる しゅんかん）
+  const G2_BATTER = 0.5;          // その とき バッターは ホームから ファーストへの まんなか
+  const G2_GLOVE = { ss: [112, 111], '3b': [84, 134] };   // ゴロを とった やしゅの いち（ランナーが サードへ はしる みちから はなれた ところ）
+  const G2_COVER = [62, 150];     // サードの ベースに はいる 人が たつ ところ（ベースの すぐ よこ。ランナーと かさならない）
+  const G2_PREVIEW = 150;
+  const G2_FIELDERS = ['ss', '3b', '1b', 'c'];   // 1だんかいめと 2だんかいめで おなじ 人を だす         // 2だんかいめの さいせい：ボールが やしゅの 手を はなれる ところまで
+  // 2だんかいめ（g2t）の 問題。scene は どの こたえでも おなじ はじめ、outcome[えらんだ こたえ] が けっか
+  function throwStep2(s, rng) {
+    const OW = OUTS_WORD[s.outs];
+    const who = POS_NAME[s.ball];
+    const q = 'きみは セカンドの ランナー（ランナーは きみ だけ）。' + OW + '。' + who + 'が ゴロを とって、ファーストに なげた！ きみは どう する？';
+    const explain = 'ボールが ファーストへ いって いる あいだに、サードへ はしる。なげた しゅんかんに スタートすれば、まにあう ことが おおい。' +
+      'ベースに いても アウトには ならないけど、すすめる チャンスを のがす。ホームまでは とおくて アウトに なりやすい。' +
+      '（なげたら すすむ かどうかは、チームの やくそくで かわる ことが あるよ）';
+    const glove = G2_GLOVE[s.ball];
+    const base = [
+      // はじめの ようす（1だんかいめの おわりと おなじ）
+      { t: 0, type: 'run', who: 0, to: G2_BATTER, d: 1 },
+      { t: 0, type: 'field', who: s.ball, to: glove, d: 1 },
+      { t: 0, type: 'ball', kind: 'carry', to: s.ball, d: 1 },
+      // ファーストへ なげる → バッター アウト
+      { t: 10, type: 'ball', kind: 'throw', from: s.ball, to: '1b', d: 550 },
+      { t: 10, type: 'run', who: 0, to: 1, d: 760 },
+      { t: 560, type: 'sfx', name: 'catch' },
+      { t: 560, type: 'out', who: 0 },
+      { t: 560, type: 'label', text: 'バッター アウト', at: 'b1', tone: 'out', d: 440 }
+    ];
+    // サードの ベースに はいる 人：ショートの ゴロなら サードを まもる ひと、サードの ゴロなら なげた あと もどる
+    if (s.ball === 'ss') base.push({ t: 10, type: 'field', who: '3b', to: G2_COVER, d: 500 });
+    else base.push({ t: 200, type: 'field', who: '3b', to: G2_COVER, d: 450 });
+    const outcome = [
+      // サードへ はしる（ただしい）：なげた しゅんかんに スタート。ファーストからの なげかえしより さきに つく
+      [{ t: G2_PREVIEW, type: 'run', who: 2, to: 3, d: 850 },
+        { t: 620, type: 'ball', kind: 'throw', from: '1b', to: '3b', d: 750, h: 18 },
+        { t: 1020, type: 'label', text: 'サードへ すすめた！', at: 'b3', tone: 'safe', d: 1200 },
+        { t: 1370, type: 'sfx', name: 'catch' },
+        { t: 1400, type: 'label', text: 'まにあわない', at: [96, 186], tone: 'info', d: 800 }],
+      // ベースに いる：アウトには ならないが、すすめなかった
+      [{ t: G2_PREVIEW, type: 'run', who: 2, to: 2.1, d: 250 },
+        { t: 400, type: 'run', who: 2, to: 2, d: 250 },
+        { t: 1050, type: 'label', text: 'サードへ いけたのに…', at: 'b3', tone: 'info', d: 1300 },
+        { t: 1050, type: 'label', text: 'セカンドの まま', at: 'b2', tone: 'safe', d: 1300 }],
+      // ホームへ はしる：ファーストから ホームへ なげられて、ホームの てまえで タッチアウト
+      [{ t: G2_PREVIEW, type: 'run', who: 2, to: 3, d: 850 },
+        { t: 1000, type: 'run', who: 2, to: 3.82, d: 800 },
+        { t: 620, type: 'ball', kind: 'throw', from: '1b', to: 'c', d: 650, h: 16 },
+        { t: 1270, type: 'sfx', name: 'catch' },
+        { t: 1500, type: 'field', who: 'c', to: [138, 210], d: 300 },
+        { t: 1500, type: 'ball', kind: 'carry', to: 'c', d: 300 },
+        { t: 1800, type: 'out', who: 2 },
+        { t: 1800, type: 'label', text: 'ホームで アウト', at: 'H', tone: 'out' }]
+    ];
+    return {
+      type: 'choice', q: q, choices: ['サードへ はしる', 'ベースに いる', 'ホームへ はしる'], answerIds: ['third', 'stay', 'home'], answer: 0, explain: explain,
+      bso: { b: rngInt(rng, 4), s: rngInt(rng, 3), o: s.outs },
+      scene: { runners: [2, 0], fielders: G2_FIELDERS.slice(), youRunner: 2, steps: base },
+      outcome: outcome, preview: G2_PREVIEW, step2: true
+    };
+  }
+
   const TEMPLATES = [
 
     /* ===== ふりにげ（公開版：dropped-third-strike） ===== */
@@ -2784,6 +2847,8 @@ const Core = (function () {
        ・フライ（ファーストの ランナー）：ツーアウトは すぐ はしる、ツーアウト みまんは とちゅうで まつ
        ・ゴロで つぎの ベースが あいていない（フォース）：アウトの かずに かかわらず はしる
        ・セカンドの ランナーだけで、じぶんより まえ（ショート・サード）の ゴロ：ツーアウトは はしる、ツーアウト みまんは ベースに もどる
+         ツーアウト みまんは 2だんかい：こたえたら、やしゅが ゴロを とって ファーストへ なげる しゅんかんまで うごかし、
+         2だんかいめ（g2t：「なげた！ どう する？」→ サードへ はしる）を つづけて きく。2だんかいめは べつの 型（覚える 単位）
        タッチアップ（サードの ランナーと ふかい フライ）は tag-up で あつかう */
     {
       id: 'runner-decision', stage: 3, type: 'choice', tags: ['baserun', 'outs'],
@@ -2803,15 +2868,22 @@ const Core = (function () {
             out.push({ pattern: 'g2-o' + outs, situation: { runners: [2], outs: outs, target: 2, ball: ball, kind: 'grounder2' } });
           });
         });
+        // 2だんかいめ（ツーアウト みまんだけ）：やしゅが ファーストへ なげた しゅんかんの はんだん
+        [0, 1].forEach(function (outs) {
+          ['3b', 'ss'].forEach(function (ball) {
+            out.push({ pattern: 'g2t-o' + outs, situation: { runners: [2], outs: outs, target: 2, ball: ball, kind: 'throw2' } });
+          });
+        });
         return out;
       },
       build: function (sit, rng) {
         const s = sit.situation;
+        if (s.kind === 'throw2') return throwStep2(s, rng);   // 2だんかいめ
         const two = s.outs === 2;
         const OW = OUTS_WORD[s.outs];
         let q, answer, explain;
         const steps = [{ t: 0, type: 'sfx', name: 'bat' }];
-        const fielders = [s.ball, '1b', 'ss'];
+        const fielders = s.kind === 'grounder2' && !two ? G2_FIELDERS.slice() : [s.ball, '1b', 'ss'];
         if (s.kind === 'fly') {
           q = 'きみは ファーストの ランナー（ランナーは きみ だけ）。' + OW + '。バッターが ' + POS_NAME[s.ball] + 'に たかい フライを うちあげた！ どう する？';
           answer = two ? 0 : 1;
@@ -2868,23 +2940,30 @@ const Core = (function () {
             : 'まだ ' + OW + '。ファーストに ランナーが いないので、きみは バッターに おしだされない（フォースでは ない）。すすまなくても いい。ショートや サードの ほうの ゴロで すぐ はしると、サードで タッチされて アウトに なりやすいので、うった しゅんかんは ベースに もどる。';
           steps.push({ t: 0, type: 'ball', kind: 'grounder', from: 'H', to: s.ball, d: 600 });
           steps.push({ t: 600, type: 'sfx', name: 'catch' });
-          steps.push({ t: 100, type: 'run', who: 0, to: 1, d: 1500 });
           if (two) {
+            steps.push({ t: 100, type: 'run', who: 0, to: 1, d: 1500 });
             // やしゅが なげた あとに、やしゅの よこを とおる
             steps.push({ t: 300, type: 'run', who: 2, to: 3, d: 1500 });
+            steps.push({ t: 610, type: 'ball', kind: 'throw', from: s.ball, to: '1b', d: 550 });
+            steps.push({ t: 1160, type: 'sfx', name: 'catch' });
+            steps.push({ t: 1160, type: 'out', who: 0 });
+            steps.push({ t: 1160, type: 'label', text: 'バッター アウト', at: 'b1', tone: 'out' });
           } else {
+            // 2だんかい：ランナーは ベースに もどり、やしゅが ゴロを とって ファーストへ なげる しゅんかん（G2_STOP）で とまる。
+            // こたえを まちがえても、ただしい うごき（もどる）を みせてから 2だんかいめへ
+            steps.push({ t: 100, type: 'run', who: 0, to: G2_BATTER, d: G2_STOP - 100 });
             steps.push({ t: 300, type: 'run', who: 2, to: 2.15, d: 200 });
             steps.push({ t: 500, type: 'run', who: 2, to: 2, d: 300 });
+            steps.push({ t: 600, type: 'field', who: s.ball, to: G2_GLOVE[s.ball], d: G2_STOP - 600 });
+            steps.push({ t: 600, type: 'ball', kind: 'carry', to: s.ball, d: G2_STOP - 600 });
+            steps.push({ t: 820, type: 'label', text: 'もどった！', at: [160, 180], tone: 'safe', d: 700 });
           }
-          steps.push({ t: 610, type: 'ball', kind: 'throw', from: s.ball, to: '1b', d: 550 });
-          steps.push({ t: 1160, type: 'sfx', name: 'catch' });
-          steps.push({ t: 1160, type: 'out', who: 0 });
-          steps.push({ t: 1160, type: 'label', text: 'バッター アウト', at: 'b1', tone: 'out' });
         }
         return {
           type: 'choice', q: q, choices: ['すぐ はしる', 'とちゅうで まつ', 'ベースに もどる'], answerIds: ['go', 'half', 'back'], answer: answer, explain: explain,
           bso: { b: rngInt(rng, 4), s: rngInt(rng, 3), o: s.outs },
-          scene: { runners: s.runners.concat([0]), fielders: uniq(fielders), youRunner: s.target, steps: steps }, preview: 300
+          scene: { runners: s.runners.concat([0]), fielders: uniq(fielders), youRunner: s.target, steps: steps }, preview: 300,
+          follow: s.kind === 'grounder2' && !two ? 'g2t-o' + s.outs : undefined
         };
       }
     },
@@ -3004,6 +3083,9 @@ const Core = (function () {
       explain: b.explain, card: t.card, cardId: t.id, rule: t.rule, tags: t.tags, situation: ordered, preview: b.preview
     };
     if (b.spots) q.spots = b.spots;
+    if (b.follow) q.follow = t.id + ':' + b.follow;   // 1だんかいめ：つづけて きく 2だんかいめの 型
+    if (b.outcome) q.outcome = b.outcome;              // こたえで かわる けっかの アニメ（2だんかいめ）
+    if (b.step2) q.step2 = true;
     q.scene = b.scene;
     // スコアボードは situation の bso と おなじ ものを みせる
     q.scene.bso = { b: b.bso.b, s: b.bso.s, o: b.bso.o };
@@ -3029,11 +3111,46 @@ const Core = (function () {
     rng = rng || Math.random;
     key = String(key || '');
     if (!/^[a-z0-9-]+(:[a-z0-9-]+)?$/.test(key)) return null;
+    let q;
     if (key.indexOf(':') < 0 && TEMPLATE_BY_ID[key]) {
       const t = TEMPLATE_BY_ID[key];
-      return templateQuestion(t, t.situations[rngInt(rng, t.situations.length)], rng);
-    }
-    return questionFor(key, rng);
+      q = templateQuestion(t, t.situations[rngInt(rng, t.situations.length)], rng);
+    } else q = questionFor(key, rng);
+    // 2だんかいめだけは ひらかない（1だんかいめから はじめる）
+    return q && q.step2 ? parentQuestion(q, rng) : q;
+  }
+
+  /* ---------- 2だんかいの 問題（1だんかいめ q.follow → 2だんかいめ q.step2） ---------- */
+  // 1だんかいめに つづく 2だんかいめ（おなじ ボールの いき先・おなじ アウトの かず）
+  function followQuestion(q1, rng) {
+    if (!q1 || !q1.follow) return null;
+    const t = TEMPLATE_BY_ID[q1.itemId];
+    const pattern = q1.follow.slice(q1.follow.indexOf(':') + 1);
+    const sit = t.situations.filter(function (x) {
+      return x.pattern === pattern && x.situation.ball === q1.situation.ball && x.situation.outs === q1.situation.outs;
+    })[0];
+    if (!sit) return null;
+    const q2 = templateQuestion(t, sit, rng);
+    // スコアボードは 1だんかいめの おわりと おなじ（うって ボールが とんだので カウントは 0-0。アウトの かずは おなじ）
+    const board = bsoAt(q1.scene, sceneDuration(q1.scene));
+    q2.situation.bso = { b: board.b, s: board.s, o: board.o };
+    q2.scene.bso = { b: board.b, s: board.s, o: board.o };
+    return q2;
+  }
+  // 2だんかいめの まえの 1だんかいめ
+  function parentQuestion(q2, rng) {
+    const t = TEMPLATE_BY_ID[q2.itemId];
+    const sit = t.situations.filter(function (x) {
+      return x.situation.kind === 'grounder2' && x.situation.ball === q2.situation.ball && x.situation.outs === q2.situation.outs;
+    })[0];
+    return sit ? templateQuestion(t, sit, rng) : null;
+  }
+  // こたえで かわる けっかの アニメ（outcome が ある 問題）。ない 問題は q.scene の まま
+  function choiceScene(q, idx) {
+    if (!q.outcome) return q.scene;
+    const sc = Object.assign({}, q.scene);
+    sc.steps = q.scene.steps.concat(q.outcome[idx] || []);
+    return sc;
   }
 
   /* ---------- アウトの かずだけ かえた 問題（「もし アウトが ○つ だったら？」） ----------
@@ -3129,6 +3246,17 @@ const Core = (function () {
   })();
   const UNIT_BY_KEY = {};
   UNITS.forEach(function (u, i) { u.order = i; UNIT_BY_KEY[u.key] = u; });
+  // 2だんかいの 問題：2だんかいめ（g2t-oN）は 1だんかいめ（g2-oN）の あとに だけ でる。
+  // 2だんかいめは べつの 覚える 単位（srs）だが、出題は 1だんかいめの 単位で えらぶ（child は 1回 10もんの 1もんに 数えない）
+  UNITS.forEach(function (u) {
+    if (!u.template) return;
+    const pattern = u.key.slice(u.key.indexOf(':') + 1);
+    const m = /^g2t-o(\d)$/.exec(pattern);
+    if (u.template === 'runner-decision' && m) {
+      const parent = UNIT_BY_KEY['runner-decision:g2-o' + m[1]];
+      if (parent) { u.parent = parent.key; parent.child = u.key; }
+    }
+  });
 
   /* ---------- 日付（端末の日付で「きょう」を決める） ---------- */
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -3477,16 +3605,23 @@ const Core = (function () {
   }
 
   /* ---------- 出題（1回 10もんの くみたて） ---------- */
-  // にがて＝さいごに まちがえた unit
+  // 出題に つかう 記録：2だんかいの 問題は、1だんかいめと 2だんかいめの よわい ほう（だんが ひくい・日が はやい・さいごに まちがえた）
+  function effectiveRec(p, u) {
+    const r = p.srs[u.key];
+    const c = u.child ? p.srs[u.child] : null;
+    if (!r || !c) return r || c || null;   // かたほうしか ない ときは ある ほう
+    return { b: Math.min(r.b, c.b), d: r.d < c.d ? r.d : c.d, s: r.s, c: r.c, f: r.f, w: r.w, l: Math.min(r.l, c.l), t: r.t > c.t ? r.t : c.t };
+  }
+  // にがて＝さいごに まちがえた unit（2だんかいめを まちがえたら 1だんかいめの 単位で だす）
   function nigateKeys(p) {
-    return UNITS.filter(function (u) { const r = p.srs[u.key]; return r && r.l === 0; }).map(function (u) { return u.key; });
+    return UNITS.filter(function (u) { const r = effectiveRec(p, u); return !u.parent && r && r.l === 0; }).map(function (u) { return u.key; });
   }
 
   // mode: { kind: 'today' }（ひらいている ステージ ぜんぶ） / { kind: 'stage', stage: 1 } / { kind: 'nigate' }
   function unitPool(p, mode) {
-    if (mode.kind === 'stage') return unitsOf(mode.stage);
+    if (mode.kind === 'stage') return unitsOf(mode.stage).filter(function (u) { return !u.parent; });
     if (mode.kind === 'nigate') return nigateKeys(p).map(function (k) { return UNIT_BY_KEY[k]; });
-    return UNITS.filter(function (u) { return isUnlocked(p, u.stage); });
+    return UNITS.filter(function (u) { return !u.parent && isUnlocked(p, u.stage); });
   }
 
   function shuffle(list, rng) {
@@ -3504,17 +3639,17 @@ const Core = (function () {
     const n = Math.min(ROUND_SIZE, pool.length);
     const buckets = { review: [], fresh: [], check: [], extra: [] };
     pool.forEach(function (u) {
-      const r = p.srs[u.key];
+      const r = effectiveRec(p, u);
       if (!r) buckets.fresh.push(u);
       else if (!isDue(r, today)) buckets.extra.push(u);
       else if (isMastered(r)) buckets.check.push(u);
       else buckets.review.push(u);
     });
     // 復習：だんの ひくい じゅん → 日の ふるい じゅん。確認：日の ふるい じゅん。あたらしい：カリキュラムの じゅん
-    buckets.review.sort(function (a, b) { const x = p.srs[a.key], y = p.srs[b.key]; return (x.b - y.b) || (x.d < y.d ? -1 : x.d > y.d ? 1 : a.order - b.order); });
-    buckets.check.sort(function (a, b) { const x = p.srs[a.key], y = p.srs[b.key]; return (x.d < y.d ? -1 : x.d > y.d ? 1 : a.order - b.order); });
+    buckets.review.sort(function (a, b) { const x = effectiveRec(p, a), y = effectiveRec(p, b); return (x.b - y.b) || (x.d < y.d ? -1 : x.d > y.d ? 1 : a.order - b.order); });
+    buckets.check.sort(function (a, b) { const x = effectiveRec(p, a), y = effectiveRec(p, b); return (x.d < y.d ? -1 : x.d > y.d ? 1 : a.order - b.order); });
     buckets.fresh.sort(function (a, b) { return a.order - b.order; });
-    buckets.extra.sort(function (a, b) { const x = p.srs[a.key], y = p.srs[b.key]; return (x.b - y.b) || (x.d < y.d ? -1 : 1); });
+    buckets.extra.sort(function (a, b) { const x = effectiveRec(p, a), y = effectiveRec(p, b); return (x.b - y.b) || (x.d < y.d ? -1 : 1); });
 
     const plan = mode.kind === 'nigate' ? { review: n, fresh: 0, check: 0 } : planMix(recentAccuracy(p), n);
     const out = [];
@@ -3572,7 +3707,7 @@ const Core = (function () {
     });
   });
   function bucketOf(p, key, today) {
-    const r = p.srs[key];
+    const r = UNIT_BY_KEY[key] ? effectiveRec(p, UNIT_BY_KEY[key]) : p.srs[key];
     if (!r) return 'fresh';
     if (!isDue(r, today)) return 'extra';
     if (isMastered(r)) return 'check';
@@ -3668,17 +3803,23 @@ const Core = (function () {
 
   /* ---------- こたえを きろくする ---------- */
   // 本番の こたえ。習熟・正解率・カードを うごかす。戻り値 { newCard, becameMastered }
-  function recordAnswer(p, q, ok, elapsedMs, today) {
+  function recordAnswer(p, q, ok, elapsedMs, today, opts) {
     const fast = ok && elapsedMs < FAST_MS;
     const res = applyAnswer(p, q.key, ok, fast, today);
     p.recent.push(ok ? 1 : 0);
     p.recent = p.recent.slice(-RECENT_KEEP);
-    p.stats.answers += 1;
-    if (ok) p.stats.correct += 1;
+    if (!opts || opts.slot !== false) countSlot(p, ok);
     const cardId = q.cardId || q.id;
     let newCard = false;
     if (ok && !p.cards[cardId]) { p.cards[cardId] = today; newCard = true; }
     return { newCard: newCard, becameMastered: res.becameMastered, fast: fast };
+  }
+
+  // 1回 10もんの 1もん ぶんを 数える（ランキングの「せいかいの かず」＝ stats.correct）。
+  // 2だんかいの 問題は、2つとも 正解で 1もん せいかい（2だんかいめを こたえた ときに 1回だけ 数える）
+  function countSlot(p, ok) {
+    p.stats.answers += 1;
+    if (ok) p.stats.correct += 1;
   }
 
   // もういちど チャレンジ（ラウンドの さいご）は、点数にも 習熟にも いれない。
@@ -3774,7 +3915,8 @@ const Core = (function () {
     isUnlocked: isUnlocked, stageLearned: stageLearned, allCleared: allCleared, nextStage: nextStage, starsFor: starsFor,
     nigateKeys: nigateKeys, unitPool: unitPool, composeSession: composeSession, buildRound: buildRound,
     questionFor: questionFor, templateQuestion: templateQuestion, arrangeChoices: arrangeChoices, answerId: answerId,
-    recordAnswer: recordAnswer, recordRetry: recordRetry, playQuestion: playQuestion, cardIds: cardIds, cardCount: cardCount, rankOf: rankOf,
+    recordAnswer: recordAnswer, recordRetry: recordRetry, playQuestion: playQuestion,
+    followQuestion: followQuestion, parentQuestion: parentQuestion, choiceScene: choiceScene, countSlot: countSlot, effectiveRec: effectiveRec, cardIds: cardIds, cardCount: cardCount, rankOf: rankOf,
     finishRound: finishRound, sessionPayload: sessionPayload, isForced: isForced, forceBases: forceBases,
     FIELD: FIELD, pathPoint: pathPoint, runnerPoint: runnerPoint, sceneAt: sceneAt, bsoAt: bsoAt, withOuts: withOuts, outsCompare: outsCompare, outsMatter: outsMatter,
     OUTS_MATTER: OUTS_MATTER, OUTS_PARTNERS: OUTS_PARTNERS, pairOuts: pairOuts, PAIR_RATE: PAIR_RATE, PAIR_FLIP_RATE: PAIR_FLIP_RATE, PATTERN_ANSWER: PATTERN_ANSWER, bucketOf: bucketOf, MAX_PER_TEMPLATE: MAX_PER_TEMPLATE, sceneDuration: sceneDuration, checkScene: checkScene, sfxBetween: sfxBetween,
@@ -4741,6 +4883,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     const list = Core.buildRound(P, mode, today());
     if (!list.length) { renderHome(); return; }
     R = {
+      q2: null, ok1: false,
       mode: mode, list: list, i: 0, phase: 'main',
       results: [], retry: [], correct: 0, combo: 0, answers: [], mastered: 0,
       newCards: [], rankBefore: Core.rankOf(Core.cardCount(P)).rank.name,
@@ -4761,6 +4904,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     if (!q) return false;
     Sound.ensure();
     R = {
+      q2: null, ok1: false,
       mode: { kind: 'show', key: key }, list: [Object.assign({}, q, { bucket: 'show' })], i: 0, phase: 'main',
       results: [], retry: [], correct: 0, combo: 0, answers: [], mastered: 0,
       newCards: [], rankBefore: '', startedAt: Date.now(), sessionId: '', openBefore: []
@@ -4787,7 +4931,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     introTimer = setTimeout(function () { box.hidden = true; }, 1150);
   }
 
-  function currentQ() { return R.phase === 'main' ? R.list[R.i] : R.retry[R.i]; }
+  function slotQ() { return R.phase === 'main' ? R.list[R.i] : R.retry[R.i]; }   // 1もん（10もんの 1つ）の 問題
+  function currentQ() { return R.q2 || slotQ(); }                                // いま 出ている 問題（2だんかいめなら その 問題）
 
   function renderDots() {
     let html = '';
@@ -4836,7 +4981,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     renderDots();
     $('retryBanner').hidden = R.phase !== 'retry';
     $('outsBanner').hidden = !(R.phase === 'main' && q.pair === 2);
-    $('bucketTag').textContent = R.phase === 'main' && q.bucket ? BUCKET_LABEL[q.bucket] : '';
+    $('bucketTag').textContent = q.step2 ? '➡ つづき（2だんかいめ）' : R.phase === 'main' && q.bucket ? BUCKET_LABEL[q.bucket] : '';
     $('qCard').setAttribute('data-qid', q.id);
     $('qIcon').textContent = R.phase === 'retry' ? '🔁' : '❓';
     if (R.player) R.player.stop();
@@ -4933,16 +5078,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     const elapsed = Date.now() - R.shownAt;
     let got;
     const showing = R.mode.kind === 'show';
+    // 2だんかいの 問題：1だんかいめ（q.follow）では まだ 1もんに 数えない。2だんかいめで、2つとも 正解なら 1もん せいかい
+    const firstOf2 = !!q.follow && !R.q2;
+    const slotEnd = !firstOf2;
+    const slotOk = R.q2 ? (R.ok1 && ok) : ok;
+    if (firstOf2) R.ok1 = ok;
     if (showing) {
       got = { newCard: false, becameMastered: false, fast: false };
-      R.results.push(ok);
+      if (slotEnd) R.results.push(slotOk);
     } else if (R.phase === 'main') {
-      got = Core.recordAnswer(P, q, ok, elapsed, t);
-      R.results.push(ok);
+      got = Core.recordAnswer(P, q, ok, elapsed, t, { slot: false });
+      if (slotEnd) Core.countSlot(P, slotOk);
       R.answers.push({ template: !!q.template, itemId: q.itemId, situation: q.situation || null, pattern: q.pattern || '',
         answerId: Core.answerId(q, idx), ok: ok, elapsedMs: elapsed, fast: got.fast, tags: q.tags });
       if (got.becameMastered) R.mastered++;
-      if (ok) { R.correct++; R.combo++; } else { R.combo = 0; R.retry.push(q); }
+      if (slotEnd) {
+        R.results.push(slotOk);
+        if (slotOk) { R.correct++; R.combo++; } else { R.combo = 0; R.retry.push(slotQ()); }
+      }
     } else {
       got = Core.recordRetry(P, q, ok, t);
     }
@@ -4965,7 +5118,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
 
     const combo = $('combo');
     combo.classList.remove('hot');
-    if (ok && R.phase === 'main' && R.combo >= 2) {
+    if (slotEnd && slotOk && R.phase === 'main' && R.combo >= 2) {
       let word = '🔥 ' + R.combo + 'もん れんぞく せいかい！';
       if (R.combo >= 5) word = '🔥🔥🔥 ' + R.combo + 'もん れんぞく！ パーフェクト ペース！';
       else if (R.combo >= 3) word = '🔥🔥 ' + R.combo + 'もん れんぞく！ ホットだね！';
@@ -4990,7 +5143,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     const isLast = R.phase === 'main'
       ? (R.i === R.list.length - 1 && R.retry.length === 0)
       : (R.i === R.retry.length - 1);
-    const nextLabel = showing ? '🔁 もういちど みる' : isLast ? 'けっかを みる ▶' : (R.phase === 'main' && R.i === R.list.length - 1 ? 'もういちど チャレンジへ ▶' : 'つぎへ ▶');
+    const nextLabel = firstOf2 ? 'つづき（2だんかいめ）へ ▶' : showing ? '🔁 もういちど みる' : isLast ? 'けっかを みる ▶' : (R.phase === 'main' && R.i === R.list.length - 1 ? 'もういちど チャレンジへ ▶' : 'つぎへ ▶');
     let note = '';
     if (R.phase === 'main' && got.fast) note = '<p class="fb-note">⏱ はやすぎる こたえは「おぼえた」に かぞえないよ。よく よんで こたえてね。</p>';
     else if (R.phase === 'main' && got.becameMastered) note = '<p class="fb-note">🧠 この もんだいを おぼえたよ！</p>';
@@ -5133,6 +5286,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       from = previewEnd(q);
       R.player = mountQuestion(field, q, idx, { start: from });
       R.player.lockTap(true);
+    } else if (q.outcome) {
+      R.player.stop();
+      from = previewEnd(q);
+      R.player = Play.mount(field, Core.choiceScene(q, idx), { onSfx: playSfx, focusOuts: Core.outsMatter(q), start: from });
     }
     const pl = R.player;
     pl.play(from, pl.duration, function () {
@@ -5156,6 +5313,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
 
   function goNext() {
     Speech.stop();
+    const q = currentQ();
+    if (q.follow && !R.q2) {
+      // 2だんかいめへ：アニメは 1だんかいめの さいご（なげる しゅんかん）の ようすから つづける
+      R.q2 = Core.followQuestion(q);
+      if (R.player) { R.player.stop(); R.player = null; }
+      showQuestion();
+      return;
+    }
+    R.q2 = null;
     if (R.player) { R.player.stop(); R.player = null; }
     if (R.mode.kind === 'show') { window.scrollTo(0, 0); startShow(R.mode.key); return; }
     R.i++;
