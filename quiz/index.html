@@ -2416,10 +2416,12 @@ const Core = (function () {
      やしゅが ゴロを とって ファーストへ なげる しゅんかん（G2_STOP）で とまる。2だんかいめは その ようすから はじめる */
   const G2_STOP = 900;            // 1だんかいめの アニメの おわり（ランナーが ベースに もどり、やしゅが なげる しゅんかん）
   const G2_BATTER = 0.5;          // その とき バッターは ホームから ファーストへの まんなか
-  const G2_GLOVE = { ss: [112, 111], '3b': [84, 134] };   // ゴロを とった やしゅの いち（ランナーが サードへ はしる みちから はなれた ところ）
+  const G2_GLOVE = { ss: [112, 111], '3b': [84, 134], p: [160, 154] };   // ゴロを とった やしゅの いち（ランナーが サードへ はしる みちから はなれた ところ）
   const G2_COVER = [62, 150];     // サードの ベースに はいる 人が たつ ところ（ベースの すぐ よこ。ランナーと かさならない）
-  const G2_PREVIEW = 150;
-  const G2_FIELDERS = ['ss', '3b', '1b', 'c'];   // 1だんかいめと 2だんかいめで おなじ 人を だす         // 2だんかいめの さいせい：ボールが やしゅの 手を はなれる ところまで
+  const G2_PREVIEW = 150;         // 2だんかいめの さいせい：ボールが やしゅの 手を はなれる ところまで
+  const G2_FIELDERS = ['ss', '3b', '1b', 'c'];   // 1だんかいめと 2だんかいめで おなじ 人を だす
+  // ランナーの はんだんは ルールでは なく はんだん（あたりの つよさや 足の はやさで かわる）。解説の さいごに そえる（仕様 run-on-throw）
+  const COACH_VOICE = 'ほんとうの しあいでは、サードコーチの こえを きこう。';
   // 2だんかいめ（g2t）の 問題。scene は どの こたえでも おなじ はじめ、outcome[えらんだ こたえ] が けっか
   function throwStep2(s, rng) {
     const OW = OUTS_WORD[s.outs];
@@ -2427,7 +2429,7 @@ const Core = (function () {
     const q = 'きみは セカンドの ランナー（ランナーは きみ だけ）。' + OW + '。' + who + 'が ゴロを とって、ファーストに なげた！ きみは どう する？';
     const explain = 'ボールが ファーストへ いって いる あいだに、サードへ はしる。なげた しゅんかんに スタートすれば、まにあう ことが おおい。' +
       'ベースに いても アウトには ならないけど、すすめる チャンスを のがす。ホームまでは とおくて アウトに なりやすい。' +
-      '（なげたら すすむ かどうかは、チームの やくそくで かわる ことが あるよ）';
+      '（なげたら すすむ かどうかは、チームの やくそくで かわる ことが あるよ）' + COACH_VOICE;
     const glove = G2_GLOVE[s.ball];
     const base = [
       // はじめの ようす（1だんかいめの おわりと おなじ）
@@ -2442,7 +2444,7 @@ const Core = (function () {
       { t: 560, type: 'label', text: 'バッター アウト', at: 'b1', tone: 'out', d: 440 }
     ];
     // サードの ベースに はいる 人：ショートの ゴロなら サードを まもる ひと、サードの ゴロなら なげた あと もどる
-    if (s.ball === 'ss') base.push({ t: 10, type: 'field', who: '3b', to: G2_COVER, d: 500 });
+    if (s.ball !== '3b') base.push({ t: 10, type: 'field', who: '3b', to: G2_COVER, d: 500 });
     else base.push({ t: 200, type: 'field', who: '3b', to: G2_COVER, d: 450 });
     const outcome = [
       // サードへ はしる（ただしい）：なげた しゅんかんに スタート。ファーストからの なげかえしより さきに つく
@@ -2469,8 +2471,42 @@ const Core = (function () {
     return {
       type: 'choice', q: q, choices: ['サードへ はしる', 'ベースに いる', 'ホームへ はしる'], answerIds: ['third', 'stay', 'home'], answer: 0, explain: explain,
       bso: { b: rngInt(rng, 4), s: rngInt(rng, 3), o: s.outs },
-      scene: { runners: [2, 0], fielders: G2_FIELDERS.slice(), youRunner: 2, steps: base },
+      scene: { runners: [2, 0], fielders: uniq(G2_FIELDERS.concat([s.ball])), youRunner: 2, steps: base },
       outcome: outcome, preview: G2_PREVIEW, step2: true
+    };
+  }
+
+  // セカンドの ランナー（ノーアウト・ワンアウト）、セカンドか ファーストを まもる ひとへの ゴロ（ランナーから みて うしろ）。
+  // まえの サードは あいて いて、ボールを とる ひとは サードから とおい。だから うった しゅんかんに サードへ はしる（1だんかいだけ）
+  function backGrounder(s, rng) {
+    const OW = OUTS_WORD[s.outs];
+    const who = POS_NAME[s.ball];
+    const q = 'きみは セカンドの ランナー（ランナーは きみ だけ）。' + OW + '。バッターが ' + who + 'に ゴロを うった！ どう する？';
+    const explain = who + 'への ゴロは きみの うしろ。ボールを とる ひとは サードから とおいので、ゴロと わかったら すぐ サードへ はしる。' + COACH_VOICE;
+    const steps = [
+      { t: 0, type: 'sfx', name: 'bat' },
+      { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: s.ball, d: 600 },
+      { t: 600, type: 'sfx', name: 'catch' },
+      { t: 100, type: 'run', who: 0, to: 1, d: 1500 },
+      { t: 300, type: 'run', who: 2, to: 3, d: 1100 },
+      { t: 1450, type: 'label', text: 'サードへ すすめた！', at: 'b3', tone: 'safe', d: 1200 }
+    ];
+    if (s.ball === '1b') {
+      // ファーストを まもる ひとは そのまま ファーストの ベースを ふむ
+      steps.push({ t: 620, type: 'field', who: '1b', to: 'b1', d: 380 });
+      steps.push({ t: 620, type: 'ball', kind: 'carry', to: '1b', d: 380 });
+      steps.push({ t: 1000, type: 'out', who: 0 });
+      steps.push({ t: 1000, type: 'label', text: 'バッター アウト', at: 'b1', tone: 'out', d: 420 });
+    } else {
+      steps.push({ t: 650, type: 'ball', kind: 'throw', from: s.ball, to: '1b', d: 450 });
+      steps.push({ t: 1100, type: 'sfx', name: 'catch' });
+      steps.push({ t: 1100, type: 'out', who: 0 });
+      steps.push({ t: 1100, type: 'label', text: 'バッター アウト', at: 'b1', tone: 'out', d: 330 });
+    }
+    return {
+      type: 'choice', q: q, choices: ['すぐ はしる', 'とちゅうで まつ', 'ベースに もどる'], answerIds: ['go', 'half', 'back'], answer: 0, explain: explain,
+      bso: { b: rngInt(rng, 4), s: rngInt(rng, 3), o: s.outs },
+      scene: { runners: [2, 0], fielders: uniq([s.ball, '1b', 'ss', '3b']), youRunner: 2, steps: steps }, preview: 300
     };
   }
 
@@ -2849,6 +2885,7 @@ const Core = (function () {
        ・セカンドの ランナーだけで、じぶんより まえ（ショート・サード）の ゴロ：ツーアウトは はしる、ツーアウト みまんは ベースに もどる
          ツーアウト みまんは 2だんかい：こたえたら、やしゅが ゴロを とって ファーストへ なげる しゅんかんまで うごかし、
          2だんかいめ（g2t：「なげた！ どう する？」→ サードへ はしる）を つづけて きく。2だんかいめは べつの 型（覚える 単位）
+       ・セカンドの ランナーだけで、じぶんより うしろ（セカンド・ファーストを まもる ひと）の ゴロ（g2b）：ノーアウト・ワンアウトは すぐ はしる
        タッチアップ（サードの ランナーと ふかい フライ）は tag-up で あつかう */
     {
       id: 'runner-decision', stage: 3, type: 'choice', tags: ['baserun', 'outs'],
@@ -2864,14 +2901,23 @@ const Core = (function () {
           ['3b', 'ss'].forEach(function (ball) {
             out.push({ pattern: 'force-o' + outs, situation: { runners: [1], outs: outs, target: 1, ball: ball, kind: 'force' } });
           });
-          ['3b', 'ss'].forEach(function (ball) {
-            out.push({ pattern: 'g2-o' + outs, situation: { runners: [2], outs: outs, target: 2, ball: ball, kind: 'grounder2' } });
+          // ランナーから みて まえ（サードがわ）の ゴロ。ピッチャーの ゴロも まえ（仕様 run-on-throw）。
+          // ツーアウトの ピッチャーゴロも「すぐ はしる」（アウトの かずだけ ちがう くみを つくる ため）
+          ['3b', 'ss', 'p'].forEach(function (ball) {
+            out.push({ pattern: 'g2-o' + outs, situation: { runners: [2], outs: outs, target: 2, ball: ball, kind: 'grounder2', side: 'front' } });
           });
         });
         // 2だんかいめ（ツーアウト みまんだけ）：やしゅが ファーストへ なげた しゅんかんの はんだん
         [0, 1].forEach(function (outs) {
-          ['3b', 'ss'].forEach(function (ball) {
-            out.push({ pattern: 'g2t-o' + outs, situation: { runners: [2], outs: outs, target: 2, ball: ball, kind: 'throw2' } });
+          ['3b', 'ss', 'p'].forEach(function (ball) {
+            out.push({ pattern: 'g2t-o' + outs, situation: { runners: [2], outs: outs, target: 2, ball: ball, kind: 'throw2', side: 'front' } });
+          });
+        });
+        // ランナーから みて うしろ（ファーストがわ）の ゴロ（g2b）：まえの サードは あいて いて、とる 人も とおいので すぐ はしる。1だんかいだけ。
+        // ツーアウトは「すぐ はしる」の g2-o2 で あつかうので、ノーアウト・ワンアウトだけ（仕様 run-on-throw）
+        [0, 1].forEach(function (outs) {
+          ['2b', '1b'].forEach(function (ball) {
+            out.push({ pattern: 'g2b-o' + outs, situation: { runners: [2], outs: outs, target: 2, ball: ball, kind: 'grounder2back', side: 'back' } });
           });
         });
         return out;
@@ -2879,11 +2925,12 @@ const Core = (function () {
       build: function (sit, rng) {
         const s = sit.situation;
         if (s.kind === 'throw2') return throwStep2(s, rng);   // 2だんかいめ
+        if (s.kind === 'grounder2back') return backGrounder(s, rng);   // うしろの ゴロ（すぐ はしる）
         const two = s.outs === 2;
         const OW = OUTS_WORD[s.outs];
         let q, answer, explain;
         const steps = [{ t: 0, type: 'sfx', name: 'bat' }];
-        const fielders = s.kind === 'grounder2' && !two ? G2_FIELDERS.slice() : [s.ball, '1b', 'ss'];
+        const fielders = s.kind === 'grounder2' && !two ? G2_FIELDERS.concat([s.ball]) : [s.ball, '1b', 'ss'];
         if (s.kind === 'fly') {
           q = 'きみは ファーストの ランナー（ランナーは きみ だけ）。' + OW + '。バッターが ' + POS_NAME[s.ball] + 'に たかい フライを うちあげた！ どう する？';
           answer = two ? 0 : 1;
@@ -2937,7 +2984,8 @@ const Core = (function () {
           answer = two ? 0 : 2;
           explain = two
             ? 'ツーアウトなので、バッターが アウトなら こうたい（チェンジ）。まよわず はしる。エラーが あれば ホームまで かえれる かも しれない。'
-            : 'まだ ' + OW + '。ファーストに ランナーが いないので、きみは バッターに おしだされない（フォースでは ない）。すすまなくても いい。ショートや サードの ほうの ゴロで すぐ はしると、サードで タッチされて アウトに なりやすいので、うった しゅんかんは ベースに もどる。';
+            : 'まだ ' + OW + '。ファーストに ランナーが いないので、きみは バッターに おしだされない（フォースでは ない）。' +
+              POS_NAME[s.ball] + 'への ゴロは きみの まえ。' + POS_NAME[s.ball] + 'が ボールを もって いる ときに はしると、サードで タッチされて アウトに なりやすいので、うった しゅんかんは ベースに もどる。' + COACH_VOICE;
           steps.push({ t: 0, type: 'ball', kind: 'grounder', from: 'H', to: s.ball, d: 600 });
           steps.push({ t: 600, type: 'sfx', name: 'catch' });
           if (two) {
