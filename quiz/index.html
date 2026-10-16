@@ -2268,7 +2268,7 @@ const Core = (function () {
       steps.push({ t: arrival, type: 'sfx', name: 'catch' });
       if (tapped === q.answer) {
         steps.push({ t: arrival + 50, type: 'out', who: sc.target });
-        steps.push({ t: arrival + 50, type: 'label', text: 'アウト！', at: baseRef, tone: 'out' });
+        steps.push({ t: arrival + 50, type: 'label', text: sc.okText || 'アウト！', at: baseRef, tone: 'out' });
         steps.push({ t: arrival + 60, type: 'sfx', name: 'cheer' });
       } else {
         // まちがえた ベースで おきる こと（問題ごとに データで きめる。rule-checker で たしかめる）
@@ -2281,7 +2281,7 @@ const Core = (function () {
       }
     }
     const fielders = (sc.fielders || []).slice();
-    return { runners: sc.runners, fielders: fielders, steps: steps, target: sc.target, bso: sc.bso };
+    return { runners: sc.runners, fielders: fielders, steps: steps, target: sc.noRing ? undefined : sc.target, bso: sc.bso };
   }
 
   /* ---------- まもりの 問題（type: 'spot'）の 場面 ----------
@@ -2673,7 +2673,8 @@ const Core = (function () {
           explain = (s.runners.length ? 'ファーストが あいているので、いる ランナーは すすまなくて いい（フォースでは ない）。' : '') +
             'バッターは ファーストへ はしるので、ファーストの ベースを ふめば アウト。';
         } else if (s.best === 4) {
-          explain = 'まんるいなので、サードの ランナーは ホームへ すすむしか ない（フォース）。ホームの ベースを ふめば アウトだよ。';
+          explain = 'まんるいなので、サードの ランナーは ホームへ すすむしか ない（フォース）。ホームの ベースを ふめば アウトだよ。' +
+            '（この もんだいは、しろい わの ランナーを アウトに する もんだい。まんるいで どこで アウトを とるのが いいかは、アウトの かずや ゴロの つよさで かわるよ）';
         } else {
           explain = (s.best === 2 ? 'バッターが ファーストへ くるので' : 'ファーストの ランナーが セカンドへ くるので') +
             '、' + NAME[target] + 'の ランナーは ' + NAME[s.best] + 'へ すすむしか ない（フォース）。' + NAME[s.best] + 'の ベースを ふめば アウトだよ。';
@@ -2698,6 +2699,84 @@ const Core = (function () {
               { t: 0, type: 'sfx', name: 'bat' },
               { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: s.ball, d: 750 },
               { t: 750, type: 'sfx', name: 'catch' }
+            ],
+            runs: runs, cover: cover, wrong: wrong
+          }
+        };
+      }
+    },
+
+    /* ===== まんるいで どこへ なげる（仕様 bases-loaded-throw）=====
+       まんるいは どの ベースも フォースなので、どこに なげても アウトは とれる。だから「どこで アウトを とるのが いいか（点を ふせげるか）」を きく。
+       ・ノーアウト・ワンアウト：ホームへ（なげないと サードの ランナーが かえって 1てん はいる）
+       ・ツーアウト：どこで アウトに しても チェンジで てんは はいらない。だから「いちばん ちかくて たしかな ところ」で とる。
+         こたえが 1つに きまるのは ファーストを まもる ひとの ゴロ（そのまま ファーストを ふむ）だけなので、ツーアウトは これだけ 出す。
+         サードゴロ（サードを ふむ／ファーストへ なげる）を 出さないと 利用者が きめた 理由（こたえが 2つ に なる）が、
+         ピッチャー（ホームが ちかい）・セカンド・ショート（セカンドが ちかい）にも あてはまるため（rule-checker ★）
+       ・ゆるい ゴロ（高学年だけ）：ノーアウト・ワンアウトでも ホームは まにあわないので ファーストへ（1てんは はいるが アウトを たしかに ふやす）
+       where-to-throw（ねらいの ランナーが きまって いる）とは べつの テンプレート。ねらいの わは 出さない */
+    {
+      id: 'bases-loaded-throw', stage: 5, type: 'tap', tags: ['throw', 'outs'],
+      title: 'まんるいで どこへ なげる',
+      card: { name: 'まんるいは アウトの かずで かわる', icon: '🏠', point: 'ノーアウトと ワンアウトは ホーム。ツーアウトは ちかくで たしかに' },
+      rule: '定義「フォースプレイ」、5.08(a)',
+      // ゆるい ゴロの 型は 高学年だけ（低学年は つよい ゴロだけ。例外を おしえると まよう ため）
+      patternGrade: { 'o0-weak': 4, 'o1-weak': 4 },
+      all: function () {
+        const out = [];
+        [0, 1, 2].forEach(function (outs) {
+          ['p', '1b', '2b', '3b', 'ss'].forEach(function (ball) {
+            if (outs === 2 && ball !== '1b') return;   // ツーアウトは ファーストを まもる ひとの ゴロだけ（ほかは ちかい ベースが いくつも あり、こたえが 1つに きまらない）
+            out.push({ pattern: 'o' + outs, situation: { runners: [1, 2, 3], outs: outs, ball: ball, strength: 'strong', best: outs === 2 ? 1 : 4 } });
+          });
+        });
+        [0, 1].forEach(function (outs) {
+          ['p', '1b', '2b', '3b', 'ss'].forEach(function (ball) {
+            out.push({ pattern: 'o' + outs + '-weak', situation: { runners: [1, 2, 3], outs: outs, ball: ball, strength: 'weak', best: 1 } });
+          });
+        });
+        return out;
+      },
+      build: function (sit, rng) {
+        const s = sit.situation;
+        const weak = s.strength === 'weak';
+        const two = s.outs === 2;
+        const q = 'まんるい（ファースト・セカンド・サードに ランナー）。' + OUTS_WORD[s.outs] + '。' + POS_NAME[s.ball] + 'が ' +
+          (weak ? 'ゆっくり ころがる よわい ゴロ' : 'つよい ゴロ') + 'を とった。どこで アウトを とるのが いちばん いい？';
+        let explain;
+        if (two) {
+          explain = 'ツーアウトなので、どこで アウトを とっても 3つめの アウトで チェンジ。てんは はいらない。' +
+            'だから いちばん ちかくて たしかな ところで とる。ファーストを まもる ひとが とったので、そのまま ファーストの ベースを ふめば いい。ホームに こだわらなくて いい。まよったら コーチの こえを きこう。';
+        } else if (weak) {
+          explain = 'ゆっくりの ゴロで、ホームは まにあわない。1てんは はいって しまうけど、たしかに アウトが とれる ファーストへ。アウトを ふやす ほうが あとが らくに なる。' +
+            'てんさや イニングで かわる ことも ある。きほんの かたちと して おぼえよう。';
+        } else {
+          explain = 'まんるいなので、どこでも ベースを ふめば アウトに できる。でも ホームで アウトに しないと、サードの ランナーが かえって 1てん はいる。だから まず ホーム。' +
+            '（この もんだいは、どこで アウトに するかを じぶんで きめる もんだい。アウトの かずで かわるよ）まよったら コーチの こえを きこう。';
+        }
+        const all = [1, 2, 3, 0];
+        // ファーストへは ファーストを まもる ひと（とった ときは そのまま ふむ）、ホームへは キャッチャー
+        const cover = { 1: '1b', 2: coverOf(2, s.ball), 3: '3b', 4: 'c' };
+        // はしる 時間：つよい ゴロは なげた ボールが さきに つく。よわい ゴロは ランナーの ほうが はやいが、バッターは まにあわない
+        const rd = weak ? 1300 : 1800, bd = weak ? 2000 : 1800;
+        const runs = all.map(function (r) { return { t: 100, type: 'run', who: r, to: r + 1, d: r === 0 ? bd : rd }; });
+        const wrong = {};
+        [1, 2, 3, 4].forEach(function (b) {
+          if (b === s.best) return;
+          if (two) wrong[b] = { text: 'アウトで チェンジ。でも ふむ ほうが たしか', out: b - 1 };
+          else if (weak) wrong[b] = { text: b === 4 ? 'まにあわない… 1てん はいった' : 'まにあわない…' };
+          else wrong[b] = { text: 'アウト。でも 1てん はいった', out: b - 1 };
+        });
+        return {
+          type: 'tap', q: q, answer: s.best, answerIds: [null, '1B', '2B', '3B', 'H'], explain: explain,
+          bso: { b: rngInt(rng, 4), s: rngInt(rng, 3), o: s.outs },
+          scene: {
+            runners: all, fielders: uniq([s.ball, cover[1], cover[2], cover[3], cover[4]]), holder: s.ball, target: s.best - 1, noRing: true,
+            okText: two ? 'アウト！ チェンジ' : weak ? 'ファーストで アウト！' : 'ホームで アウト！ 1てん ふせいだ',
+            setup: [
+              { t: 0, type: 'sfx', name: 'bat' },
+              { t: 0, type: 'ball', kind: 'grounder', from: 'H', to: s.ball, d: weak ? 1100 : 750 },
+              { t: weak ? 1100 : 750, type: 'sfx', name: 'catch' }
             ],
             runs: runs, cover: cover, wrong: wrong
           }
@@ -3204,7 +3283,7 @@ const Core = (function () {
   /* ---------- アウトの かずだけ かえた 問題（「もし アウトが ○つ だったら？」） ----------
      おなじ 状況（ランナー・ボールの いき先・ねらう ランナー・ふむ じゅん）で、アウトの かずだけ ちがう 状況を さがす。
      それ いがいの 項目（canRun・twoOuts・infieldFly など）は アウトの かずから きまるので くらべない */
-  const OUTS_INPUTS = ['runners', 'ball', 'target', 'order', 'kind'];
+  const OUTS_INPUTS = ['runners', 'ball', 'target', 'order', 'kind', 'strength'];
   function outsInputs(sit) {
     const r = {};
     OUTS_INPUTS.forEach(function (k) { if (sit[k] !== undefined) r[k] = sit[k]; });
@@ -3294,6 +3373,14 @@ const Core = (function () {
   })();
   const UNIT_BY_KEY = {};
   UNITS.forEach(function (u, i) { u.order = i; UNIT_BY_KEY[u.key] = u; });
+  // 高学年（4年いじょう）だけに 出す 単位：テンプレートごと（minGrade）か、型ごと（patternGrade）に きめる
+  UNITS.forEach(function (u) {
+    if (!u.template) return;
+    const t = TEMPLATE_BY_ID[u.template];
+    const pattern = u.key.slice(u.key.indexOf(':') + 1);
+    const g = Math.max(t.minGrade || 0, (t.patternGrade && t.patternGrade[pattern]) || 0);
+    if (g) u.minGrade = g;
+  });
   // 2だんかいの 問題：2だんかいめ（g2t-oN）は 1だんかいめ（g2-oN）の あとに だけ でる。
   // 2だんかいめは べつの 覚える 単位（srs）だが、出題は 1だんかいめの 単位で えらぶ（child は 1回 10もんの 1もんに 数えない）
   UNITS.forEach(function (u) {
@@ -3617,12 +3704,18 @@ const Core = (function () {
   function stageOf(id) { return STAGES.filter(function (s) { return s.id === id; })[0] || null; }
   function questionsOf(stageId) { return QUESTIONS.filter(function (q) { return q.stage === stageId; }); }
   function templatesOf(stageId) { return TEMPLATES.filter(function (t) { return t.stage === stageId; }); }
-  function unitsOf(stageId) { return UNITS.filter(function (u) { return u.stage === stageId; }); }
+  function unitsOf(stageId, p) { return UNITS.filter(function (u) { return u.stage === stageId && (!p || unitAllowed(p, u)); }); }
+  // あそんで いる 子の 学年。名前なし（学年が わからない）は 0 ＝ 低学年として あつかう（利用者の きめごと）
+  function playerGrade(p) { return p && p.profile && p.profile.grade ? p.profile.grade : 0; }
+  // その 子に 出して よい 単位か（高学年だけの 問題は、4年いじょうと 入力した 子だけ）
+  function unitAllowed(p, u) { return !u.minGrade || playerGrade(p) >= u.minGrade; }
+  // その 子が おぼえる 単位（ホームの「おぼえた もんだい ○ / ○」の 分母）
+  function unitsFor(p) { return UNITS.filter(function (u) { return unitAllowed(p, u); }); }
   function bestStars(p, stageId) { return (p.stages[stageId] && p.stages[stageId].best) || 0; }
 
   // その ステージの 問題を ぜんぶ 1かいは 正解した（だん1いじょう。2びょう みまんの 正解は のぞく）
   function stageLearned(p, stageId) {
-    return unitsOf(stageId).every(function (u) { const r = p.srs[u.key]; return r && r.b >= 1; });
+    return unitsOf(stageId, p).every(function (u) { const r = p.srs[u.key]; return r && r.b >= 1; });
   }
   // ステージ1は はじめから。2〜4は ひとつ まえを ★1いじょうで クリアするか、ひとつ まえの 問題を ぜんぶ 1かいは 正解したら ひらく。
   // マウンド（判断問題）と がいや（まもり）は ステージ1で おなじ ように ひらく（「きょうの 10もん」だけで あそぶ 子も すすめる ように）
@@ -3662,14 +3755,14 @@ const Core = (function () {
   }
   // にがて＝さいごに まちがえた unit（2だんかいめを まちがえたら 1だんかいめの 単位で だす）
   function nigateKeys(p) {
-    return UNITS.filter(function (u) { const r = effectiveRec(p, u); return !u.parent && r && r.l === 0; }).map(function (u) { return u.key; });
+    return UNITS.filter(function (u) { const r = effectiveRec(p, u); return !u.parent && unitAllowed(p, u) && r && r.l === 0; }).map(function (u) { return u.key; });
   }
 
   // mode: { kind: 'today' }（ひらいている ステージ ぜんぶ） / { kind: 'stage', stage: 1 } / { kind: 'nigate' }
   function unitPool(p, mode) {
-    if (mode.kind === 'stage') return unitsOf(mode.stage).filter(function (u) { return !u.parent; });
+    if (mode.kind === 'stage') return unitsOf(mode.stage, p).filter(function (u) { return !u.parent; });
     if (mode.kind === 'nigate') return nigateKeys(p).map(function (k) { return UNIT_BY_KEY[k]; });
-    return UNITS.filter(function (u) { return !u.parent && isUnlocked(p, u.stage); });
+    return UNITS.filter(function (u) { return !u.parent && unitAllowed(p, u) && isUnlocked(p, u.stage); });
   }
 
   function shuffle(list, rng) {
@@ -3961,6 +4054,7 @@ const Core = (function () {
     recentAccuracy: recentAccuracy, planMix: planMix,
     stageOf: stageOf, questionsOf: questionsOf, templatesOf: templatesOf, unitsOf: unitsOf, bestStars: bestStars,
     isUnlocked: isUnlocked, stageLearned: stageLearned, allCleared: allCleared, nextStage: nextStage, starsFor: starsFor,
+    playerGrade: playerGrade, unitAllowed: unitAllowed, unitsFor: unitsFor,
     nigateKeys: nigateKeys, unitPool: unitPool, composeSession: composeSession, buildRound: buildRound,
     questionFor: questionFor, templateQuestion: templateQuestion, arrangeChoices: arrangeChoices, answerId: answerId,
     recordAnswer: recordAnswer, recordRetry: recordRetry, playQuestion: playQuestion,
@@ -4714,7 +4808,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       $('rankFill').style.width = '100%';
       $('rankText').textContent = 'カード ' + n + 'まい ・ さいこうの ランク！';
     }
-    const m = Core.masteredCount(P), all = Core.UNITS.length;
+    const m = Core.masteredCount(P), all = Core.unitsFor(P).length;
     $('masterFill').style.width = (m / all * 100) + '%';
     $('masterText').textContent = 'おぼえた もんだい ' + m + ' / ' + all;
   }
@@ -5421,7 +5515,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     $('bigStars').innerHTML = stars;
     $('bigStars').hidden = !isStage;
     $('scoreLine').textContent = total + 'もん ちゅう ' + R.correct + 'もん せいかい';
-    $('masterLine').textContent = '🧠 おぼえた もんだい ' + Core.masteredCount(P) + ' / ' + Core.UNITS.length +
+    $('masterLine').textContent = '🧠 おぼえた もんだい ' + Core.masteredCount(P) + ' / ' + Core.unitsFor(P).length +
       (R.mastered ? '（きょう ' + R.mastered + 'もん ふえた！）' : '');
 
     const news = [];
@@ -5543,7 +5637,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   function renderParent() {
     let rows = '<tr><th>ステージ</th><th>ほし</th><th>おぼえた</th><th>せいかい</th></tr>';
     Core.STAGES.forEach(function (st) {
-      const us = Core.unitsOf(st.id);
+      const us = Core.unitsOf(st.id, P);
       let ok = 0, ng = 0, m = 0;
       us.forEach(function (u) { const r = P.srs[u.key]; if (r) { ok += r.c; ng += r.w; if (Core.isMastered(r)) m++; } });
       const best = Core.bestStars(P, st.id);
