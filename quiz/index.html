@@ -217,6 +217,8 @@ ruby rt { font-size: 12px; }
 .dot.cur { outline: 3px solid var(--orange); outline-offset: 1px; background: var(--card); }
 .dot.ok { background: var(--green); }
 .dot.ng { background: var(--red); }
+.team-banner { background: var(--orange-soft); color: var(--orange-dark); border: 2px solid var(--orange); border-radius: 12px; padding: 8px 12px; font-weight: 900; margin-bottom: 10px; font-size: 16px; }
+@media (prefers-color-scheme: dark) { .team-banner { color: var(--orange); } }
 .retry-banner { background: var(--blue-soft); color: var(--blue-dark); border-radius: 12px; padding: 8px 12px; font-weight: 900; margin-bottom: 10px; font-size: 16px; }
 @media (prefers-color-scheme: dark) { .retry-banner { color: var(--blue); } }
 .combo { text-align: center; font-weight: 900; color: var(--orange); font-size: 16px; min-height: 26px; }
@@ -544,6 +546,7 @@ ruby rt { font-size: 12px; }
       <div class="dots" id="dots"></div>
     </div>
     <div class="bucket-tag" id="bucketTag"></div>
+    <div class="team-banner" id="teamBanner" hidden>🍊 オレンジの やくそく（やきゅうの ルールでは ないよ）</div>
     <div class="retry-banner" id="retryBanner" hidden>🔁 まちがえた もんだいに もういちど チャレンジ！</div>
     <div class="outs-banner" id="outsBanner" hidden>🔴 さっきと おなじ ばめん。アウトの かずだけ ちがうよ！</div>
     <div class="combo" id="combo" aria-live="polite"></div>
@@ -1965,6 +1968,33 @@ const Core = (function () {
     's6-11': [[0, 0], [0, 0], [6, 15]],
     's6-12': [[0, 0], [0, 0], [-6, 15]]
   };
+  const TEAM_QUESTIONS = [
+    {
+      id: 'tm-01', stage: 1, type: 'choice', team: true,
+      q: 'ピッチャーが なげる まえ。ランナーや バッターの とき、まいかい する ことは？',
+      choices: ['コーチを みて、サインを たしかめる', 'コーチは みないで、すきに うごく', 'よそみを して まつ'], answer: 0,
+      // ランナーが コーチを みるのは ベースに ついて いる とき（けんせいで アウトに ならない ように。rule-checker ☆）
+      explain: 'ピッチャーが なげる まえは、まいかい コーチを みよう。サインを みおとさない ことが、オレンジの やくそく。ランナーは ベースに ついて いる ときに みよう。',
+      card: { name: 'まいかい コーチを みる', icon: '👀', point: 'なげる まえは まいかい コーチを みる' }
+    },
+    {
+      // 「とまる」のは なげる まえの サインの こと だけ。うったら いつもどおり はしる（プレー中に とまると アウトに なる。rule-checker ★で 場面を しぼった）
+      id: 'tm-02', stage: 1, type: 'choice', team: true,
+      q: 'ピッチャーが なげる まえ。サインが よく わからなかった。どう する？',
+      choices: ['かってに うごかないで、コーチに たしかめる', 'わかった ふりを して うごく', 'あてずっぽうで うごく'], answer: 0,
+      explain: 'サインが わからない まま うごくと、チームの さくせんが くずれて しまう。かってに うごかないで、コーチに たしかめよう。でも、ボールを うったら、いつもの はんだんで うごこう。',
+      card: { name: 'わからない サインは きく', icon: '❓', point: 'なげる まえに サインが わからなければ、かってに うごかず たしかめる' }
+    },
+    {
+      id: 'tm-03', stage: 1, type: 'choice', team: true,
+      q: 'ほかの チームの ともだちに「サインを おしえて」と いわれた。どう する？',
+      choices: ['おしえない（チームの そとでは はなさない）', 'おしえて あげる', 'すこしだけ おしえる'], answer: 0,
+      explain: 'サインは チームの ひみつ。チームの そとでは はなさないのが、オレンジの やくそく。「ひみつだよ」って いえば いいよ。',
+      card: { name: 'サインは ひみつ', icon: '🤫', point: 'サインは チームの そとで はなさない' }
+    }
+  ];
+  TEAM_QUESTIONS.forEach(function (q) { q.rule = ''; QUESTIONS.push(q); });
+
   DEFENSE_QUESTIONS.forEach(function (q) {
     q.rule = ''; q.answerIds = q.spots.map(function (s) { return s.id; });
     q.spots.forEach(function (s, i) { s.say = SPOT_SAY[q.id][i]; s.mk = SPOT_MK[q.id][i]; });
@@ -2336,7 +2366,8 @@ const Core = (function () {
     'baserun': 'そうるいの はんだん',
     'outs': 'アウトの かず',
     'outfield': 'がいやの しごと',
-    'after-fly': 'フライの あと'
+    'after-fly': 'フライの あと',
+    'team': 'チームの やくそく'   // やきゅうの ルールでは ない オレンジの きまり（べつの わく）
   };
   const TAG_OF = {
     's1-01': ['count'], 's1-02': ['count'], 's1-03': ['count'], 's1-04': ['count'], 's1-05': ['count'],
@@ -2351,7 +2382,8 @@ const Core = (function () {
     's5-05': ['throw', 'tagup'], 's5-06': ['throw', 'tagup'], 's5-07': ['throw', 'force-tag'], 's5-08': ['throw', 'force-tag'],
     's6-01': ['cover'], 's6-02': ['cover'], 's6-03': ['cover'], 's6-04': ['cover'],
     's6-05': ['backup'], 's6-06': ['backup'], 's6-07': ['relay'], 's6-08': ['relay'],
-    's6-09': ['outfield', 'backup'], 's6-10': ['outfield', 'backup'], 's6-11': ['outfield', 'relay'], 's6-12': ['outfield', 'relay']
+    's6-09': ['outfield', 'backup'], 's6-10': ['outfield', 'backup'], 's6-11': ['outfield', 'relay'], 's6-12': ['outfield', 'relay'],
+    'tm-01': ['team'], 'tm-02': ['team'], 'tm-03': ['team']
   };
   // こたえる まえの「さいせい」で みせて よい ところ（ミリ秒）。こたえが わかる ところ（けっかの もじ・うごき）の てまえで とめる。
   // ない 問題は、アニメ そのものが こたえに なるので さいせいしない
@@ -2824,13 +2856,13 @@ const Core = (function () {
               [pitch, { t: 320, type: 'run', who: 1, to: 2, d: 1300 }, { t: 770, type: 'sfx', name: 'catch' },
                 { t: 800, type: 'field', who: 'ss', to: 'b2', d: 450 }, { t: 820, type: 'ball', kind: 'throw', from: 'c', to: 'ss', d: 550 },
                 { t: 900, type: 'run', who: 3, to: 4, d: 900 }, { t: 1400, type: 'ball', kind: 'throw', from: 'ss', to: 'c', d: 600 },
-                { t: 1800, type: 'label', text: 'サードの ランナーが ホームイン！', at: 'H', tone: 'safe', d: 1200 }],
+                { t: 1800, type: 'label', text: 'ホームイン！', at: 'H', tone: 'safe', d: 1200 }],
               // ファーストに のこる：なにも おきない
               [pitch, { t: 770, type: 'sfx', name: 'catch' }, { t: 900, type: 'ball', kind: 'throw', from: 'c', to: 'p', d: 450 },
                 { t: 1100, type: 'label', text: 'チャンスを のがした…', at: 'mid', tone: 'info', d: 1300 }],
               // サードへ はしる：まえの ランナーを おいこす ことに なり、サードには もう ランナーが いるので いけない（5.06(a)(2)：おなじ ベースには 1人しか いられず、まえの ランナーが つかう）
               [pitch, { t: 770, type: 'sfx', name: 'catch' }, { t: 900, type: 'ball', kind: 'throw', from: 'c', to: 'p', d: 450 },
-                { t: 1100, type: 'label', text: 'サードには もう ランナーが いる！', at: 'b3', tone: 'info', d: 1300 }]
+                { t: 1100, type: 'label', text: 'サードに ランナーが いる！', at: 'b3', tone: 'info', d: 1300 }]
             ],
             preview: 300
           };
@@ -2853,7 +2885,7 @@ const Core = (function () {
             [{ t: 470, type: 'field', who: 'ss', to: 'b2', d: 450 }, { t: 500, type: 'ball', kind: 'throw', from: 'c', to: 'ss', d: 550 },
               { t: 600, type: 'run', who: 3, to: 4, d: 900 },
               { t: 1050, type: 'sfx', name: 'catch' }, { t: 1050, type: 'out', who: 1 }, { t: 1100, type: 'ball', kind: 'throw', from: 'ss', to: 'c', d: 600 },
-              { t: 1500, type: 'label', text: 'サードの ランナーが ホームイン…', at: 'H', tone: 'safe', d: 1300 }],
+              { t: 1500, type: 'label', text: 'ホームイン…', at: 'H', tone: 'safe', d: 1300 }],
             // なげずに ピッチャーへ かえす：セカンドへ すすまれるが、てんは はいらない
             [{ t: 520, type: 'ball', kind: 'throw', from: 'c', to: 'p', d: 350 },
               { t: 1400, type: 'label', text: '1てん ふせいだ！', at: 'H', tone: 'out', d: 1300 }],
@@ -3455,7 +3487,7 @@ const Core = (function () {
     return list;
   })();
   const UNIT_BY_KEY = {};
-  UNITS.forEach(function (u, i) { u.order = i; UNIT_BY_KEY[u.key] = u; });
+  UNITS.forEach(function (u, i) { u.order = i; UNIT_BY_KEY[u.key] = u; if (BY_ID[u.key] && BY_ID[u.key].team) u.team = true; });
   // 高学年（4年いじょう）だけに 出す 単位：テンプレートごと（minGrade）か、型ごと（patternGrade）に きめる
   UNITS.forEach(function (u) {
     if (!u.template) return;
@@ -3785,7 +3817,9 @@ const Core = (function () {
 
   /* ---------- ステージ ---------- */
   function stageOf(id) { return STAGES.filter(function (s) { return s.id === id; })[0] || null; }
-  function questionsOf(stageId) { return QUESTIONS.filter(function (q) { return q.stage === stageId; }); }
+  // ステージの ルールの 問題（チームの やくそくは ステージの 問題では ないので ふくめない）
+  function questionsOf(stageId) { return QUESTIONS.filter(function (q) { return q.stage === stageId && !q.team; }); }
+  function teamQuestions() { return QUESTIONS.filter(function (q) { return q.team; }); }
   function templatesOf(stageId) { return TEMPLATES.filter(function (t) { return t.stage === stageId; }); }
   function unitsOf(stageId, p) { return UNITS.filter(function (u) { return u.stage === stageId && (!p || unitAllowed(p, u)); }); }
   // あそんで いる 子の 学年。名前なし（学年が わからない）は 0 ＝ 低学年として あつかう（利用者の きめごと）
@@ -3798,7 +3832,7 @@ const Core = (function () {
 
   // その ステージの 問題を ぜんぶ 1かいは 正解した（だん1いじょう。2びょう みまんの 正解は のぞく）
   function stageLearned(p, stageId) {
-    return unitsOf(stageId, p).every(function (u) { const r = p.srs[u.key]; return r && r.b >= 1; });
+    return unitsOf(stageId, p).every(function (u) { const r = p.srs[u.key]; return u.team || (r && r.b >= 1); });
   }
   // ステージ1は はじめから。2〜4は ひとつ まえを ★1いじょうで クリアするか、ひとつ まえの 問題を ぜんぶ 1かいは 正解したら ひらく。
   // マウンド（判断問題）と がいや（まもり）は ステージ1で おなじ ように ひらく（「きょうの 10もん」だけで あそぶ 子も すすめる ように）
@@ -3836,6 +3870,8 @@ const Core = (function () {
     if (!r || !c) return r || c || null;   // かたほうしか ない ときは ある ほう
     return { b: Math.min(r.b, c.b), d: r.d < c.d ? r.d : c.d, s: r.s, c: r.c, f: r.f, w: r.w, l: Math.min(r.l, c.l), t: r.t > c.t ? r.t : c.t };
   }
+  // チームの やくそくを 出す 回：3回に 1回ていど（仕様 team-signs）。ルールの 問題の じかんを へらさない ため
+  function teamRound(p) { return p.rounds % 3 === 2; }
   // にがて＝さいごに まちがえた unit（2だんかいめを まちがえたら 1だんかいめの 単位で だす）
   function nigateKeys(p) {
     return UNITS.filter(function (u) { const r = effectiveRec(p, u); return !u.parent && unitAllowed(p, u) && r && r.l === 0; }).map(function (u) { return u.key; });
@@ -3843,9 +3879,10 @@ const Core = (function () {
 
   // mode: { kind: 'today' }（ひらいている ステージ ぜんぶ） / { kind: 'stage', stage: 1 } / { kind: 'nigate' }
   function unitPool(p, mode) {
-    if (mode.kind === 'stage') return unitsOf(mode.stage, p).filter(function (u) { return !u.parent; });
+    if (mode.kind === 'stage') return unitsOf(mode.stage, p).filter(function (u) { return !u.parent && !u.team; });
     if (mode.kind === 'nigate') return nigateKeys(p).map(function (k) { return UNIT_BY_KEY[k]; });
-    return UNITS.filter(function (u) { return !u.parent && unitAllowed(p, u) && isUnlocked(p, u.stage); });
+    const teamTurn = teamRound(p);
+    return UNITS.filter(function (u) { return !u.parent && unitAllowed(p, u) && isUnlocked(p, u.stage) && (!u.team || teamTurn); });
   }
 
   function shuffle(list, rng) {
@@ -3878,8 +3915,11 @@ const Core = (function () {
     const plan = mode.kind === 'nigate' ? { review: n, fresh: 0, check: 0 } : planMix(recentAccuracy(p), n);
     const out = [];
     const perTemplate = {};
+    // チームの やくそくは 1回に 1もんまで（ルールの 問題の じかんを へらさない ため）
+    const teamFull = function (u) { return u.team && out.some(function (x) { return UNIT_BY_KEY[x.key].team; }); };
     const take = function (u, bucket) {
       if (out.some(function (x) { return x.key === u.key; })) return false;
+      if (teamFull(u)) return false;
       if (u.template && (perTemplate[u.template] || 0) >= MAX_PER_TEMPLATE) return false;
       if (u.template) perTemplate[u.template] = (perTemplate[u.template] || 0) + 1;
       out.push({ key: u.key, bucket: bucket });
@@ -3900,7 +3940,7 @@ const Core = (function () {
     if (out.length < n) {
       ['review', 'fresh', 'check', 'extra'].forEach(function (b) {
         buckets[b].forEach(function (u) {
-          if (out.length < n && !out.some(function (x) { return x.key === u.key; })) out.push({ key: u.key, bucket: b });
+          if (out.length < n && !out.some(function (x) { return x.key === u.key; }) && !teamFull(u)) out.push({ key: u.key, bucket: b });
         });
       });
     }
@@ -4139,9 +4179,9 @@ const Core = (function () {
     emptyProgress: emptyProgress, sanitize: sanitize, cleanProfile: cleanProfile, syncPart: syncPart, mergeProgress: mergeProgress,
     srsOf: srsOf, isMastered: isMastered, masteredCount: masteredCount, applyAnswer: applyAnswer,
     recentAccuracy: recentAccuracy, planMix: planMix,
-    stageOf: stageOf, questionsOf: questionsOf, templatesOf: templatesOf, unitsOf: unitsOf, bestStars: bestStars,
+    stageOf: stageOf, questionsOf: questionsOf, teamQuestions: teamQuestions, templatesOf: templatesOf, unitsOf: unitsOf, bestStars: bestStars,
     isUnlocked: isUnlocked, stageLearned: stageLearned, allCleared: allCleared, nextStage: nextStage, starsFor: starsFor,
-    playerGrade: playerGrade, unitAllowed: unitAllowed, unitsFor: unitsFor,
+    playerGrade: playerGrade, teamRound: teamRound, unitAllowed: unitAllowed, unitsFor: unitsFor,
     nigateKeys: nigateKeys, unitPool: unitPool, composeSession: composeSession, buildRound: buildRound,
     questionFor: questionFor, templateQuestion: templateQuestion, arrangeChoices: arrangeChoices, answerId: answerId,
     cardIdsFor: cardIdsFor,
@@ -5210,6 +5250,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     R.shownAt = Date.now();
     renderDots();
     $('retryBanner').hidden = R.phase !== 'retry';
+    $('teamBanner').hidden = !(q.tags && q.tags.indexOf('team') >= 0);
     $('outsBanner').hidden = !(R.phase === 'main' && q.pair === 2);
     $('bucketTag').textContent = q.step2 ? '➡ つづき（2だんかいめ）' : R.phase === 'main' && q.bucket ? BUCKET_LABEL[q.bucket] : '';
     $('qCard').setAttribute('data-qid', q.id);
@@ -5672,6 +5713,20 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   // カードの もと（問題 または テンプレート）
   function cardOf(id) { return Core.BY_ID[id] || Core.TEMPLATE_BY_ID[id]; }
 
+  function zukanGroup(title, ids) {
+    const got = ids.filter(function (id) { return P.cards[id]; }).length;
+    let html = '<div class="zukan-stage"><h3>' + esc(title) + '（' + got + '/' + ids.length + '）</h3><div class="grid">';
+    ids.forEach(function (id) {
+      const c = cardOf(id).card;
+      if (P.cards[id]) {
+        html += '<button class="zcard" data-qid="' + esc(id) + '"><span class="z-icon">' + c.icon + '</span>' + esc(c.name) + '</button>';
+      } else {
+        html += '<div class="zcard no"><span class="z-icon">？</span>まだ</div>';
+      }
+    });
+    return html + '</div></div>';
+  }
+
   function renderZukan() {
     const n = Core.cardCount(P);
     const all = Core.cardIdsFor(P).length;
@@ -5681,18 +5736,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     Core.STAGES.forEach(function (st) {
       const ids = Core.questionsOf(st.id).map(function (q) { return q.id; })
         .concat(Core.templatesOf(st.id).filter(function (t) { return !t.minGrade || Core.playerGrade(P) >= t.minGrade; }).map(function (t) { return t.id; }));
-      const got = ids.filter(function (id) { return P.cards[id]; }).length;
-      html += '<div class="zukan-stage"><h3>' + st.icon + ' ' + esc(st.base) + '：' + esc(st.title) + '（' + got + '/' + ids.length + '）</h3><div class="grid">';
-      ids.forEach(function (id) {
-        const c = cardOf(id).card;
-        if (P.cards[id]) {
-          html += '<button class="zcard" data-qid="' + esc(id) + '"><span class="z-icon">' + c.icon + '</span>' + esc(c.name) + '</button>';
-        } else {
-          html += '<div class="zcard no"><span class="z-icon">？</span>まだ</div>';
-        }
-      });
-      html += '</div></div>';
+      html += zukanGroup(st.icon + ' ' + st.base + '：' + st.title, ids);
     });
+    // チームの やくそくの カードは ステージとは べつの わくに だす（やきゅうの ルールでは ない）
+    html += zukanGroup('🍊 オレンジの やくそく（やきゅうの ルールでは ないよ）', Core.teamQuestions().map(function (q) { return q.id; }));
     $('zukanList').innerHTML = html;
     Array.prototype.forEach.call($('zukanList').querySelectorAll('button.zcard'), function (b) {
       b.onclick = function () { openCard(b.getAttribute('data-qid')); };
@@ -5709,7 +5756,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     $('cdName').textContent = src.card.name;
     $('cdPoint').textContent = src.card.point;
     $('cdExplain').textContent = explain;
-    $('cdRule').innerHTML = src.rule ? 'やきゅうの きそく：' + ruleHTML(src.rule) : 'まもりの きほん（チームの やくそく）';
+    $('cdRule').innerHTML = src.team ? 'オレンジの やくそく（やきゅうの ルールでは ない）' : src.rule ? 'やきゅうの きそく：' + ruleHTML(src.rule) : 'まもりの きほん（チームの やくそく）';
     $('cdSpeak').onclick = function () { Speech.say(src.card.name + '。' + src.card.point + '。' + explain); };
     refreshSpeakButtons();
     $('cardModal').hidden = false;
@@ -5725,7 +5772,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   function renderParent() {
     let rows = '<tr><th>ステージ</th><th>ほし</th><th>おぼえた</th><th>せいかい</th></tr>';
     Core.STAGES.forEach(function (st) {
-      const us = Core.unitsOf(st.id, P);
+      const us = Core.unitsOf(st.id, P).filter(function (u) { return !u.team; });
       let ok = 0, ng = 0, m = 0;
       us.forEach(function (u) { const r = P.srs[u.key]; if (r) { ok += r.c; ng += r.w; if (Core.isMastered(r)) m++; } });
       const best = Core.bestStars(P, st.id);
