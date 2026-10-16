@@ -2784,6 +2784,88 @@ const Core = (function () {
       }
     },
 
+    /* ===== 1・3るいの ばめん（仕様 first-and-third）。高学年だけ（minGrade）=====
+       ランナーが ファーストと サード、ノーアウトか ワンアウト。せめ（ファーストの ランナー）と まもり（キャッチャー）の 2つの 見かた。
+       ・せめ：セカンドへ はしる。キャッチャーが セカンドへ なげれば、その あいだに サードの ランナーが ホームを ねらえる。なげなければ セカンドへ すすめる
+       ・まもり：なげずに ピッチャーへ かえす。セカンドへ なげると サードの ランナーが ホームイン。セカンドへ すすまれても てんには ならない
+       どちらも さくせんで、チームや たいかいの きまりで ちがう（利用者が この こたえで つくると きめた。チームの約束.md に 確認欄）。
+       ノーアウトと ワンアウトで こたえは かわらない（ツーアウトは べつの はんだんなので 出さない） */
+    {
+      id: 'first-and-third', stage: 5, type: 'choice', tags: ['baserun', 'throw'],
+      title: 'ファーストと サードの ばめん',
+      card: { name: 'ファーストと サードの ばめん', icon: '🔀', point: 'せめは はしって チャンスを つくる。まもりは まず 1てんを ふせぐ' },
+      rule: '5.08(a)、5.09(b)(4)',   // とくてんの きまり（セカンドで アウトでも、3つめで なければ てんは はいる）と、ベースを はなれた ランナーへの タッチ（rule-checker ★で なおした）
+      minGrade: 4,
+      all: function () {
+        const out = [];
+        ['offense', 'defense'].forEach(function (view) {
+          [0, 1].forEach(function (outs) {
+            out.push({ pattern: view, situation: { runners: [1, 3], outs: outs, view: view } });
+          });
+        });
+        return out;
+      },
+      build: function (sit, rng) {
+        const s = sit.situation;
+        const OW = OUTS_WORD[s.outs];
+        const NOTE = 'チームの やくそくや たいかいの きまりで ちがう ことが あるよ。';
+        if (s.view === 'offense') {
+          const steps = [{ t: 0, type: 'field', who: 'p', to: [160, 160], d: 300 }];
+          const pitch = { t: 320, type: 'ball', kind: 'pitch', from: 'p', to: 'c', d: 450 };
+          return {
+            type: 'choice', tags: ['baserun'],
+            q: 'きみは ファーストの ランナー。ランナーは ファーストと サード。' + OW + '。ピッチャーが なげる ところ。きみは どう する？',
+            choices: ['セカンドへ はしる', 'ファーストに のこる', 'サードへ はしる'], answerIds: ['steal', 'stay', 'third'], answer: 0,
+            explain: 'ファーストと サードに ランナーが いる ときは チャンス。はしれば、キャッチャーが セカンドへ なげた あいだに、サードの ランナーが ホームを ねらえる。なげて こなければ、セカンドへ すすめる。せめる ほうが とくを する ことが おおい。サードの ランナーが いる あいだは、サードへは いけない。（じっさいに はしるかは サインで きまる ことが おおい。' + NOTE + '）',
+            bso: { b: rngInt(rng, 4), s: rngInt(rng, 3), o: s.outs },
+            scene: { runners: [1, 3, 0], fielders: ['p', 'c', 'ss', '2b', '3b', '1b'], youRunner: 1, steps: steps },
+            outcome: [
+              // セカンドへ はしる：キャッチャーが セカンドへ なげ、その あいだに サードの ランナーが ホームイン
+              [pitch, { t: 320, type: 'run', who: 1, to: 2, d: 1300 }, { t: 770, type: 'sfx', name: 'catch' },
+                { t: 800, type: 'field', who: 'ss', to: 'b2', d: 450 }, { t: 820, type: 'ball', kind: 'throw', from: 'c', to: 'ss', d: 550 },
+                { t: 900, type: 'run', who: 3, to: 4, d: 900 }, { t: 1400, type: 'ball', kind: 'throw', from: 'ss', to: 'c', d: 600 },
+                { t: 1800, type: 'label', text: 'サードの ランナーが ホームイン！', at: 'H', tone: 'safe', d: 1200 }],
+              // ファーストに のこる：なにも おきない
+              [pitch, { t: 770, type: 'sfx', name: 'catch' }, { t: 900, type: 'ball', kind: 'throw', from: 'c', to: 'p', d: 450 },
+                { t: 1100, type: 'label', text: 'チャンスを のがした…', at: 'mid', tone: 'info', d: 1300 }],
+              // サードへ はしる：まえの ランナーを おいこす ことに なり、サードには もう ランナーが いるので いけない（5.06(a)(2)：おなじ ベースには 1人しか いられず、まえの ランナーが つかう）
+              [pitch, { t: 770, type: 'sfx', name: 'catch' }, { t: 900, type: 'ball', kind: 'throw', from: 'c', to: 'p', d: 450 },
+                { t: 1100, type: 'label', text: 'サードには もう ランナーが いる！', at: 'b3', tone: 'info', d: 1300 }]
+            ],
+            preview: 300
+          };
+        }
+        // まもり：きみは キャッチャー
+        const steps = [
+          { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: 'c', d: 450 },
+          { t: 50, type: 'run', who: 1, to: 2, d: 1300 },
+          { t: 450, type: 'sfx', name: 'catch' }
+        ];
+        return {
+          type: 'choice', tags: ['throw'],
+          q: 'きみは キャッチャー。ランナーは ファーストと サード。' + OW + '。ピッチャーが なげた とき、ファーストの ランナーが セカンドへ はしった！ きみは どう する？',
+          choices: ['セカンドへ なげる', 'なげずに ピッチャーへ かえす', 'サードへ なげる'], answerIds: ['second', 'return', 'third'], answer: 1,
+          explain: 'セカンドへ なげると、その あいだに サードの ランナーが ホームイン する ことが ある。セカンドで アウトに できても、1てん とられる。セカンドへ すすまれても、てんには ならない。まず 1てんを ふせぐ。ピッチャーへ しっかり かえして、サードの ランナーを みよう。（どう まもるかは、' + NOTE + '）',
+          bso: { b: rngInt(rng, 4), s: rngInt(rng, 3), o: s.outs },
+          scene: { runners: [1, 3, 0], fielders: ['p', 'c', 'ss', '2b', '3b', '1b'], you: 'c', youLab: [18, -14, 'start'], steps: steps },
+          outcome: [
+            // セカンドへ なげる：セカンドで アウトに できても、サードの ランナーが ホームイン
+            [{ t: 470, type: 'field', who: 'ss', to: 'b2', d: 450 }, { t: 500, type: 'ball', kind: 'throw', from: 'c', to: 'ss', d: 550 },
+              { t: 600, type: 'run', who: 3, to: 4, d: 900 },
+              { t: 1050, type: 'sfx', name: 'catch' }, { t: 1050, type: 'out', who: 1 }, { t: 1100, type: 'ball', kind: 'throw', from: 'ss', to: 'c', d: 600 },
+              { t: 1500, type: 'label', text: 'サードの ランナーが ホームイン…', at: 'H', tone: 'safe', d: 1300 }],
+            // なげずに ピッチャーへ かえす：セカンドへ すすまれるが、てんは はいらない
+            [{ t: 520, type: 'ball', kind: 'throw', from: 'c', to: 'p', d: 350 },
+              { t: 1400, type: 'label', text: '1てん ふせいだ！', at: 'H', tone: 'out', d: 1300 }],
+            // サードへ なげる：サードの ランナーは ベースに もどるので アウトに できない（ベースに ふれて いる ランナーは タッチされても アウトに ならない）。ファーストの ランナーは セカンドへ
+            [{ t: 520, type: 'ball', kind: 'throw', from: 'c', to: '3b', d: 450 },
+              { t: 1100, type: 'label', text: 'ベースに もどられた', at: 'b3', tone: 'info', d: 1300 }]
+          ],
+          preview: 470
+        };
+      }
+    },
+
     /* ===== タッチアップ（公開版：tag-up。こたえが 1つに きまるよう、サードの ランナーに しぼる） ===== */
     {
       id: 'tag-up', stage: 3, type: 'choice', tags: ['tagup'],
@@ -3207,7 +3289,7 @@ const Core = (function () {
     const q = {
       key: t.id + ':' + sit.pattern, id: t.id + ':' + sit.pattern, itemId: t.id, pattern: sit.pattern, template: true,
       stage: t.stage, type: b.type, q: b.q, choices: b.choices, answerIds: b.answerIds, answer: b.answer,
-      explain: b.explain, card: t.card, cardId: t.id, rule: t.rule, tags: t.tags, situation: ordered, preview: b.preview
+      explain: b.explain, card: t.card, cardId: t.id, rule: t.rule, tags: b.tags || t.tags, situation: ordered, preview: b.preview
     };
     if (b.spots) q.spots = b.spots;
     if (b.follow) q.follow = t.id + ':' + b.follow;   // 1だんかいめ：つづけて きく 2だんかいめの 型
@@ -3281,9 +3363,9 @@ const Core = (function () {
   }
 
   /* ---------- アウトの かずだけ かえた 問題（「もし アウトが ○つ だったら？」） ----------
-     おなじ 状況（ランナー・ボールの いき先・ねらう ランナー・ふむ じゅん）で、アウトの かずだけ ちがう 状況を さがす。
+     おなじ 状況（ランナー・ボールの いき先・ねらう ランナー・ふむ じゅん・せめか まもりか）で、アウトの かずだけ ちがう 状況を さがす。
      それ いがいの 項目（canRun・twoOuts・infieldFly など）は アウトの かずから きまるので くらべない */
-  const OUTS_INPUTS = ['runners', 'ball', 'target', 'order', 'kind', 'strength'];
+  const OUTS_INPUTS = ['runners', 'ball', 'target', 'order', 'kind', 'strength', 'view'];
   function outsInputs(sit) {
     const r = {};
     OUTS_INPUTS.forEach(function (k) { if (sit[k] !== undefined) r[k] = sit[k]; });
@@ -3337,7 +3419,8 @@ const Core = (function () {
 
   // ランクの さかいめは カードの まいすうに あわせて きめる（ぜんぶ あつめたら ルールはかせ）
   (function () {
-    const total = QUESTIONS.length + TEMPLATES.length;
+    // 高学年だけの テンプレートの カードは のぞく（低学年の 子も いちばん うえの ランクに なれる ように）
+    const total = QUESTIONS.length + TEMPLATES.filter(function (t) { return !t.minGrade; }).length;
     [0, 0.25, 0.5, 0.75, 1].forEach(function (fr, k) { RANKS[k].min = Math.round(fr * total); });
   })();
 
@@ -3976,6 +4059,10 @@ const Core = (function () {
   }
 
   function cardIds() { return QUESTIONS.map(function (q) { return q.id; }).concat(TEMPLATES.map(function (t) { return t.id; })); }
+  // その 子が あつめられる カード（高学年だけの テンプレートは 4年いじょうの 子だけ）
+  function cardIdsFor(p) {
+    return QUESTIONS.map(function (q) { return q.id; }).concat(TEMPLATES.filter(function (t) { return !t.minGrade || playerGrade(p) >= t.minGrade; }).map(function (t) { return t.id; }));
+  }
   function cardCount(p) { return Object.keys(p.cards).length; }
 
   function rankOf(count) {
@@ -4057,6 +4144,7 @@ const Core = (function () {
     playerGrade: playerGrade, unitAllowed: unitAllowed, unitsFor: unitsFor,
     nigateKeys: nigateKeys, unitPool: unitPool, composeSession: composeSession, buildRound: buildRound,
     questionFor: questionFor, templateQuestion: templateQuestion, arrangeChoices: arrangeChoices, answerId: answerId,
+    cardIdsFor: cardIdsFor,
     recordAnswer: recordAnswer, recordRetry: recordRetry, playQuestion: playQuestion,
     followQuestion: followQuestion, parentQuestion: parentQuestion, choiceScene: choiceScene, countSlot: countSlot, effectiveRec: effectiveRec, cardIds: cardIds, cardCount: cardCount, rankOf: rankOf,
     finishRound: finishRound, sessionPayload: sessionPayload, isForced: isForced, forceBases: forceBases,
@@ -4784,7 +4872,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   /* ---------- ホーム ---------- */
   function homeMessage() {
     const n = Core.cardCount(P);
-    const total = Core.cardIds().length;
+    const total = Core.cardIdsFor(P).length;
     if (!P.rounds) return 'ぼく オレンジくん！「きょうの 10もん」で ルールを おぼえて、いっしょに ホームインしよう！';
     if (Core.allCleared(P)) {
       if (n >= total) return 'カード ぜんぶ あつめたね！ きみは ルールはかせだ！';
@@ -5586,13 +5674,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
 
   function renderZukan() {
     const n = Core.cardCount(P);
-    const all = Core.cardIds().length;
+    const all = Core.cardIdsFor(P).length;
     $('zukanFill').style.width = (n / all * 100) + '%';
     $('zukanText').textContent = n + ' / ' + all + 'まい';
     let html = '';
     Core.STAGES.forEach(function (st) {
       const ids = Core.questionsOf(st.id).map(function (q) { return q.id; })
-        .concat(Core.templatesOf(st.id).map(function (t) { return t.id; }));
+        .concat(Core.templatesOf(st.id).filter(function (t) { return !t.minGrade || Core.playerGrade(P) >= t.minGrade; }).map(function (t) { return t.id; }));
       const got = ids.filter(function (id) { return P.cards[id]; }).length;
       html += '<div class="zukan-stage"><h3>' + st.icon + ' ' + esc(st.base) + '：' + esc(st.title) + '（' + got + '/' + ids.length + '）</h3><div class="grid">';
       ids.forEach(function (id) {
@@ -5645,7 +5733,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
         '<td class="num">' + m + '/' + us.length + '</td>' +
         '<td class="num">' + (ok + ng ? Math.round(ok / (ok + ng) * 100) + '%' : '−') + '</td></tr>';
     });
-    rows += '<tr><td>カード</td><td class="num" colspan="3">' + Core.cardCount(P) + ' / ' + Core.cardIds().length + 'まい</td></tr>';
+    rows += '<tr><td>カード</td><td class="num" colspan="3">' + Core.cardCount(P) + ' / ' + Core.cardIdsFor(P).length + 'まい</td></tr>';
     rows += '<tr><td>あそんだ ひ</td><td class="num" colspan="3">' + P.days.length + 'にち</td></tr>';
     rows += '<tr><td>あそんだ かいすう</td><td class="num" colspan="3">' + P.rounds + 'かい</td></tr>';
     rows += '<tr><td>にがて</td><td class="num" colspan="3">' + Core.nigateKeys(P).length + 'もん</td></tr>';
