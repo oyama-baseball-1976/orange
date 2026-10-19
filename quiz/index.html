@@ -1593,7 +1593,7 @@ const Core = (function () {
        その あいだに バッターランナーは ファーストを まわって セカンドを ねらう。
        ・ボールに いかない ほうが セカンドの ベースに はいって いれば、ファーストで とまる
        ・セカンドが あいて いると、セカンドまで すすまれる（ふたりとも ボールに いった とき） */
-    const IN_POS = { ss: [126, 134], '2b': [194, 134], '3b': [90, 162], '1b': [232, 154] };   // 前進守備（ふだんは ss [114,114]・2b [206,114]）
+    const IN_POS = { ss: [126, 134], '2b': [194, 134], '3b': [102, 150], '1b': [232, 154] };   // 前進守備（ふだんは ss [114,114]・2b [206,114]）
     function infieldIn(o) {
       // o：{ id, you, ball（ゴロを とる ひと）, q, spots, explain, card, youLab }
       const glove = IN_POS[o.ball];
@@ -1603,7 +1603,7 @@ const Core = (function () {
       // ホームへ なげて アウト（どの こたえでも おなじ）。キャッチャーは ホームの まえで まって タッチする
       // ピッチャーは ホームの うしろへ バックアップ（rule-checker ☆）
       const home = [{ t: 520, type: 'ball', kind: 'throw', from: o.ball, to: 'c', d: 420 }, { t: 400, type: 'field', who: 'c', to: [154, 218], d: 300 },
-        { t: 520, type: 'field', who: 'p', to: [176, 240], d: 500 },
+        { t: 520, type: 'field', who: 'p', to: o.ball === 'ss' ? [176, 240] : [144, 240], d: 500 },
         { t: 940, type: 'sfx', name: 'catch' }, { t: 1060, type: 'out', who: 3 }, { t: 1060, type: 'label', text: 'ホームで アウト！', at: 'H', tone: 'out', d: 700 }];
       // バッターランナー：ファーストを まわって セカンドを ねらう
       const stop = [{ t: 1600, type: 'run', who: 0, to: 1.22, d: 300 }, { t: 1700, type: 'label', text: 'セカンドに ひとが いる！', at: 'b2', tone: 'info', d: 600 },
@@ -2603,6 +2603,127 @@ const Core = (function () {
     };
   }
 
+  /* ---------- ふりにげの ときの サードの ランナー（dropped3-runner：1だんかいめ k3 → 2だんかいめ k3t） ----------
+     ランナーは サードだけ（ファーストが あいて いるので、ノーアウト・ワンアウトでも ふりにげ できる）。
+     2ストライクから 3つめの ストライクを キャッチャーが こぼし、バッターが ファーストへ はしる。
+     ・1だんかいめ（k3）：ボールは キャッチャーの すぐ まえ。すぐ はしると ホームの まえで タッチされるので、すこし でて キャッチャーを みる
+     ・2だんかいめ（k3t）：キャッチャーが ファーストへ なげた しゅんかんに ホームへ はしる（ピッチャーが ホームの カバーに はいる）
+     ツーアウトは 問題に しない。バッターが ファーストで アウトなら 3つめの アウトで、その まえに ホームを ふんでも てんは はいらない
+     （5.08(a)【例外】(1)）。すぐ はしるか ようすを みるかで こたえが 1つに きまらない（rule-checker ★）。くらべる パネルで みせるだけ */
+  const K3_STOP = 1150;            // 1だんかいめの おわり（キャッチャーが ボールを ひろって、ファーストへ なげる しゅんかん）
+  const K3_BATTER = 0.3;           // その とき バッターは ホームから ファーストへの とちゅう
+  const K3_LEAD = 3.18;            // サードの ランナーは すこし でて みる（でて いる ことが わかる くらい。rule-checker ☆）
+  const K3_DROP = [166, 230];      // こぼれた ボール（キャッチャーの すぐ まえ）
+  const K3_CATCH = [168, 236];     // ボールを ひろった キャッチャー
+  const K3_PWAIT = [156, 196];     // ホームへ むかう ピッチャー（1だんかいめの おわり）
+  const K3_PCOVER = [166, 214];    // ホームの カバーに はいった ピッチャー（ホームの すぐ まえの 一塁がわ。ランナーの みちと かさならない）
+  const K3_PREVIEW = 150;          // 2だんかいめの さいせい：ボールが キャッチャーの 手を はなれる ところまで
+  const K3_FIELDERS = ['p', 'c', '1b', '3b'];
+  // 3つめの ストライクを こぼして、キャッチャーが ひろう まで（どの 場面も おなじ はじめ）
+  function k3Pitch() {
+    return [
+      { t: 0, type: 'ball', kind: 'pitch', from: 'p', to: [170, 240], d: 450 },
+      { t: 300, type: 'label', text: 'ストライク スリー！', at: 'H', tone: 'info', d: 700 },
+      { t: 450, type: 'ball', kind: 'roll', to: K3_DROP, d: 300 },
+      { t: 750, type: 'label', text: 'こぼした！', at: [232, 204], tone: 'info', d: 500 },
+      // ふりにげで 打席は おわる（B・S は 0 に もどる。アウトは ふえない）
+      { t: 800, type: 'bso', b: 0, s: 0 },
+      { t: 700, type: 'run', who: 0, to: K3_BATTER, d: K3_STOP - 700 },
+      { t: 750, type: 'field', who: 'c', to: K3_CATCH, d: 350 },
+      { t: 1100, type: 'ball', kind: 'carry', to: 'c', d: 50 },
+      // ピッチャーは ホームの カバーへ むかう。ファーストを まもる ひとは ベースへ
+      { t: 700, type: 'field', who: 'p', to: K3_PWAIT, d: K3_STOP - 700 },
+      { t: 700, type: 'field', who: '1b', to: 'b1', d: 400 }
+    ];
+  }
+  function k3First(s, rng) {
+    const steps = k3Pitch().concat([
+      { t: 750, type: 'run', who: 3, to: K3_LEAD, d: 300 },
+      { t: 1080, type: 'label', text: 'ようすを みる', at: [96, 196], tone: 'info', d: 600 }
+    ]);
+    return {
+      type: 'choice',
+      q: 'きみは サードの ランナー（ランナーは きみ だけ）。' + OUTS_WORD[s.outs] + '。3つめの ストライク！ でも キャッチャーが ボールを こぼした。ボールは キャッチャーの すぐ まえに おちた。バッターは ファーストへ はしりだした（ふりにげ）。きみは どう する？',
+      choices: ['すぐ ホームへ はしる', 'すこし でて、キャッチャーを みる'], answerIds: ['go', 'watch'], answer: 1,
+      explain: 'ボールは キャッチャーの すぐ まえ。いま ホームへ はしると、ボールを ひろった キャッチャーに ホームの まえで タッチされて しまう。すこし でて、キャッチャーが どこへ なげるかを みよう。' +
+        '（ボールが うしろへ ころがって、キャッチャーが おいかけて いる ときは、すぐ はしって いい）' + COACH_VOICE,
+      bso: { b: rngInt(rng, 4), s: 2, o: s.outs },
+      scene: { runners: [3, 0], fielders: K3_FIELDERS.slice(), youRunner: 3, steps: steps }, preview: 760,
+      follow: 'k3t-o' + s.outs
+    };
+  }
+  function k3Second(s, rng) {
+    const base = [
+      // はじめの ようす（1だんかいめの おわりと おなじ）
+      { t: 0, type: 'run', who: 0, to: K3_BATTER, d: 1 },
+      { t: 0, type: 'run', who: 3, to: K3_LEAD, d: 1 },
+      { t: 0, type: 'field', who: 'c', to: K3_CATCH, d: 1 },
+      { t: 0, type: 'field', who: 'p', to: K3_PWAIT, d: 1 },
+      { t: 0, type: 'field', who: '1b', to: 'b1', d: 1 },
+      { t: 0, type: 'ball', kind: 'carry', to: 'c', d: 1 },
+      // キャッチャーが ファーストへ なげる → バッター アウト。ピッチャーは ホームの カバーに はいる
+      { t: 10, type: 'ball', kind: 'throw', from: 'c', to: '1b', d: 500 },
+      { t: 10, type: 'run', who: 0, to: 1, d: 900 },
+      { t: 10, type: 'field', who: 'p', to: K3_PCOVER, d: 400 },
+      { t: 510, type: 'sfx', name: 'catch' },
+      { t: 510, type: 'out', who: 0 },
+      { t: 510, type: 'label', text: 'バッター アウト', at: 'b1', tone: 'out', d: 500 }
+    ];
+    const outcome = [
+      // ホームへ はしる（ただしい）：ファーストからの なげかえしより さきに つく
+      [{ t: K3_PREVIEW, type: 'run', who: 3, to: 4, d: 850 },
+        { t: 580, type: 'ball', kind: 'throw', from: '1b', to: 'p', d: 650, h: 14 },
+        { t: 1000, type: 'label', text: 'ホームイン！ 1てん', at: 'H', tone: 'safe', d: 1300 },
+        { t: 1230, type: 'sfx', name: 'catch' },
+        { t: 1280, type: 'label', text: 'まにあわない', at: [118, 236], tone: 'info', d: 800 }],
+      // サードに もどる：アウトには ならないが、てんが とれない
+      [{ t: K3_PREVIEW, type: 'run', who: 3, to: 3, d: 200 },
+        { t: 580, type: 'ball', kind: 'throw', from: '1b', to: 'p', d: 650, h: 14 },
+        { t: 900, type: 'label', text: '1てん とれたのに…', at: 'H', tone: 'info', d: 1300 },
+        { t: 900, type: 'label', text: 'サードの まま', at: 'b3', tone: 'safe', d: 1300 }],
+      // とちゅうで まつ：ホームと サードの あいだで はさまれて タッチアウト
+      [{ t: K3_PREVIEW, type: 'run', who: 3, to: 3.45, d: 450 },
+        { t: 580, type: 'ball', kind: 'throw', from: '1b', to: 'p', d: 650, h: 14 },
+        { t: 1230, type: 'sfx', name: 'catch' },
+        { t: 1250, type: 'run', who: 3, to: 3.3, d: 400 },
+        { t: 1250, type: 'field', who: 'p', to: [96, 180], d: 400 },
+        { t: 1250, type: 'ball', kind: 'carry', to: 'p', d: 400 },
+        { t: 1650, type: 'out', who: 3 },
+        { t: 1650, type: 'label', text: 'はさまれて アウト', at: [96, 180], tone: 'out' }]
+    ];
+    return {
+      type: 'choice',
+      q: 'きみは サードの ランナー（ランナーは きみ だけ）。' + OUTS_WORD[s.outs] + '。ふりにげで バッターが ファーストへ はしって いる。キャッチャーが ボールを ひろって、ファーストに なげた！ きみは どう する？',
+      choices: ['ホームへ はしる', 'サードに もどる', 'とちゅうで まつ'], answerIds: ['home', 'back', 'half'], answer: 0,
+      explain: 'キャッチャーが ファーストへ なげて いる あいだ、キャッチャーは ホームから はなれて いる。ファーストから ホームへ なげかえすより さきに、ホームに つける ことが おおい。' +
+        (s.outs === 1 ? 'ワンアウトなので、バッターが ファーストで アウトに なっても 2つめの アウト。' : 'ノーアウトなので、バッターが ファーストで アウトに なっても 1つめの アウト。') +
+        'ホームを ふめば 1てん はいる。とちゅうで とまると、はさまれて アウトに なりやすい。（なげたら ホームへ いくかは、チームの やくそくで かわる ことが あるよ）' + COACH_VOICE,
+      bso: { b: 0, s: 0, o: s.outs },
+      scene: { runners: [3, 0], fielders: K3_FIELDERS.slice(), youRunner: 3, steps: base },
+      outcome: outcome, preview: K3_PREVIEW, step2: true
+    };
+  }
+  // くらべる パネルの ツーアウト（問題には しない）：ホームを さきに ふんでも、バッターが ファーストの まえで アウトなら てんは はいらない
+  function k3TwoOuts() {
+    const steps = k3Pitch().concat([
+      { t: 750, type: 'run', who: 3, to: 4, d: 900 },
+      { t: 1650, type: 'label', text: 'ホームを ふんだ けど…', at: 'H', tone: 'info', d: 700 },
+      { t: 1150, type: 'run', who: 0, to: 1, d: 1000 },
+      { t: 1350, type: 'ball', kind: 'throw', from: 'c', to: '1b', d: 500 },
+      { t: 1850, type: 'sfx', name: 'catch' },
+      { t: 1850, type: 'out', who: 0 },
+      { t: 1850, type: 'label', text: 'バッター アウト（3アウト）', at: 'b1', tone: 'out', d: 900 },
+      { t: 2400, type: 'label', text: 'てんは はいらない', at: 'H', tone: 'info', d: 1400 }
+    ]);
+    return {
+      type: 'choice', info: true,
+      answer: 'てんは はいらない（もんだいには しない）',
+      explain: 'ツーアウトの ときは、バッターが ファーストに つく まえに アウトに なると 3つめの アウト。その まえに ホームを ふんで いても、てんは はいらない。' +
+        'てんが はいるのは、バッターが ファーストで セーフに なった ときだけ。ツーアウトの ときは、サードコーチの こえを きこう。',
+      scene: { runners: [3, 0], fielders: K3_FIELDERS.slice(), youRunner: 3, steps: steps, bso: { b: 0, s: 2, o: 2 } }
+    };
+  }
+
   const TEMPLATES = [
 
     /* ===== ふりにげ（公開版：dropped-third-strike） ===== */
@@ -3144,6 +3265,7 @@ const Core = (function () {
     {
       id: 'runner-decision', stage: 3, type: 'choice', tags: ['baserun', 'outs'],
       title: 'ランナーの はんだん',
+      twoStep: { g2t: 'g2' },   // 2だんかいめの 型 → 1だんかいめの 型
       card: { name: 'ランナーの はんだん', icon: '🏃‍♀️', point: 'ツーアウトは うった しゅんかんに はしる' },
       rule: '5.09(b)(5)、5.09(b)(6)、定義「フォースプレイ」',
       all: function () {
@@ -3268,6 +3390,26 @@ const Core = (function () {
           follow: s.kind === 'grounder2' && !two ? 'g2t-o' + s.outs : undefined
         };
       }
+    },
+
+    /* ===== ふりにげの ときの サードの ランナー（2だんかい。k3 → k3t）=====
+       ノーアウト・ワンアウトだけ。ツーアウトは くらべる パネルで「てんは はいらない」を みせるだけ（outsInfo） */
+    {
+      id: 'dropped3-runner', stage: 3, type: 'choice', tags: ['baserun', 'dropped3'],
+      title: 'ふりにげの ときの サードの ランナー',
+      card: { name: 'ふりにげの ときの サードの ランナー', icon: '🏠', point: 'こぼれても すぐ はしらず みる。ファーストへ なげたら ホームへ' },
+      // 5.05(a)(2)：ふりにげで バッターが ランナーに なれる。5.09(a)(10)：ファーストの まえで タッチ・送球で アウト。
+      // 5.08(a)：とくてんの きまり（【例外】(1) ツーアウトで バッターが ファーストの まえで アウトなら てんは はいらない）
+      rule: '5.05(a)(2)、5.09(a)(10)、5.08(a)',
+      twoStep: { k3t: 'k3' },
+      all: function () {
+        const out = [];
+        [0, 1].forEach(function (outs) { out.push({ pattern: 'k3-o' + outs, situation: { runners: [3], outs: outs, target: 3, ball: 'c', kind: 'k3' } }); });
+        [0, 1].forEach(function (outs) { out.push({ pattern: 'k3t-o' + outs, situation: { runners: [3], outs: outs, target: 3, ball: 'c', kind: 'k3throw' } }); });
+        return out;
+      },
+      build: function (sit, rng) { return sit.situation.kind === 'k3throw' ? k3Second(sit.situation, rng) : k3First(sit.situation, rng); },
+      outsInfo: function (sit, outs) { return outs === 2 ? k3TwoOuts() : null; }
     },
 
     /* ===== フライを とった あと、どこへ なげる？（あたらしい 問題・ばしょを タップ） =====
@@ -3442,8 +3584,10 @@ const Core = (function () {
   // 2だんかいめの まえの 1だんかいめ
   function parentQuestion(q2, rng) {
     const t = TEMPLATE_BY_ID[q2.itemId];
-    const sit = t.situations.filter(function (x) {
-      return x.situation.kind === 'grounder2' && x.situation.ball === q2.situation.ball && x.situation.outs === q2.situation.outs;
+    // 2だんかいめの 型（g2t-oN・k3t-oN）から 1だんかいめの 型（g2-oN・k3-oN）を きめる
+    const parentPrefix = t.twoStep && t.twoStep[q2.pattern.replace(/-o\d$/, '')];
+    const sit = parentPrefix && t.situations.filter(function (x) {
+      return x.pattern === parentPrefix + '-o' + q2.situation.outs && x.situation.ball === q2.situation.ball;
     })[0];
     return sit ? templateQuestion(t, sit, rng) : null;
   }
@@ -3492,7 +3636,13 @@ const Core = (function () {
     return [0, 1, 2].map(function (o) {
       if (o === q.situation.outs) return { outs: o, current: true, same: true, answer: answerText(q), explain: q.explain, q: q };
       const sq = withOuts(q, o);
-      if (!sq) return { outs: o, none: true };
+      if (!sq) {
+        // 問題には しない アウトの かず：説明と アニメだけ（ふりにげの サードランナーの ツーアウト）
+        const t = TEMPLATE_BY_ID[q.itemId];
+        const info = t && t.outsInfo && t.outsInfo(q.situation, o);
+        if (info) return { outs: o, current: false, info: true, same: false, answer: info.answer, explain: info.explain, q: info };
+        return { outs: o, none: true };
+      }
       return { outs: o, current: false, same: sq.answer === q.answer, answer: answerText(sq), explain: sq.explain, q: sq };
     });
   }
@@ -3562,9 +3712,10 @@ const Core = (function () {
   UNITS.forEach(function (u) {
     if (!u.template) return;
     const pattern = u.key.slice(u.key.indexOf(':') + 1);
-    const m = /^g2t-o(\d)$/.exec(pattern);
-    if (u.template === 'runner-decision' && m) {
-      const parent = UNIT_BY_KEY['runner-decision:g2-o' + m[1]];
+    const t = TEMPLATE_BY_ID[u.template];
+    const m = /^(.+)-o(\d)$/.exec(pattern);
+    if (t.twoStep && m && t.twoStep[m[1]]) {
+      const parent = UNIT_BY_KEY[u.template + ':' + t.twoStep[m[1]] + '-o' + m[2]];
       if (parent) { u.parent = parent.key; parent.child = u.key; }
     }
   });
@@ -5519,6 +5670,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     return s + '</div><p class="oc-result" id="ocResult" aria-live="polite">ボタンを おして くらべて みよう。</p></div>';
   }
   function outsResultHTML(c) {
+    if (c.info) return '<b>もし ' + OUTS_NAME[c.outs] + ' だったら</b>：' + esc(c.answer) + '<br>' + esc(c.explain);
     if (c.current) return '<b>' + OUTS_NAME[c.outs] + '（いまの もんだい）</b>：こたえは「' + esc(c.answer) + '」';
     return '<b>もし ' + OUTS_NAME[c.outs] + ' だったら</b>：こたえは「' + esc(c.answer) + '」' +
       (c.same ? '　<b class="same">＝ おなじ</b>' : '　<b class="chg">← こたえが かわる！</b>') +
