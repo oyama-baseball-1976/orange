@@ -1628,6 +1628,68 @@ const Core = (function () {
         }
       };
     }
+    /* ピッチャーへの 返球の カバー（s6-15〜s6-18）。投げる 線の 延長線上の、受ける 人（ピッチャー）の うしろに 回る。
+       ランナーが いて ボールが 生きて いる とき、返球が それると すすまれる。どの こたえでも 返球は それて ピッチャーの うしろへ ぬける：
+       ・うしろに 回って いれば きみが とめる（ランナーは すすめない）
+       ・だれも いないと 外野へ ころがり、ランナーが すすむ
+       o：{ id, you, from（投げる 人）, fromAt（投げる 人の いち）, cover（きみが 回る ところ）, mates（ほかに 回る 人 [[who, xy]]）,
+            runner（1 か 3）, roll（ころがって いく さき）, spots, q, explain, card, youLab } */
+    function returnCover(o) {
+      const P0 = [160, 162];   // ピッチャー（FIELD.POS.p。FIELD は この あとで きまるので かずで かく）
+      const stop = o.cover;   // それた 返球は きみが 回る ところへ ぬける
+      const throwT = T, arriveT = 1000;
+      const base = [{ t: 0, type: 'field', who: o.from, to: o.fromAt, d: 1 }, { t: 0, type: 'ball', kind: 'carry', to: o.from, d: 1 },
+        { t: throwT, type: 'ball', kind: 'throw', from: o.from, to: stop, d: arriveT - throwT, h: 22 },
+        { t: 650, type: 'label', text: 'それた！', at: [P0[0] + 22, P0[1] - 6], tone: 'info', d: 500 }];
+      const caught = [{ t: arriveT, type: 'sfx', name: 'catch' }, { t: arriveT, type: 'label', text: 'とめた！', at: o.cover, tone: 'good', d: 900 },
+        { t: 1500, type: 'label', text: o.runner === 3 ? 'ホームへ いけない' : 'セカンドへ いけない', at: [160, 200], tone: 'good' }];
+      const lostWith = function (word) {
+        return [{ t: arriveT, type: 'ball', kind: 'roll', to: o.roll, d: 900 }, { t: arriveT, type: 'label', text: word, at: o.cover, tone: 'info', d: 700 },
+          { t: 1100, type: 'run', who: o.runner, to: o.runner + 1, d: o.runner === 3 ? 1100 : 1000 },
+          { t: 2200, type: 'label', text: o.runner === 3 ? 'ホームイン（1てん）' : 'セカンドまで すすまれた', at: o.runner === 3 ? 'H' : 'b2', tone: 'safe' }];
+      };
+      const lost = lostWith('きみの ところが あいてる！');
+      const mates = (o.mates || []).map(function (m) { return { t: T, type: 'field', who: m[0], to: m[1], d: 400 }; });
+      return {
+        id: o.id, stage: 6, type: 'spot', judge: true, q: o.q, spots: o.spots, answer: 0, explain: o.explain, card: o.card,
+        scene: {
+          coverKind: 'return',
+          T: T, runners: [o.runner], fielders: ['p', 'c', '1b', '2b', 'ss', '3b', 'cf'], you: o.you, youLab: o.youLab,
+          pos: o.pos, crowdLabel: '😵 だれも カバーしないと', crowdNote: 'ピッチャーの うしろに だれも いないと、それた ボールが がいやへ ころがって、ランナーに すすまれる。',
+          base: base, jobs: mates,
+          outcome: [caught, lost, lost],
+          crowd: [{ t: T + 200, type: 'label', text: 'だれも うごかない…', at: 'mid', tone: 'info', d: 400 }].concat(lostWith('だれも いない！'))
+        }
+      };
+    }
+    /* パスボール・ワイルドピッチの ときの ピッチャーの ホームカバー（s6-19）。ランナーは サード。
+       キャッチャーが うしろに そらした ボールを おいかけて いる あいだ、ホームが あく。ピッチャーが ホームに はいる。
+       アウトの かずで こたえは かわらない（どの アウトでも ホームに はいる） */
+    function homeCover(o) {
+      const TH = 700;   // こたえる しゅんかん：ボールが キャッチャーの うしろへ ぬけた ところ
+      const BALL = [206, 246];
+      const base = [{ t: 0, type: 'ball', kind: 'pitch', from: 'p', to: [178, 240], d: 450 },
+        { t: 450, type: 'label', text: 'そらした！', at: [244, 200], tone: 'info', d: 500 },
+        { t: 450, type: 'ball', kind: 'roll', to: BALL, d: 450 },
+        { t: 500, type: 'field', who: 'c', to: [200, 244], d: 600 }];
+      const runHome = { t: TH, type: 'run', who: 3, to: 3.82, d: 800 };   // ランナーは こたえる しゅんかんに スタート
+      const tagged = [runHome, { t: 1150, type: 'ball', kind: 'throw', from: 'c', to: 'p', d: 300, h: 6 }, { t: 1450, type: 'sfx', name: 'catch' },
+        { t: 1450, type: 'field', who: 'p', to: [149, 211], d: 60 }, { t: 1450, type: 'ball', kind: 'carry', to: 'p', d: 60 },
+        { t: 1510, type: 'out', who: 3 }, { t: 1510, type: 'label', text: 'タッチ アウト！', at: 'H', tone: 'out' }];
+      const scored = [{ t: TH, type: 'run', who: 3, to: 4, d: 1000 }, { t: 1150, type: 'label', text: 'ホームが あいてる！', at: 'H', tone: 'info', d: 500 },
+        { t: 1750, type: 'label', text: 'ホームイン（1てん）', at: 'H', tone: 'safe' }];
+      return {
+        id: o.id, stage: 6, type: 'spot', judge: true, q: o.q, spots: o.spots, answer: 0, explain: o.explain, card: o.card,
+        scene: {
+          coverKind: 'home',
+          T: TH, runners: [3], fielders: ['p', 'c', '1b', '3b'], you: 'p', youLab: [20, -14, 'start'],
+          crowdLabel: '😵 ピッチャーが マウンドに いると', crowdNote: 'ピッチャーが マウンドに いると、ホームが あいて、サードの ランナーに かえられて しまう。',
+          base: base, jobs: [],
+          outcome: [tagged, scored, scored],
+          crowd: [{ t: TH, type: 'label', text: 'マウンドに いる…', at: [160, 140], tone: 'info', d: 400 }].concat(scored)
+        }
+      };
+    }
     return [
       /* ===== ベースカバー ===== */
       {
@@ -1991,6 +2053,29 @@ const Core = (function () {
         spots: [{ id: '2B', at: 'b2', label: 'セカンド ベース' }, { id: 'ball', at: [172, 132], label: 'ボールへ' }, { id: '3B', at: 'b3', label: 'サード ベース' }],
         explain: 'セカンドを まもる ひとが とったら、ボールに いかない きみ（ショート）が セカンドの ベースに はいる。ホームへ なげて アウトを とって いる あいだに、バッターは セカンドを ねらって くる。ベースに ひとが いれば すすませない。ふたりとも ボールに いくと、セカンドが あいて すすまれる。（だれが はいるかは、チームの やくそくで かわる ことが あるよ）',
         card: { name: 'ぜんしん しゅびの カバー（ショート）', icon: '⏪', point: 'セカンドを まもる ひとが とったら ショートが セカンドへ' }
+      }),
+      /* ===== ピッチャーへの 返球の カバー（なげる 線の さき、うける ひとの うしろ） ===== */
+      returnCover({
+        id: 's6-15', you: 'ss', from: 'c', fromAt: [160, 242], cover: [150, 124], mates: [['2b', [170, 124]]], runner: 1, roll: [160, 46], youLab: [-20, -14, 'end'],
+        q: 'きみは ショート。ランナーは ファースト。キャッチャーが ピッチャーに ボールを かえす。きみは どこへ いく？',
+        spots: [{ id: 'behindP', at: [150, 124], label: 'ピッチャーの うしろ' }, { id: 'stay', at: [114, 114], label: 'いまの ばしょ' }, { id: 'front', at: [146, 198], label: 'ピッチャーの まえ' }],
+        explain: 'なげる ボールの せんを のばした さき、うける ひと（ピッチャー）の うしろに まわる。キャッチャーが ピッチャーに かえす ときは、ショートも セカンドを まもる ひとも、ふたりとも かならず ピッチャーの うしろ（セカンド ベースの まえ あたり）に まわる。タイムが かかる まで ボールは いきて いるので、それると ランナーに すすまれる。うしろで とめれば すすめない。（だれが まわるかは、チームの やくそくで かわる ことが あるよ）',
+        card: { name: 'へんきゅうの カバー（キャッチャーから）', icon: '🔙', point: 'キャッチャーが かえす ときは ショートも セカンドも かならず ピッチャーの うしろへ' }
+      }),
+      returnCover({
+        id: 's6-16', you: '2b', from: 'c', fromAt: [160, 242], cover: [170, 124], mates: [['ss', [150, 124]]], runner: 1, roll: [160, 46], youLab: [22, -14, 'start'],
+        q: 'きみは セカンドを まもる ひと。ランナーは ファースト。キャッチャーが ピッチャーに ボールを かえす。きみは どこへ いく？',
+        spots: [{ id: 'behindP', at: [170, 124], label: 'ピッチャーの うしろ' }, { id: 'stay', at: [206, 114], label: 'いまの ばしょ' }, { id: 'front', at: [174, 198], label: 'ピッチャーの まえ' }],
+        explain: 'なげる ボールの せんを のばした さき、うける ひと（ピッチャー）の うしろに まわる。キャッチャーが ピッチャーに かえす ときは、セカンドを まもる ひとも ショートも、ふたりとも かならず ピッチャーの うしろ（セカンド ベースの まえ あたり）に まわる。タイムが かかる まで ボールは いきて いるので、それると ランナーに すすまれる。うしろで とめれば すすめない。（だれが まわるかは、チームの やくそくで かわる ことが あるよ）',
+        card: { name: 'へんきゅうの カバー（ふたりとも）', icon: '👬', point: 'キャッチャーの へんきゅうは ふたりで かならず カバー' }
+      }),
+      /* ===== パスボール・ワイルドピッチの ときの ピッチャーの ホームカバー ===== */
+      homeCover({
+        id: 's6-17',
+        q: 'きみは ピッチャー。ランナーは サード。きみが なげた ボールを、キャッチャーが うしろに そらした！ きみは どこへ いく？',
+        spots: [{ id: 'H', at: [162, 208], label: 'ホーム ベースの まえ' }, { id: 'stay', at: [160, 162], label: 'マウンド' }, { id: 'ball', at: [196, 236], label: 'ボールへ' }],
+        explain: 'キャッチャーが ボールを おいかけて いる あいだ、ホームには だれも いない。ピッチャーは ホーム ベースの まえ（マウンドがわ）に はいって、キャッチャーからの ボールを まち、はしって くる ランナーに タッチする。ボールを もって いない うちは、ランナーの みちを ふさがない。アウトが いくつでも おなじ。ボールは キャッチャーに まかせよう。',
+        card: { name: 'ピッチャーの ホームカバー', icon: '🏠', point: 'うしろに そらしたら ピッチャーは ホームへ' }
       })
     ];
   })();
@@ -2009,7 +2094,10 @@ const Core = (function () {
     's6-11': ['センターと ショートの あいだへ いく', 'センターと いっしょに ボールを おいかける', 'そらした ところで とまる'],
     's6-12': ['センターと ないやの あいだへ いく', 'センターと いっしょに ボールを おいかける', 'そらした ところで とまる'],
     's6-13': ['セカンド ベースへ いく', 'ショートの ほうへ いく', 'ファースト ベースへ いく'],
-    's6-14': ['セカンド ベースへ いく', 'ボールの ほうへ いく', 'サード ベースへ いく']
+    's6-14': ['セカンド ベースへ いく', 'ボールの ほうへ いく', 'サード ベースへ いく'],
+    's6-15': ['ピッチャーの うしろ（ショートがわ）へ いく', 'いまの ばしょで まつ', 'ピッチャーの まえへ いく'],
+    's6-16': ['ピッチャーの うしろ（セカンドがわ）へ いく', 'いまの ばしょで まつ', 'ピッチャーの まえへ いく'],
+    's6-17': ['ホーム ベースの まえへ いく', 'マウンドで まつ', 'ボールを おいかける']
   };
   // 番号の 印の ずらし [x, y]（_dev/tests/marks_place.js で、人・ボール・ほかの 印・「きみ」と かさならない いちを もとめた）
   const SPOT_MK = {
@@ -2026,7 +2114,10 @@ const Core = (function () {
     's6-11': [[0, 0], [0, 0], [6, 15]],
     's6-12': [[0, 0], [0, 0], [-6, 15]],
     's6-13': [[0, 0], [-9, 22], [0, 0]],
-    's6-14': [[0, 0], [9, 22], [-6, 15]]
+    's6-14': [[0, 0], [9, 22], [-6, 15]],
+    's6-15': [[-11, 11], [-6, 15], [0, 0]],
+    's6-16': [[16, 0], [14, 14], [0, 0]],
+    's6-17': [[-15, 6], [6, 15], [-6, -15]]
   };
   const TEAM_QUESTIONS = [
     {
@@ -2444,6 +2535,7 @@ const Core = (function () {
     's6-05': ['backup'], 's6-06': ['backup'], 's6-07': ['relay'], 's6-08': ['relay'],
     's6-09': ['outfield', 'backup'], 's6-10': ['outfield', 'backup'], 's6-11': ['outfield', 'relay'], 's6-12': ['outfield', 'relay'],
     's6-13': ['cover'], 's6-14': ['cover'],
+    's6-15': ['backup'], 's6-16': ['backup'], 's6-17': ['cover'],
     'tm-01': ['team'], 'tm-02': ['team'], 'tm-03': ['team']
   };
   // こたえる まえの「さいせい」で みせて よい ところ（ミリ秒）。こたえが わかる ところ（けっかの もじ・うごき）の てまえで とめる。
