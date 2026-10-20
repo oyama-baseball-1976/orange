@@ -1668,7 +1668,7 @@ const Core = (function () {
         }
       };
     }
-    /* パスボール・ワイルドピッチの ときの ピッチャーの ホームカバー（s6-19）。ランナーは サード。
+    /* パスボール・ワイルドピッチの ときの ピッチャーの ホームカバー（s6-17）。ランナーは サード。
        キャッチャーが うしろに そらした ボールを おいかけて いる あいだ、ホームが あく。ピッチャーが ホームに はいる。
        アウトの かずで こたえは かわらない（どの アウトでも ホームに はいる） */
     function homeCover(o) {
@@ -2082,6 +2082,24 @@ const Core = (function () {
         spots: [{ id: 'H', at: [162, 208], label: 'ホーム ベースの まえ' }, { id: 'stay', at: [160, 162], label: 'マウンド' }, { id: 'ball', at: [196, 236], label: 'ボールへ' }],
         explain: 'キャッチャーが ボールを おいかけて いる あいだ、ホームには だれも いない。ピッチャーは ホーム ベースの まえ（マウンドがわ）に はいって、キャッチャーからの ボールを まち、はしって くる ランナーに タッチする。ボールを もって いない うちは、ランナーの みちを ふさがない。アウトが いくつでも おなじ。ボールは キャッチャーに まかせよう。',
         card: { name: 'ピッチャーの ホームカバー', icon: '🏠', point: 'うしろに そらしたら ピッチャーは ホームへ' }
+      }),
+      /* サードから ピッチャーへの 返球：せんを のばすと ファーストの ほう → ファーストを まもる ひとが まわる（依頼者の きめごと・rule-checker）。
+         ファーストを まもる ひとの いまの ばしょ [240,140] は せんから 38てん（やく 8m）はなれて いて、まって いても それた ボールに とどかない */
+      returnCover({
+        id: 's6-18', you: '1b', from: '3b', fromAt: [82, 146], cover: [193, 169], runner: 3, roll: [296, 190], youLab: [20, -14, 'start'],
+        q: 'きみは ファーストを まもる ひと。ランナーは サード。ピッチャーが サードに けんせいした あと、サードを まもる ひとが ピッチャーに ボールを かえす。きみは どこへ いく？',
+        spots: [{ id: 'behindP', at: [193, 169], label: 'ピッチャーの うしろ（サードから みて むこうがわ）' }, { id: 'stay', at: [240, 140], label: 'いまの ばしょ' }, { id: 'side', at: [230, 92], label: 'セカンドの ほう' }],
+        explain: 'なげる せんを のばした さきに いる ひとが、うける ひと（ピッチャー）の うしろに まわる。サードから ピッチャーへの せんを のばすと、ファーストの ほうへ いく。その さきに いるのは きみ（ファーストを まもる ひと）。サードから みて、ピッチャーの むこうがわが「うしろ」だよ。いまの ばしょで まって いると、それた ボールは はなれた ところを ころがって いって とどかない。ピッチャーの うしろに まわって とめよう。タイムが かかる まで ボールは いきて いるので、それると、サードの ランナーに ホームへ かえられる ことが ある。（だれが まわるかは、チームの やくそくで かわる ことが あるよ）',
+        card: { name: 'へんきゅうの カバー（サードから）', icon: '↗️', point: 'サードからの へんきゅうは ファーストを まもる ひとが うしろへ' }
+      }),
+      /* ファーストから ピッチャーへの 返球：せんを のばすと サードの ほう → サードを まもる ひとが まわる。
+         サードを まもる ひとの いまの ばしょ [80,140] は せんから 33てん（やく 7m）はなれて いる */
+      returnCover({
+        id: 's6-19', you: '3b', from: '1b', fromAt: [246, 150], cover: [124, 167], runner: 1, roll: [24, 186], youLab: [-20, -14, 'end'],
+        q: 'きみは サードを まもる ひと。ランナーは ファースト。ピッチャーが ファーストに けんせいした あと、ファーストを まもる ひとが ピッチャーに ボールを かえす。きみは どこへ いく？',
+        spots: [{ id: 'behindP', at: [124, 167], label: 'ピッチャーの うしろ（ファーストから みて むこうがわ）' }, { id: 'stay', at: [80, 140], label: 'いまの ばしょ' }, { id: 'side', at: [90, 92], label: 'ショートの ほう' }],
+        explain: 'なげる せんを のばした さきに いる ひとが、うける ひと（ピッチャー）の うしろに まわる。ファーストから ピッチャーへの せんを のばすと、サードの ほうへ いく。その さきに いるのは きみ（サードを まもる ひと）。ファーストから みて、ピッチャーの むこうがわが「うしろ」だよ。いまの ばしょで まって いると、それた ボールは はなれた ところを ころがって いって とどかない。ピッチャーの うしろに まわって とめよう。タイムが かかる まで ボールは いきて いるので、それると、ファーストの ランナーに すすまれる ことが ある。（だれが まわるかは、チームの やくそくで かわる ことが あるよ）',
+        card: { name: 'へんきゅうの カバー（ファーストから）', icon: '↖️', point: 'ファーストからの へんきゅうは サードを まもる ひとが うしろへ' }
       })
     ];
   })();
@@ -2103,7 +2121,9 @@ const Core = (function () {
     's6-14': ['セカンド ベースへ いく', 'ボールの ほうへ いく', 'サード ベースへ いく'],
     's6-15': ['ピッチャーの うしろ（ショートがわ）へ いく', 'いまの ばしょで まつ', 'ピッチャーの まえへ いく'],
     's6-16': ['ピッチャーの うしろ（セカンドがわ）へ いく', 'いまの ばしょで まつ', 'ピッチャーの まえへ いく'],
-    's6-17': ['ホーム ベースの まえへ いく', 'マウンドで まつ', 'ボールを おいかける']
+    's6-17': ['ホーム ベースの まえへ いく', 'マウンドで まつ', 'ボールを おいかける'],
+    's6-18': ['ピッチャーの うしろ（サードから みて むこうがわ）へ いく', 'いまの ばしょで まつ', 'セカンドの ほうへ いく'],
+    's6-19': ['ピッチャーの うしろ（ファーストから みて むこうがわ）へ いく', 'いまの ばしょで まつ', 'ショートの ほうへ いく']
   };
   // 番号の 印の ずらし [x, y]（_dev/tests/marks_place.js で、人・ボール・ほかの 印・「きみ」と かさならない いちを もとめた）
   const SPOT_MK = {
@@ -2123,7 +2143,9 @@ const Core = (function () {
     's6-14': [[0, 0], [9, 22], [-6, 15]],
     's6-15': [[-11, 11], [-6, 15], [0, 0]],
     's6-16': [[16, 0], [14, 14], [0, 0]],
-    's6-17': [[-15, 6], [6, 15], [-6, -15]]
+    's6-17': [[-15, 6], [6, 15], [-6, -15]],
+    's6-18': [[0, 0], [6, 15], [0, 0]],
+    's6-19': [[0, 0], [6, 15], [0, 0]]
   };
   const TEAM_QUESTIONS = [
     {
@@ -2165,6 +2187,14 @@ const Core = (function () {
       poses: ['infieldReady', 'upright', 'squat'],
       explain: 'ぼーっと たって いると、ボールが きた ときに うごきだすのが おそく なる。ひざを まげて ひくく かまえ、グローブを ひらいて ひざの ちかくに おくと、まえにも みぎにも ひだりにも すぐ うごける。しゃがみこむと、すぐには たてない。（かまえかたは、チームの おしえかたで ちがう ことが あるよ）',
       card: { name: 'ないやの かまえ', icon: '🧤', point: 'ひくく かまえて グローブは ひざの ちかく' }
+    },
+    {
+      // ジャンプの タイミング（依頼者の きめごと）。こたえる まえは とまった 絵、こたえた あとに アニメで タイミングを みせる
+      id: 'kk-02', stage: 1, type: 'choice', mind: true, anim: 'jumpTiming',
+      q: 'きみは ショート（ないや）。かまえてから、かるく ジャンプする。ジャンプする タイミングは いつ？',
+      choices: ['ピッチャーが なげたら かるく ジャンプして、バッターが うつ しゅんかんに おりる', 'バッターが うった あとに ジャンプする', 'ピッチャーが ボールを もって たって いる ときに ジャンプする'], answer: 0,
+      explain: 'ピッチャーが なげたら かるく ジャンプして、バッターが うつ しゅんかんに おりる。おりた ときに ひざが まがって いるので、ボールが どこへ とんでも すぐに うごきだせる。うった あとに ジャンプすると、うごきだすのが おそく なる。なげる まえに ジャンプすると、うつ ときには もう とまって しまって いる。（かまえかたは、チームの おしえかたで ちがう ことが あるよ）',
+      card: { name: 'ジャンプの タイミング', icon: '⏱️', point: 'なげたら かるく ジャンプ、うつ しゅんかんに おりる' }
     },
     {
       id: 'kk-03', stage: 1, type: 'choice', mind: true,
@@ -2249,6 +2279,54 @@ const Core = (function () {
     // 選手の まわりだけを みせる（14〜110 × 16〜116）。ボタンの 中で 大きく みえる ように
     return '<svg class="side-fig" viewBox="12 16 100 100" role="img" aria-hidden="true" data-pose="' + pose + '">' +
       '<rect x="0" y="112" width="120" height="8" rx="2" fill="#c8a06a"/>' + sidePlayer(pose, 0, 0) + '</svg>';
+  }
+
+  /* ジャンプの タイミング（kk-02）：ショート・ピッチャー・バッターを 横から みた 絵。
+     animated が false の ときは はじめの とまった 絵（こたえる まえ）。true の ときは SMIL の アニメ（くりかえし）。
+     じかん（びょう）：0〜0.8 ピッチャーが ボールを もって いる → 0.8 なげる → 1.2〜1.35 ショートが かるく ジャンプ（あがる）
+     → 1.35〜1.5 おりる → 1.5 バッターが うつ ＝ ショートが おりる しゅんかん → 1.5〜2.3 ボールが ショートの ほうへ。
+     うく じかんは 0.3びょう（かるく。rule-checker ☆）：なげてから 1.2びょう までは じゅんび、1.2〜1.5 で ジャンプ */
+  const JUMP_T = { dur: 3, pitch: 0.8, up: 1.2, peak: 1.35, hit: 1.5, roll: 2.3 };
+  function timingSVG(kind, animated) {
+    if (kind !== 'jumpTiming') return '';
+    const D = JUMP_T.dur, k = function (t) { return (t / D).toFixed(4); };
+    const anim = function (tag) { return animated ? tag : ''; };
+    const kt = function (ts) { return ts.map(k).join(';'); };
+    const REP = ' dur="' + D + 's" repeatCount="indefinite"';
+    // ショートの ジャンプ：なげたら あがり、うつ しゅんかんに おりる
+    const hop = anim('<animateTransform attributeName="transform" type="translate" values="0 0;0 0;0 -12;0 0;0 0" keyTimes="' +
+      kt([0, JUMP_T.up, JUMP_T.peak, JUMP_T.hit, D]) + '" calcMode="spline" keySplines="0 0 1 1;0.3 0.6 0.6 1;0.4 0 0.7 0.4;0 0 1 1"' + REP + '/>');
+    const shadow = anim('<animate attributeName="rx" values="20;20;13;20;20" keyTimes="' + kt([0, JUMP_T.up, JUMP_T.peak, JUMP_T.hit, D]) + '"' + REP + '/>');
+    // ボール：ピッチャーの て → バッター（なげる）→ ショートの まえ（ゴロ）
+    const BP = [178, 80], BH = [262, 84], BG = [96, 108];
+    const ballX = anim('<animate attributeName="cx" values="' + [BP[0], BP[0], BH[0], BG[0], BG[0]].join(';') + '" keyTimes="' + kt([0, JUMP_T.pitch, JUMP_T.hit, JUMP_T.roll, D]) + '"' + REP + '/>');
+    const ballY = anim('<animate attributeName="cy" values="' + [BP[1], BP[1], BH[1], BG[1], BG[1]].join(';') + '" keyTimes="' + kt([0, JUMP_T.pitch, JUMP_T.hit, JUMP_T.roll, D]) + '"' + REP + '/>');
+    // バット：うつ しゅんかんに ふる
+    const swing = anim('<animateTransform attributeName="transform" type="rotate" values="0 60 70;0 60 70;-150 60 70;-150 60 70" keyTimes="' +
+      kt([0, JUMP_T.hit - 0.12, JUMP_T.hit + 0.08, D]) + '"' + REP + '/>');
+    // 上の ことば（いま なにを して いるか）
+    const say = function (text, from, to) {
+      const v = '<animate attributeName="opacity" values="0;1;0" keyTimes="' + kt([0, from, to]) + '" calcMode="discrete"' + REP + '/>';
+      return '<text x="160" y="16" text-anchor="middle" font-size="14" font-weight="bold" fill="#1f3b73" opacity="0">' + text + v + '</text>';
+    };
+    return '<svg class="' + (animated ? 'side-anim' : 'side-still') + '" viewBox="0 0 320 134" role="img" aria-label="ピッチャーが なげたら ショートが かるく ジャンプして、バッターが うつ しゅんかんに おりる">' +
+      '<rect x="0" y="112" width="320" height="12" rx="2" fill="#c8a06a"/>' +
+      // ピッチャー（まんなか・すこし とおく）
+      '<g transform="translate(130 22) scale(0.8)">' + sidePlayer('upright', 0, 0, { shirt: '#c0392b' }) + '</g>' +
+      '<text x="176" y="130" text-anchor="middle" font-size="12" fill="#5a3214">ピッチャー</text>' +
+      // バッター（みぎ・ひだりを むく）とバット
+      '<g transform="translate(330 22) scale(-0.8 0.8)">' + sidePlayer('upright', 0, 0, { shirt: '#7f8c8d' }) +
+      '<line x1="60" y1="70" x2="78" y2="36" stroke="#8a5a2b" stroke-width="5" stroke-linecap="round">' + swing + '</line></g>' +
+      '<text x="285" y="130" text-anchor="middle" font-size="12" fill="#5a3214">バッター</text>' +
+      // ショート（ひだり・きみ）
+      '<ellipse cx="63" cy="112" rx="20" ry="2.5" fill="rgba(0,0,0,.25)">' + shadow + '</ellipse>' +
+      '<g class="anim-fielder">' + hop + sidePlayer('infieldReady', 0, 0) + '</g>' +
+      '<text x="62" y="130" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f3b73">きみ（ショート）</text>' +
+      // ボール
+      '<circle cx="' + BP[0] + '" cy="' + BP[1] + '" r="3.2" fill="#fff" stroke="#c0392b" stroke-width="1">' + ballX + ballY + '</circle>' +
+      (animated ? say('ピッチャーが なげる まえ… まだ じっと', 0, JUMP_T.pitch) + say('なげた！ じゅんび…', JUMP_T.pitch, JUMP_T.up) + say('かるく ジャンプ', JUMP_T.up, JUMP_T.hit) +
+        say('うつ しゅんかんに おりる！', JUMP_T.hit, D) : '') +
+      '</svg>';
   }
 
   DEFENSE_QUESTIONS.forEach(function (q) {
@@ -2641,9 +2719,9 @@ const Core = (function () {
     's6-05': ['backup'], 's6-06': ['backup'], 's6-07': ['relay'], 's6-08': ['relay'],
     's6-09': ['outfield', 'backup'], 's6-10': ['outfield', 'backup'], 's6-11': ['outfield', 'relay'], 's6-12': ['outfield', 'relay'],
     's6-13': ['cover'], 's6-14': ['cover'],
-    's6-15': ['backup'], 's6-16': ['backup'], 's6-17': ['cover'],
+    's6-15': ['backup'], 's6-16': ['backup'], 's6-17': ['cover'], 's6-18': ['backup'], 's6-19': ['backup'],
     'tm-01': ['team'], 'tm-02': ['team'], 'tm-03': ['team'],
-    'kk-01': ['mind'], 'kk-03': ['mind'], 'kk-04': ['mind'], 'kk-05': ['mind'], 'kk-06': ['mind']
+    'kk-01': ['mind'], 'kk-02': ['mind'], 'kk-03': ['mind'], 'kk-04': ['mind'], 'kk-05': ['mind'], 'kk-06': ['mind']
   };
   // こたえる まえの「さいせい」で みせて よい ところ（ミリ秒）。こたえが わかる ところ（けっかの もじ・うごき）の てまえで とめる。
   // ない 問題は、アニメ そのものが こたえに なるので さいせいしない
@@ -4600,7 +4678,7 @@ const Core = (function () {
     emptyProgress: emptyProgress, sanitize: sanitize, cleanProfile: cleanProfile, syncPart: syncPart, mergeProgress: mergeProgress,
     srsOf: srsOf, isMastered: isMastered, masteredCount: masteredCount, applyAnswer: applyAnswer,
     recentAccuracy: recentAccuracy, planMix: planMix,
-    stageOf: stageOf, questionsOf: questionsOf, teamQuestions: teamQuestions, mindQuestions: mindQuestions, POSES: POSES, sideFigureSVG: sideFigureSVG, templatesOf: templatesOf, unitsOf: unitsOf, bestStars: bestStars,
+    stageOf: stageOf, questionsOf: questionsOf, teamQuestions: teamQuestions, mindQuestions: mindQuestions, POSES: POSES, sideFigureSVG: sideFigureSVG, timingSVG: timingSVG, JUMP_T: JUMP_T, templatesOf: templatesOf, unitsOf: unitsOf, bestStars: bestStars,
     isUnlocked: isUnlocked, stageLearned: stageLearned, allCleared: allCleared, nextStage: nextStage, starsFor: starsFor,
     playerGrade: playerGrade, teamRound: teamRound, extraRound: extraRound, unitAllowed: unitAllowed, unitsFor: unitsFor,
     nigateKeys: nigateKeys, unitPool: unitPool, composeSession: composeSession, buildRound: buildRound,
@@ -5687,8 +5765,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       pic.hidden = false;
       R.player = Play.mount(pic, q.scene, { onSfx: playSfx, focusOuts: Core.outsMatter(q) });
     } else if (q.pic) { pic.innerHTML = diamondPic(q.pic.runners); pic.hidden = false; }
+    else if (q.anim) { pic.innerHTML = Core.timingSVG(q.anim, false); pic.hidden = false; }
     else { pic.innerHTML = ''; pic.hidden = true; }
-    $('qIcon').hidden = !!q.scene;
+    $('qIcon').hidden = !!q.scene || !!q.anim;
     $('qText').textContent = q.q;
     $('feedback').innerHTML = '';
     refreshSpeakButtons();
@@ -5855,6 +5934,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     }
     html += '<button class="btn primary" id="btnGo">' + nextLabel + '</button></div>';
     $('feedback').innerHTML = html;
+    if (q.anim) {
+      // こたえた あと：タイミングを アニメで みせる（うごきを へらす せっていでは「おりる しゅんかん」で とめる）
+      $('qPic').innerHTML = Core.timingSVG(q.anim, true);
+      const sv = $('qPic').querySelector('svg.side-anim');
+      if (sv && Play.reduced() && sv.pauseAnimations) { sv.pauseAnimations(); sv.setCurrentTime(Core.JUMP_T.hit + 0.2); }
+    }
     setMascot($('fbMascot'), ok ? 'happy' : 'oops', true);
     $('btnGo').onclick = goNext;
     if ($('btnReplay')) $('btnReplay').onclick = function () { replayResult(q, idx); };
