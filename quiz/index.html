@@ -2309,7 +2309,7 @@ const Core = (function () {
       const v = '<animate attributeName="opacity" values="0;1;0" keyTimes="' + kt([0, from, to]) + '" calcMode="discrete"' + REP + '/>';
       return '<text x="160" y="16" text-anchor="middle" font-size="14" font-weight="bold" fill="#1f3b73" opacity="0">' + text + v + '</text>';
     };
-    return '<svg class="' + (animated ? 'side-anim' : 'side-still') + '" viewBox="0 0 320 134" role="img" aria-label="ピッチャーが なげたら ショートが かるく ジャンプして、バッターが うつ しゅんかんに おりる">' +
+    return '<svg class="' + (animated ? 'side-anim' : 'side-still') + '" viewBox="0 0 320 134" role="img" aria-label="' + (animated ? 'ピッチャーが なげたら ショートが かるく ジャンプして、バッターが うつ しゅんかんに おりる' : 'ショート・ピッチャー・バッターを よこから みた え') + '">' +
       '<rect x="0" y="112" width="320" height="12" rx="2" fill="#c8a06a"/>' +
       // ピッチャー（まんなか・すこし とおく）
       '<g transform="translate(130 22) scale(0.8)">' + sidePlayer('upright', 0, 0, { shirt: '#c0392b' }) + '</g>' +
