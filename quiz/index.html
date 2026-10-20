@@ -141,6 +141,11 @@ ruby rt { font-size: 12px; }
 
 /* ---------- マスコット ---------- */
 .hero { display: flex; align-items: center; gap: 12px; }
+.grow-line { margin: 8px 0 0; font-size: 15px; font-weight: 700; color: var(--ink); }
+.grow-line .gl-name { color: var(--orange-dark); }
+.sec-title.with-mascot { display: flex; align-items: center; gap: 8px; }
+.sec-title .mini-mascot { width: 40px; height: 40px; flex: 0 0 auto; }
+.sec-title .mini-mascot svg { width: 100%; height: 100%; display: block; }
 .mascot { width: 88px; height: 88px; flex: 0 0 auto; }
 .mascot svg { width: 100%; height: 100%; display: block; }
 .mascot.bounce { animation: bounce .6s ease-out; }
@@ -515,6 +520,7 @@ ruby rt { font-size: 12px; }
         <div class="meter-bar"><div class="meter-fill" id="masterFill"></div></div>
         <div class="meter-text" id="masterText"></div>
       </div>
+      <p class="grow-line" id="growLine"></p>
       <button class="btn primary today-btn" id="btnToday">▶ きょうの 10もん</button>
       <div class="profile-row">
         <span class="who" id="profileLine"></span>
@@ -596,7 +602,7 @@ ruby rt { font-size: 12px; }
   <!-- ===== ずかん ===== -->
   <section id="scr-zukan" class="screen" hidden>
     <div class="card">
-      <p class="sec-title">📖 ルールカード ずかん</p>
+      <p class="sec-title with-mascot" id="zukanTitle">📖 ルールカード ずかん</p>
       <div class="meter">
         <div class="meter-bar"><div class="meter-fill" id="zukanFill"></div></div>
         <div class="meter-text" id="zukanText"></div>
@@ -635,7 +641,7 @@ ruby rt { font-size: 12px; }
   <!-- ===== ランキング ===== -->
   <section id="scr-rank" class="screen" hidden>
     <div class="card">
-      <p class="sec-title">🏆 ランキング</p>
+      <p class="sec-title with-mascot" id="rankTitle">🏆 ランキング</p>
       <div class="tabs">
         <button class="tab on" id="rkTabCorrect" aria-pressed="true">⭕ せいかいの かず</button>
         <button class="tab" id="rkTabMastered" aria-pressed="false">🧠 おぼえた かず</button>
@@ -4037,7 +4043,7 @@ const Core = (function () {
   function emptyProgress() {
     return {
       v: 2, stages: {}, srs: {}, cards: {}, days: [], rounds: 0, recent: [],
-      stats: { correct: 0, answers: 0 }, updated: '', sound: true, profile: null, outbox: [], gradeYear: null
+      stats: { correct: 0, answers: 0 }, updated: '', sound: true, profile: null, outbox: [], gradeYear: null, growth: 1
     };
   }
 
@@ -4102,6 +4108,7 @@ const Core = (function () {
       if (pr.ok) p.profile = { nickname: pr.nickname, grade: pr.grade };
     }
     if (isInt(raw.gradeYear) && raw.gradeYear >= 2000 && raw.gradeYear <= 2100) p.gradeYear = raw.gradeYear;
+    if (isInt(raw.growth) && raw.growth >= 1 && raw.growth <= GROWTH.length) p.growth = raw.growth;
     if (Array.isArray(raw.outbox)) {
       p.outbox = raw.outbox.filter(function (x) { return x && typeof x === 'object' && x.type === 'session'; }).slice(-10);
     }
@@ -4262,6 +4269,39 @@ const Core = (function () {
   function setGrade(p, grade, today) {
     if (p.profile && grade >= 1 && grade <= 6) p.profile.grade = grade;
     p.gradeYear = fiscalYear(today);
+  }
+
+  /* ---------- マスコットの 成長 ----------
+     おぼえた かず（masteredCount）で 5段階。区切りは 0・3・15・45・100（決定ログ 180）。
+     p.growth は これまでに とどいた いちばん 上の 段階。「おぼえた」が まちがいで へっても 段階は 下げない。
+     p は 名前ごとの 記録（名前なしも この 端末の 中の 記録）なので、成長も 名前ごとに わかれる。
+     GAS には おくらない（syncPart に いれない＝おくる 形は かわらない）。GAS から 読みこんだ ときは、あわせた 記録の
+     おぼえた かずで きまる 段階と p.growth の 大きい ほう */
+  const GROWTH = [
+    { stage: 1, key: 'ball', name: 'ボール', min: 0 },
+    { stage: 2, key: 'glove', name: 'グローブ', min: 3 },
+    { stage: 3, key: 'bat', name: 'バット', min: 15 },
+    { stage: 4, key: 'uniform', name: 'ユニフォーム', min: 45 },
+    { stage: 5, key: 'trophy', name: 'トロフィー', min: 100 }
+  ];
+  function growthFor(count) {
+    let st = 1;
+    GROWTH.forEach(function (g) { if (count >= g.min) st = g.stage; });
+    return st;
+  }
+  // いま 見せる 段階
+  function growthStage(p) { return Math.max(p.growth || 1, growthFor(masteredCount(p))); }
+  // 段階を 記録に のこす。上がった ときは grew が true（演出を だす）
+  function updateGrowth(p) {
+    const from = p.growth || 1, now = growthStage(p);
+    p.growth = now;
+    return { stage: now, from: from, grew: now > from };
+  }
+  // ホームの 表示：いまの 段階の 名前と、つぎの 段階まで あと なんこ（いちばん 上なら next は null）
+  function growthInfo(p) {
+    const stage = growthStage(p), n = masteredCount(p);
+    const next = GROWTH[stage] || null;
+    return { stage: stage, name: GROWTH[stage - 1].name, count: n, next: next, left: next ? Math.max(1, next.min - n) : 0 };
   }
 
   /* ---------- 習熟 ---------- */
@@ -4575,7 +4615,8 @@ const Core = (function () {
     const cardId = q.cardId || q.id;
     let newCard = false;
     if (ok && !p.cards[cardId]) { p.cards[cardId] = today; newCard = true; }
-    return { newCard: newCard, becameMastered: res.becameMastered, fast: fast };
+    const g = updateGrowth(p);
+    return { newCard: newCard, becameMastered: res.becameMastered, fast: fast, grew: g.grew ? g : null };
   }
 
   // 1回 10もんの 1もん ぶんを 数える（ランキングの「せいかいの かず」＝ stats.correct）。
@@ -4690,6 +4731,7 @@ const Core = (function () {
 
   return {
     MASCOT_DATA: MASCOT_DATA, MASCOT_MOODS: MASCOT_MOODS, mascotMood: mascotMood, mascotSVG: mascotSVG,
+    GROWTH: GROWTH, growthFor: growthFor, growthStage: growthStage, updateGrowth: updateGrowth, growthInfo: growthInfo,
     ROUND_SIZE: ROUND_SIZE, STORAGE_KEY: STORAGE_KEY, INTERVALS: INTERVALS, MASTER_BOX: MASTER_BOX, FAST_MS: FAST_MS,
     STAGES: STAGES, RANKS: RANKS, QUESTIONS: QUESTIONS, BY_ID: BY_ID, TAGS: TAGS,
     TEMPLATES: TEMPLATES, TEMPLATE_BY_ID: TEMPLATE_BY_ID, UNITS: UNITS, UNIT_BY_KEY: UNIT_BY_KEY,
@@ -4876,7 +4918,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
 
   /* ---------- マスコット「オレンジくん」 ----------
      ふだんは normal、正解は joy（よろこぶ）、まちがいは cheer（はげます）。絵は いまの 子の 段階 */
-  function mascotStage() { return 1; }
+  function mascotStage() { return Core.growthStage(P); }
   function setMascot(el, mood, bounce) {
     el.innerHTML = Core.mascotSVG(mascotStage(), mood);
     if (bounce) { el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }
@@ -5437,7 +5479,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     const m = Core.masteredCount(P), all = Core.unitsFor(P).length;
     $('masterFill').style.width = (m / all * 100) + '%';
     $('masterText').textContent = 'おぼえた もんだい ' + m + ' / ' + all;
+    renderGrowth();
   }
+
+  // ホームの 成長の 表示
+  function renderGrowth() {
+    const g = Core.growthInfo(P);
+    $('growLine').innerHTML = '<span class="gl-name">' + g.stage + 'だんかいめ「' + g.name + '」</span>' +
+      (g.next ? ' ・ あと ' + g.left + 'こ おぼえると せいちょう するよ' : ' ・ いちばん うえまで そだったよ！');
+    $('growLine').setAttribute('data-stage', String(g.stage));
+  }
+  // カード帳・ランキングの 見出しの 小さな マスコット（いまの 段階）
+  function miniMascot() { return '<span class="mini-mascot">' + Core.mascotSVG(mascotStage(), 'normal') + '</span>'; }
 
   function renderStamps() {
     const t = today();
@@ -5481,6 +5534,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   }
 
   function renderHome() {
+    // GAS から 読みこんで おぼえた かずが ふえた ときも、ここで 段階を のこす
+    if (Core.updateGrowth(P).grew) Store.save(P);
     setMascot($('homeMascot'), 'normal');
     $('homeBubble').textContent = homeMessage();
     renderRank();
@@ -5578,6 +5633,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   let rankRows = null, rankBy = 'correct';
   function renderRanking() {
     rankBy = 'correct';   // ひらいた ときは いつも「せいかいの かず」から
+    $('rankTitle').innerHTML = miniMascot() + '<span>🏆 ランキング</span>';
     show('scr-rank');
     drawRanking('よみこみちゅう…');
     Net.get({ action: 'ranking', level: 'beta' }).then(function (j) {
@@ -6238,6 +6294,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   }
 
   function renderZukan() {
+    $('zukanTitle').innerHTML = miniMascot() + '<span>📖 ルールカード ずかん</span>';
     const n = Core.cardCount(P);
     const all = Core.cardIdsFor(P).length;
     $('zukanFill').style.width = (n / all * 100) + '%';
