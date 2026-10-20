@@ -458,6 +458,21 @@ ruby rt { font-size: 12px; }
 .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(20, 10, 30, .55); animation: fadein .2s; }
 .modal-box { width: 100%; max-width: 420px; max-height: 90vh; overflow: auto; background: var(--card); border-radius: 22px; padding: 18px; border: 4px solid var(--gold); }
 .modal-box.plain { border-color: var(--line); }
+/* マスコットの 成長の 演出 */
+.grow-box { text-align: center; }
+.gm-title { font-size: 28px; font-weight: 900; color: var(--orange-dark); margin: 0 0 6px; }
+.gm-pics { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.gm-old { width: 56px; height: 56px; opacity: .6; flex: 0 0 auto; }
+.gm-arrow { font-size: 20px; color: var(--muted); }
+.gm-stage { position: relative; width: 160px; height: 160px; flex: 0 0 auto; }
+.gm-rays { position: absolute; inset: -10px; border-radius: 50%; background: repeating-conic-gradient(rgba(255, 200, 61, .55) 0 12deg, transparent 12deg 30deg); animation: gmspin 6s linear infinite; }
+.gm-new { position: relative; width: 100%; height: 100%; animation: gmpop .9s cubic-bezier(.2, 1.5, .4, 1) both; }
+.gm-old svg, .gm-new svg { width: 100%; height: 100%; display: block; }
+.gm-text { font-size: 20px; font-weight: 900; margin: 8px 0 2px; }
+.gm-next { font-size: 15px; color: var(--muted); margin: 0 0 12px; }
+@keyframes gmpop { 0% { transform: scale(.3) rotate(-12deg); opacity: 0; } 60% { transform: scale(1.12) rotate(4deg); opacity: 1; } 100% { transform: none; opacity: 1; } }
+@keyframes gmspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .gm-rays { display: none; } .gm-new { animation: none; } }
 .cd-icon { font-size: 64px; text-align: center; line-height: 1.2; }
 .cd-name { font-size: 24px; font-weight: 900; text-align: center; margin: 4px 0; }
 .cd-point { font-size: 19px; font-weight: 900; text-align: center; background: var(--orange-soft); border-radius: 12px; padding: 8px; }
@@ -689,6 +704,21 @@ ruby rt { font-size: 12px; }
     <p class="cd-rule" id="cdRule"></p>
     <button class="speak" id="cdSpeak" hidden>🔈 よんで もらう</button>
     <button class="btn primary" id="cdClose">とじる</button>
+  </div>
+</div>
+
+<!-- ===== マスコットの 成長 ===== -->
+<div class="modal" id="growModal" hidden role="dialog" aria-modal="true" aria-labelledby="gmTitle">
+  <div class="modal-box grow-box">
+    <p class="gm-title" id="gmTitle">せいちょう した！</p>
+    <div class="gm-pics">
+      <div class="gm-old" id="gmOld"></div>
+      <span class="gm-arrow" aria-hidden="true">▶</span>
+      <div class="gm-stage"><div class="gm-rays" aria-hidden="true"></div><div class="gm-new" id="gmNew"></div></div>
+    </div>
+    <p class="gm-text" id="gmText"></p>
+    <p class="gm-next" id="gmNext"></p>
+    <button class="btn primary" id="gmOk">やったね！</button>
   </div>
 </div>
 
@@ -5489,6 +5519,29 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       (g.next ? ' ・ あと ' + g.left + 'こ おぼえると せいちょう するよ' : ' ・ いちばん うえまで そだったよ！');
     $('growLine').setAttribute('data-stage', String(g.stage));
   }
+  // 段階が 上がった ときの 演出。g は Core.updateGrowth の かえり（from → stage）。
+  // 新しい 姿を 大きく みせる。動きを へらす 設定では 光の わ・はずむ 動き・紙ふぶきを ださない（CSS と ここ）
+  let growFocus = null;
+  function showGrowth(g) {
+    if (!g || !g.grew) return;
+    const now = Core.GROWTH[g.stage - 1], next = Core.GROWTH[g.stage] || null;
+    $('gmOld').innerHTML = Core.mascotSVG(g.from, 'normal');
+    $('gmNew').innerHTML = Core.mascotSVG(g.stage, 'joy');
+    $('gmText').textContent = '「' + now.name + '」に なったよ！';
+    $('gmNext').textContent = next ? 'つぎは「' + next.name + '」。おぼえた もんだいを ふやそう！' : 'いちばん うえまで そだったよ！';
+    $('growModal').setAttribute('data-stage', String(g.stage));
+    growFocus = document.activeElement;
+    $('growModal').hidden = false;
+    $('gmOk').focus();
+    Sound.fanfare();
+    if (!Play.reduced()) confetti();
+  }
+  function closeGrowth() {
+    $('growModal').hidden = true;
+    if (growFocus && growFocus.focus) growFocus.focus();
+    if (!$('scr-home').hidden) setMascot($('homeMascot'), 'normal', true);
+  }
+
   // カード帳・ランキングの 見出しの 小さな マスコット（いまの 段階）
   function miniMascot() { return '<span class="mini-mascot">' + Core.mascotSVG(mascotStage(), 'normal') + '</span>'; }
 
@@ -5535,7 +5588,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
 
   function renderHome() {
     // GAS から 読みこんで おぼえた かずが ふえた ときも、ここで 段階を のこす
-    if (Core.updateGrowth(P).grew) Store.save(P);
+    const grown = Core.updateGrowth(P);
+    if (grown.grew) Store.save(P);
     setMascot($('homeMascot'), 'normal');
     $('homeBubble').textContent = homeMessage();
     renderRank();
@@ -5550,6 +5604,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     renderStamps();
     show('scr-home');
     playMapRun();
+    if (grown.grew) showGrowth(grown);
   }
 
   /* ---------- なまえの とうろく（ニックネームと 学年だけ） ---------- */
@@ -5964,6 +6019,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
 
     if (ok) Sound.correct(); else Sound.wrong();
     if (got.newCard) setTimeout(function () { Sound.card(); }, 350);
+    // マスコットが せいちょう した：こたえの よろこぶ 顔を みせてから 演出
+    if (got.grew) { const gr = got.grew; setTimeout(function () { showGrowth(gr); }, Play.reduced() ? 300 : 900); }
 
     const oksay = ['せいかい！', 'すごい！', 'やったね！', 'ナイス！'];
     const ngsay = ['おしい！', 'ドンマイ！', 'つぎは できる！'];
@@ -6400,6 +6457,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     $('btnPreview').onclick = function () { Sound.tap(); playPreview(); };
     $('cdClose').onclick = closeCard;
     $('cardModal').onclick = function (e) { if (e.target === $('cardModal')) closeCard(); };
+    $('gmOk').onclick = closeGrowth;
+    $('growModal').onclick = function (e) { if (e.target === $('growModal')) closeGrowth(); };
     $('btnReset').onclick = function () { $('confirmModal').hidden = false; $('cfNo').focus(); };
     $('cfNo').onclick = function () { $('confirmModal').hidden = true; };
     $('delNo').onclick = function () { $('delModal').hidden = true; };
@@ -6418,6 +6477,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       if (!$('cardModal').hidden) closeCard();
+      if (!$('growModal').hidden) closeGrowth();
       if (!$('confirmModal').hidden) $('confirmModal').hidden = true;
       if (!$('delModal').hidden) $('delModal').hidden = true;
     });
