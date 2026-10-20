@@ -391,6 +391,7 @@ ruby rt { font-size: 12px; }
 .oc-btn { min-height: 56px; border-radius: 12px; border: 2px solid var(--line); background: var(--bg-2); color: var(--ink); font-family: inherit; font-size: 14px; font-weight: 800; padding: 4px 1px; white-space: nowrap; letter-spacing: -.02em; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
 .oc-btn[aria-pressed="true"] { border-color: #ff4d4d; box-shadow: 0 0 0 2px rgba(255, 77, 77, .35); }
 .oc-btn:disabled { opacity: .45; }
+.btn:disabled { opacity: .5; cursor: default; }
 .oc-lamps { display: inline-flex; gap: 4px; align-items: center; font-size: 12px; font-weight: 900; color: #ff4d4d; }
 .oc-lamps i { width: 12px; height: 12px; border-radius: 50%; background: #3b4654; display: inline-block; }
 .oc-lamps i.on { background: #ff4d4d; }
@@ -663,7 +664,7 @@ ruby rt { font-size: 12px; }
       </div>
       <ul class="rk-help" id="rkHelp">
         <li>⭕ せいかいの かず：これまでに せいかいした かず</li>
-        <li>🧠 おぼえた かず：おなじ もんだいに 3かい つづけて せいかいすると「おぼえた」に なるよ。まちがえると、また はじめから。</li>
+        <li>🧠 おぼえた かず：おなじ もんだいに、まちがえずに 3かい せいかいすると「おぼえた」に なるよ（2びょう より はやい せいかいは かぞえない）。まちがえると、また はじめから。「きょうの 10もん」では、おなじ もんだいは ひを あけて でて くるよ。</li>
       </ul>
       <div id="rankList"></div>
     </div>
@@ -3988,7 +3989,9 @@ const Core = (function () {
        ・まちがえた → だん0、きょうの うちに もう1ど（ラウンドの さいごにも だす）
        ・2びょう いじょう かけて 正解 → だんが 1つ あがり、間隔が ひらく（0・1・3・7・14・30日）
        ・2びょう みまんの 正解（is_fast） → 習熟に かぞえない（だんも 日も かえない）
-       ・だん3 いじょう ＝「おぼえた」
+       ・だん3 いじょう ＝「おぼえた」（日を あける 条件は ない。正解が 3かい つづけば おなじ 日でも「おぼえた」）
+       ・日が あくのは「きょうの 10もん」の だしかた（日が きた 問題を さきに だす）による。ただし 問題が たりない ときは
+         日の こない 問題も だす。ステージで あそぶと その ステージの 問題を 日に 関係なく ぜんぶ だす
      1回 10もん：苦手の 復習・あたらしい 問題・おぼえた 問題の 確認を まぜ、正解率 7〜8わりを ねらって わりあいを かえる。
      ------------------------------------------------------------ */
   const INTERVALS = [0, 1, 3, 7, 14, 30];
@@ -4302,7 +4305,7 @@ const Core = (function () {
   }
 
   /* ---------- マスコットの 成長 ----------
-     おぼえた かず（masteredCount）で 5段階。区切りは 0・3・15・45・100（決定ログ 180）。
+     おぼえた かず（masteredCount）で 5段階。区切りは 0・3・8・30・80（決定ログ 180。実際の 出しかたで 日数を はかって きめた）。
      p.growth は これまでに とどいた いちばん 上の 段階。「おぼえた」が まちがいで へっても 段階は 下げない。
      p は 名前ごとの 記録（名前なしも この 端末の 中の 記録）なので、成長も 名前ごとに わかれる。
      GAS には おくらない（syncPart に いれない＝おくる 形は かわらない）。GAS から 読みこんだ ときは、あわせた 記録の
@@ -4310,9 +4313,9 @@ const Core = (function () {
   const GROWTH = [
     { stage: 1, key: 'ball', name: 'ボール', min: 0 },
     { stage: 2, key: 'glove', name: 'グローブ', min: 3 },
-    { stage: 3, key: 'bat', name: 'バット', min: 15 },
-    { stage: 4, key: 'uniform', name: 'ユニフォーム', min: 45 },
-    { stage: 5, key: 'trophy', name: 'トロフィー', min: 100 }
+    { stage: 3, key: 'bat', name: 'バット', min: 8 },
+    { stage: 4, key: 'uniform', name: 'ユニフォーム', min: 30 },
+    { stage: 5, key: 'trophy', name: 'トロフィー', min: 80 }
   ];
   function growthFor(count) {
     let st = 1;
@@ -5522,6 +5525,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   // 段階が 上がった ときの 演出。g は Core.updateGrowth の かえり（from → stage）。
   // 新しい 姿を 大きく みせる。動きを へらす 設定では 光の わ・はずむ 動き・紙ふぶきを ださない（CSS と ここ）
   let growFocus = null;
+  // こたえで 段階が 上がった とき：演出を とじるまで「つぎへ」を おせない（演出が つぎの 問題に かさならない）
+  let growWait = false;
   function showGrowth(g) {
     if (!g || !g.grew) return;
     const now = Core.GROWTH[g.stage - 1], next = Core.GROWTH[g.stage] || null;
@@ -5538,6 +5543,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   }
   function closeGrowth() {
     $('growModal').hidden = true;
+    if (growWait) {
+      growWait = false;
+      const go = $('btnGo');
+      if (go) { go.disabled = false; go.removeAttribute('aria-disabled'); go.focus(); return; }
+    }
     if (growFocus && growFocus.focus) growFocus.focus();
     if (!$('scr-home').hidden) setMascot($('homeMascot'), 'normal', true);
   }
@@ -6019,8 +6029,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
 
     if (ok) Sound.correct(); else Sound.wrong();
     if (got.newCard) setTimeout(function () { Sound.card(); }, 350);
-    // マスコットが せいちょう した：こたえの よろこぶ 顔を みせてから 演出
-    if (got.grew) { const gr = got.grew; setTimeout(function () { showGrowth(gr); }, Play.reduced() ? 300 : 900); }
+    // マスコットが せいちょう した：こたえの よろこぶ 顔を みせてから 演出（「つぎへ」は 下で とめる）
+    const grew = got.grew;
+    if (grew) setTimeout(function () { showGrowth(grew); }, Play.reduced() ? 300 : 900);
 
     const oksay = ['せいかい！', 'すごい！', 'やったね！', 'ナイス！'];
     const ngsay = ['おしい！', 'ドンマイ！', 'つぎは できる！'];
@@ -6054,6 +6065,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     }
     setMascot($('fbMascot'), ok ? 'joy' : 'cheer', true);
     $('btnGo').onclick = goNext;
+    if (grew) { growWait = true; $('btnGo').disabled = true; $('btnGo').setAttribute('aria-disabled', 'true'); }
     if ($('btnReplay')) $('btnReplay').onclick = function () { replayResult(q, idx); };
     bindOutsCompare(q, idx);
     bindDefenseCompare(q, idx);
@@ -6206,6 +6218,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   }
 
   function goNext() {
+    if (growWait || !$('growModal').hidden) return;   // 成長の 演出が おわるまで すすまない
     Speech.stop();
     const q = currentQ();
     if (q.follow && !R.q2) {
