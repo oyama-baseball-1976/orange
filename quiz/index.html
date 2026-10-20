@@ -3992,13 +3992,15 @@ const Core = (function () {
        ・だん3 いじょう ＝「おぼえた」（日を あける 条件は ない。正解が 3かい つづけば おなじ 日でも「おぼえた」）
        ・日が あくのは「きょうの 10もん」の だしかた（日が きた 問題を さきに だす）による。ただし 問題が たりない ときは
          日の こない 問題も だす。ステージで あそぶと その ステージの 問題を 日に 関係なく ぜんぶ だす
-     1回 10もん：苦手の 復習・あたらしい 問題・おぼえた 問題の 確認を まぜ、正解率 7〜8わりを ねらって わりあいを かえる。
+     1回 10もん：日が きた 復習（あと 1かいで おぼえる だん2 を いちばん さきに）を、あたらしい 問題（4もんまで）より さきに だす（決定ログ 185）。
+       そのうえで 苦手の 復習・あたらしい 問題・おぼえた 問題の 確認を まぜ、正解率 7〜8わりを ねらって わりあいを かえる。
      ------------------------------------------------------------ */
   const INTERVALS = [0, 1, 3, 7, 14, 30];
   const MASTER_BOX = 3;
   const FAST_MS = 2000;
   const RECENT_KEEP = 30;
   const MAX_PER_TEMPLATE = 3;
+  const FRESH_MAX = 4;   // 「きょうの 10もん」の あたらしい 問題は 1回 4もんまで（正解率が たかくても。決定ログ 185）
 
   // すべての unit（ステージ順・問題順。あたらしい 問題は この順に だす）
   const UNITS = (function () {
@@ -4305,7 +4307,7 @@ const Core = (function () {
   }
 
   /* ---------- マスコットの 成長 ----------
-     おぼえた かず（masteredCount）で 5段階。区切りは 0・3・8・30・80（決定ログ 180。実際の 出しかたで 日数を はかって きめた）。
+     おぼえた かず（masteredCount）で 5段階。区切りは 0・3・8・30・100（決定ログ 180・185。実際の 出しかたで 日数を はかって きめた）。
      p.growth は これまでに とどいた いちばん 上の 段階。「おぼえた」が まちがいで へっても 段階は 下げない。
      p は 名前ごとの 記録（名前なしも この 端末の 中の 記録）なので、成長も 名前ごとに わかれる。
      GAS には おくらない（syncPart に いれない＝おくる 形は かわらない）。GAS から 読みこんだ ときは、あわせた 記録の
@@ -4315,7 +4317,7 @@ const Core = (function () {
     { stage: 2, key: 'glove', name: 'グローブ', min: 3 },
     { stage: 3, key: 'bat', name: 'バット', min: 8 },
     { stage: 4, key: 'uniform', name: 'ユニフォーム', min: 30 },
-    { stage: 5, key: 'trophy', name: 'トロフィー', min: 80 }
+    { stage: 5, key: 'trophy', name: 'トロフィー', min: 100 }
   ];
   function growthFor(count) {
     let st = 1;
@@ -4478,7 +4480,14 @@ const Core = (function () {
       else buckets.review.push(u);
     });
     // 復習：だんの ひくい じゅん → 日の ふるい じゅん。確認：日の ふるい じゅん。あたらしい：カリキュラムの じゅん
-    buckets.review.sort(function (a, b) { const x = effectiveRec(p, a), y = effectiveRec(p, b); return (x.b - y.b) || (x.d < y.d ? -1 : x.d > y.d ? 1 : a.order - b.order); });
+    // 復習は「だん2（あと 1かいで おぼえた）」を さきに、そのあとは だんの ひくい じゅん → 日の ふるい じゅん
+    //（だん2 が あたらしい 問題や だん0・1 の 復習に おされて あとまわしに ならない ように。苦手 チャレンジは だんの ひくい じゅんの まま）
+    const nearFirst = mode.kind !== 'nigate';
+    buckets.review.sort(function (a, b) {
+      const x = effectiveRec(p, a), y = effectiveRec(p, b);
+      const nx = nearFirst && x.b >= MASTER_BOX - 1 ? 0 : 1, ny = nearFirst && y.b >= MASTER_BOX - 1 ? 0 : 1;
+      return (nx - ny) || (x.b - y.b) || (x.d < y.d ? -1 : x.d > y.d ? 1 : a.order - b.order);
+    });
     buckets.check.sort(function (a, b) { const x = effectiveRec(p, a), y = effectiveRec(p, b); return (x.d < y.d ? -1 : x.d > y.d ? 1 : a.order - b.order); });
     buckets.fresh.sort(function (a, b) { return a.order - b.order; });
     buckets.extra.sort(function (a, b) { const x = effectiveRec(p, a), y = effectiveRec(p, b); return (x.b - y.b) || (x.d < y.d ? -1 : 1); });
@@ -4503,11 +4512,12 @@ const Core = (function () {
         if (take(buckets[bucket][i], bucket)) got++;
       }
     };
-    fill('review', plan.review);
-    fill('fresh', plan.fresh);
-    fill('check', plan.check);
-    // たりない ぶんは 復習 → あたらしい → 確認 → まだ 日の こない もの の じゅんに たす
-    ['review', 'fresh', 'check', 'extra'].forEach(function (b) { fill(b, n); });
+    // あたらしい 問題（正解率で きまる 数、4もんまで）→ 日が きた 復習 ぜんぶ → おぼえた 問題の 確認
+    fill('fresh', Math.min(plan.fresh, FRESH_MAX));
+    fill('review', n);
+    fill('check', n);
+    // たりない ぶんは 復習 → 確認 → あたらしい → まだ 日の こない もの の じゅんに たす
+    ['review', 'check', 'fresh', 'extra'].forEach(function (b) { fill(b, n); });
     // テンプレートの じょうげんで たりない ときは、じょうげんを はずして たす
     if (out.length < n) {
       ['review', 'fresh', 'check', 'extra'].forEach(function (b) {
@@ -4765,7 +4775,7 @@ const Core = (function () {
   return {
     MASCOT_DATA: MASCOT_DATA, MASCOT_MOODS: MASCOT_MOODS, mascotMood: mascotMood, mascotSVG: mascotSVG,
     GROWTH: GROWTH, growthFor: growthFor, growthStage: growthStage, updateGrowth: updateGrowth, growthInfo: growthInfo,
-    ROUND_SIZE: ROUND_SIZE, STORAGE_KEY: STORAGE_KEY, INTERVALS: INTERVALS, MASTER_BOX: MASTER_BOX, FAST_MS: FAST_MS,
+    ROUND_SIZE: ROUND_SIZE, FRESH_MAX: FRESH_MAX, STORAGE_KEY: STORAGE_KEY, INTERVALS: INTERVALS, MASTER_BOX: MASTER_BOX, FAST_MS: FAST_MS,
     STAGES: STAGES, RANKS: RANKS, QUESTIONS: QUESTIONS, BY_ID: BY_ID, TAGS: TAGS,
     TEMPLATES: TEMPLATES, TEMPLATE_BY_ID: TEMPLATE_BY_ID, UNITS: UNITS, UNIT_BY_KEY: UNIT_BY_KEY,
     dateStr: dateStr, addDays: addDays, fiscalYear: fiscalYear, streak: streak, lastDays: lastDays,
