@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ゼビオ ジュニアベースボールフェスト 当日案内｜小山</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#F6F7F4;
+  --surface:#FFFFFF;
+  --ink:#1D2420;
+  --sub:#5B655F;
+  --line:#DCE1DB;
+  --orange:#EE6A12;
+  --orange-soft:#FFF0E3;
+  --field:#2F6B3A;
+  --field-soft:#E6F0E6;
+  --warn:#B3261E;
+  --warn-soft:#FDECEA;
+  --dirt:#E7D6BC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --bg:#121814;
+    --surface:#1B231E;
+    --ink:#EDF1EC;
+    --sub:#A3AEA6;
+    --line:#2E3A32;
+    --orange:#FF8A3A;
+    --orange-soft:#3A2414;
+    --field:#7CC48A;
+    --field-soft:#1E3324;
+    --warn:#FF8A80;
+    --warn-soft:#3A1C1A;
+    --dirt:#5A4A33;
+  }
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px)}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Zen Kaku Gothic New","Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;
+  font-weight:500;font-size:16px;line-height:1.7;
+  -webkit-text-size-adjust:100%;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px 48px}
+
+/* header */
+header{padding:20px 16px 0;max-width:560px;margin:0 auto}
+.event{font-size:13px;color:var(--sub);margin:0}
+h1{font-size:26px;font-weight:900;line-height:1.3;margin:2px 0 4px;letter-spacing:.01em}
+.meta{font-size:14px;color:var(--sub);margin:0}
+
+/* now card */
+.now{
+  margin:16px 0 0;border-radius:18px;background:var(--orange);color:#fff;
+  padding:16px 18px 18px;position:relative;overflow:hidden;
+}
+.now::after{ /* ball seam */
+  content:"";position:absolute;right:-46px;top:-46px;width:140px;height:140px;border-radius:50%;
+  border:3px dashed rgba(255,255,255,.35);
+}
+.now .lbl{font-size:13px;opacity:.9;margin:0}
+.now .time{font-size:44px;font-weight:900;line-height:1.05;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.now .what{font-size:20px;font-weight:700;margin:0;line-height:1.35}
+.now .where{display:inline-block;margin-top:10px;background:#fff;color:var(--orange);font-weight:900;border-radius:999px;padding:2px 12px;font-size:15px}
+@media (prefers-color-scheme: dark){ .now{color:#1A0F06} .now .where{background:#1A0F06} }
+
+/* tabs */
+nav{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);
+  border-bottom:1px solid var(--line);margin-top:18px;
+}
+.tabs{display:flex;max-width:560px;margin:0 auto}
+.tabs button{
+  flex:1;appearance:none;border:0;background:none;color:var(--sub);font:inherit;font-weight:700;font-size:15px;
+  padding:14px 4px 12px;border-bottom:3px solid transparent;cursor:pointer;
+}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--orange)}
+.tabs button:focus-visible{outline:3px solid var(--orange);outline-offset:-3px}
+section[hidden]{display:none}
+h2{font-size:20px;font-weight:900;margin:28px 0 10px}
+h3{font-size:17px;font-weight:700;margin:22px 0 8px}
+p{margin:0 0 10px}
+
+/* timeline */
+.tl{list-style:none;margin:16px 0 0;padding:0;position:relative}
+.tl::before{content:"";position:absolute;left:58px;top:8px;bottom:8px;width:2px;background:var(--line)}
+.tl li{display:grid;grid-template-columns:50px 1fr;gap:0 18px;padding:10px 0;position:relative}
+.tl .t{font-weight:900;font-size:17px;text-align:right;font-variant-numeric:tabular-nums;padding-top:1px}
+.tl .dot{position:absolute;left:53px;top:17px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--sub)}
+.tl .body{padding-left:4px}
+.tl .ttl{font-weight:700;font-size:16px;line-height:1.45}
+.tl .sub{font-size:14px;color:var(--sub);line-height:1.6;margin-top:2px}
+.tag{display:inline-block;font-size:12px;font-weight:700;border-radius:6px;padding:0 7px;margin-right:6px;vertical-align:2px;border:1px solid currentColor}
+.tag.all{color:var(--orange)}
+.tag.rep{color:var(--field)}
+.tag.ump{color:var(--sub)}
+.tl li.game .body{background:var(--field-soft);border-radius:12px;padding:10px 12px;margin-left:-4px}
+.tl li.game .ttl{font-size:18px;font-weight:900}
+.tl li.game .dot{background:var(--field);border-color:var(--field)}
+.tl li.done{opacity:.45}
+.tl li.current .dot{background:var(--orange);border-color:var(--orange);box-shadow:0 0 0 5px var(--orange-soft)}
+.tl li.current .t{color:var(--orange)}
+.court{display:inline-block;font-weight:900;color:var(--field)}
+.alert{background:var(--warn-soft);color:var(--ink);border-left:4px solid var(--warn);border-radius:8px;padding:8px 10px;font-size:14px;margin-top:8px;line-height:1.6}
+.alert b{color:var(--warn)}
+
+/* generic blocks */
+.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:12px 0}
+.steps{counter-reset:s;list-style:none;margin:0;padding:0}
+.steps li{counter-increment:s;position:relative;padding:8px 0 8px 40px;border-bottom:1px dashed var(--line)}
+.steps li:last-child{border-bottom:0}
+.steps li::before{
+  content:counter(s);position:absolute;left:0;top:8px;width:28px;height:28px;border-radius:50%;
+  background:var(--orange);color:#fff;font-weight:900;font-size:15px;display:grid;place-items:center;line-height:1;
+}
+@media (prefers-color-scheme: dark){ .steps li::before{color:#1A0F06} }
+.steps b{font-weight:900}
+ul.plain{margin:0;padding-left:1.2em}
+ul.plain li{margin:4px 0}
+
+/* rule cards */
+.rule{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.rule:last-child{border-bottom:0}
+.rule .k{font-weight:900;font-size:15px;color:var(--field);min-width:5.5em}
+.rule .v{font-size:15px}
+.no{color:var(--warn)}
+
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:8px 0}
+summary{padding:12px 40px 12px 14px;font-weight:700;cursor:pointer;list-style:none;position:relative;line-height:1.5}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"＋";position:absolute;right:14px;top:11px;color:var(--orange);font-weight:900}
+details[open] summary::after{content:"－"}
+details .ans{padding:0 14px 14px;font-size:15px}
+summary:focus-visible{outline:3px solid var(--orange);outline-offset:2px;border-radius:12px}
+
+figure{margin:12px 0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px}
+figure svg{display:block;width:100%;height:auto}
+figcaption{font-size:13px;color:var(--sub);padding:6px 4px 0;line-height:1.6}
+
+.check{list-style:none;padding:0;margin:0}
+.check li{padding:6px 0 6px 30px;position:relative}
+.check li::before{content:"";position:absolute;left:2px;top:11px;width:16px;height:16px;border:2px solid var(--orange);border-radius:4px}
+
+footer{font-size:12px;color:var(--sub);margin-top:36px;line-height:1.7;border-top:1px solid var(--line);padding-top:12px}
+@media (prefers-reduced-motion: no-preference){ .tl li.current .dot{animation:pulse 2s ease-in-out infinite} }
+@keyframes pulse{50%{box-shadow:0 0 0 9px transparent}}
+</style>
+</head>
+<body>
+
+<header>
+  <p class="event">ゼビオ ジュニアベースボールフェスト 2026 愛知</p>
+  <h1>小山少年野球クラブ<br>当日案内</h1>
+  <p class="meta">10月25日（日）横根グラウンド（大府市横根町折戸81）</p>
+
+  <div class="now" id="now" aria-live="polite">
+    <p class="lbl" id="nowLbl">当日いちばん最初の予定</p>
+    <p class="time" id="nowTime">8:30</p>
+    <p class="what" id="nowWhat">受付</p>
+    <span class="where" id="nowWhere">受付テント</span>
+  </div>
+</header>
+
+<nav>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" aria-controls="tab-sched" id="b-sched">スケジュール</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-ump" id="b-ump">審判ルール</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-info" id="b-info">会場・持ち物</button>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<!-- ========== スケジュール ========== -->
+<section id="tab-sched" role="tabpanel" aria-labelledby="b-sched">
+  <h2>小山は2試合、どちらもC面</h2>
+  <p>C面は入口を入ってすぐ、受付テントの隣です。開会式・閉会式もC面で行います。</p>
+
+  <ol class="tl" id="timeline">
+    <li data-t="08:00" data-where="指定駐車場" data-what="会場に入れます">
+      <span class="t">8:00</span><span class="dot"></span>
+      <div class="body"><div class="ttl"><span class="tag all">全員</span>会場に入れます</div>
+      <div class="sub">車は北西の指定駐車場へ。真ん中の舗装駐車場は停められません。</div></div>
+    </li>
+    <li data-t="08:30" data-where="受付テント" data-what="受付">
+      <span class="t">8:30</span><span class="dot"></span>
+      <div class="body"><div class="ttl"><span class="tag rep">代表1名</span>受付</div>
+      <div class="sub">参加賞と抽選券を受け取ります。</div></div>
+    </li>
+    <li data-t="08:50" data-where="本部テント前" data-what="代表者会議（ルール説明）">
+      <span class="t">8:50</span><span class="dot"></span>
+      <div class="body"><div class="ttl"><span class="tag rep">代表・監督</span>代表者会議</div>
+      <div class="sub">本部テント前でルール説明。「審判ルール」タブの確認事項をここで聞きます。</div></div>
+    </li>
+    <li data-t="09:00" data-where="C面" data-what="開会式">
+      <span class="t">9:00</span><span class="dot"></span>
+      <div class="body"><div class="ttl"><span class="tag all">全員</span>開会式 <span class="court">C面</span></div></div>
+    </li>
+    <li data-t="09:20" data-where="WUエリア（中央）" data-what="アップ・自由時間">
+      <span class="t">9:20</span><span class="dot"></span>
+      <div class="body"><div class="ttl"><span class="tag all">全員</span>アップ・自由時間</div>
+      <div class="sub">会場中央のWUエリアでアップできます。抽選会もこの時間に。</div></div>
+    </li>
+    <li data-t="09:30" data-where="C面スタッフ" data-what="第1戦の先攻後攻・審判決め">
+      <span class="t">9:30</span><span class="dot"></span>
+      <div class="body"><div class="ttl"><span class="tag ump">監督・審判2名</span>第1戦の先攻後攻</div>
+      <div class="sub">C面のスタッフのところへ。相手チームと審判4人の担当を決めます。</div></div>
+    </li>
+    <li class="game" data-t="10:10" data-where="C面" data-what="第1戦 vs 個人・大府">
+      <span class="t">10:10</span><span class="dot"></span>
+      <div class="body"><div class="ttl">第1戦　vs 個人・大府</div>
+      <div class="sub"><span class="court">C面</span>　小山から審判を2名出します。</div></div>
+    </li>
+    <li data-t="11:00" data-where="待機エリア" data-what="昼ごはん・休憩">
+      <span class="t">11:00</span><span class="dot"></span>
+      <div class="body"><div class="ttl"><span class="tag all">全員</span>昼ごはん・休憩</div>
+      <div class="sub">全体の昼休みはありません。ここで食べておくのがおすすめです。</div></div>
+    </li>
+    <li data-t="11:50" data-where="ニューバランスブース" data-what="ニューバランスブース">
+      <span class="t">11:50</span><span class="dot"></span>
+      <div class="body"><div class="ttl"><span class="tag all">選手全員</span>ニューバランスブース</div>
+      <div class="sub">入口の奥。割り振り時間どおりに集合。4チームが順番に1チーム約10分で回ります。</div></div>
+    </li>
+    <li data-t="12:00" data-where="C面スタッフ" data-what="第2戦の先攻後攻・審判決め">
+      <span class="t">12:00</span><span class="dot"></span>
+      <div class="body"><div class="ttl"><span class="tag ump">監督・審判2名</span>第2戦の先攻後攻</div>
+      <div class="alert"><b>時間が重なります。</b>選手がNBブースにいる間に、監督か代表がC面へ。誰が行くか事前に決めておきます。</div></div>
+    </li>
+    <li class="game" data-t="12:40" data-where="C面" data-what="第2戦 vs 瑞穂・JBC">
+      <span class="t">12:40</span><span class="dot"></span>
+      <div class="body"><div class="ttl">第2戦　vs 瑞穂・JBC</div>
+      <div class="sub"><span class="court">C面</span>　小山から審判を2名出します。</div></div>
+    </li>
+    <li data-t="13:45" data-where="C面" data-what="閉会式・集合写真">
+      <span class="t">13:45</span><span class="dot"></span>
+      <div class="body"><div class="ttl"><span class="tag all">全員</span>閉会式 <span class="court">C面</span></div>
+      <div class="sub">表彰と全チーム集合写真。最後まで残ります。</div></div>
+    </li>
+    <li data-t="14:00" data-where="指定駐車場" data-what="解散">
+      <span class="t">14:00</span><span class="dot"></span>
+      <div class="body"><div class="ttl"><span class="tag all">全員</span>解散</div>
+      <div class="sub">ゴミはすべて持ち帰ります。</div></div>
+    </li>
+  </ol>
+
+  <div class="box">
+    <h3 style="margin-top:0">審判の当番</h3>
+    <p style="margin:0">各試合、小山から2名・相手から2名の計4名で、球審と1・2・3塁審を分担します。服装は自由です。2試合分、誰が出るか先に決めておくとスムーズです。</p>
+  </div>
+</section>
+
+<!-- ========== 審判ルール ========== -->
+<section id="tab-ump" role="tabpanel" aria-labelledby="b-ump" hidden>
+  <h2>ふつうの野球との違い</h2>
+  <p>ティーに置いた球を打ちます。アウトの数ではなく、<b>1番から9番まで全員打ったら</b>そのイニングは終わりです。試合は2イニング。</p>
+
+  <h3>1イニングの流れ</h3>
+  <div class="box">
+    <ol class="steps">
+      <li><b>番号札を渡す</b>　球審が攻撃チームに1〜9番の札を渡す。打者は打席に入るとき札を球審へ。</li>
+      <li><b>満塁から始める</b>　1塁に9番、2塁に8番、3塁に7番の打者が立つ。</li>
+      <li><b>1番から順に打つ</b>　三振はなし。打つまで続ける。</li>
+      <li><b>9番打者だけ「2アウト」</b>　9番のときは2アウト扱いでプレー。アウト1つで終了。</li>
+      <li><b>得点を数える</b>　9番のプレーが終わるまでに入った点がそのイニングの得点。</li>
+    </ol>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 320 300" role="img" aria-label="グラウンドの図。塁間21m、ホームから6mの円内はファウル、ティーはホームから2m前、満塁スタート">
+      <path d="M19 139 A200 200 0 0 1 301 139" fill="none" stroke="var(--sub)" stroke-width="1.5" stroke-dasharray="3 4"/>
+      <text x="160" y="72" text-anchor="middle" font-size="11" fill="var(--sub)">外野 約50m</text>
+      <line x1="160" y1="280" x2="19" y2="139" stroke="var(--sub)" stroke-width="1.5"/>
+      <line x1="160" y1="280" x2="301" y2="139" stroke="var(--sub)" stroke-width="1.5"/>
+      <path d="M160 280 L219 221 L160 162 L101 221 Z" fill="var(--dirt)" stroke="var(--sub)" stroke-width="1.5"/>
+      <!-- dead ball lines -->
+      <path d="M177 297 L318 156 M143 297 L2 156" stroke="var(--warn)" stroke-width="2" stroke-dasharray="6 4" fill="none"/>
+      <path d="M143 297 A24 24 0 0 0 177 297" stroke="var(--warn)" stroke-width="2" stroke-dasharray="6 4" fill="none"/>
+      <!-- 6m foul circle -->
+      <path d="M160 280 L143 263 A24 24 0 0 1 177 263 Z" fill="var(--orange)" fill-opacity=".35" stroke="var(--orange)" stroke-width="2"/>
+      <!-- bases -->
+      <rect x="213" y="215" width="12" height="12" transform="rotate(45 219 221)" fill="var(--surface)" stroke="var(--ink)"/>
+      <rect x="154" y="156" width="12" height="12" transform="rotate(45 160 162)" fill="var(--surface)" stroke="var(--ink)"/>
+      <rect x="95" y="215" width="12" height="12" transform="rotate(45 101 221)" fill="var(--surface)" stroke="var(--ink)"/>
+      <path d="M154 278 L166 278 L166 283 L160 288 L154 283 Z" fill="var(--surface)" stroke="var(--ink)"/>
+      <circle cx="160" cy="272" r="3" fill="var(--ink)"/>
+      <!-- runners -->
+      <g font-size="12" font-weight="900" text-anchor="middle">
+        <circle cx="236" cy="210" r="11" fill="var(--field)"/><text x="236" y="214" fill="var(--surface)">9</text>
+        <circle cx="160" cy="140" r="11" fill="var(--field)"/><text x="160" y="144" fill="var(--surface)">8</text>
+        <circle cx="84" cy="210" r="11" fill="var(--field)"/><text x="84" y="214" fill="var(--surface)">7</text>
+      </g>
+      <text x="198" y="186" font-size="11" fill="var(--sub)">21m</text>
+      <text x="186" y="258" font-size="11" fill="var(--orange)" font-weight="700">6m円内＝ファウル</text>
+      <text x="196" y="292" font-size="11" fill="var(--warn)">6mデッドライン</text>
+    </svg>
+    <figcaption>ティーはホームから2m投手側。オレンジの円の中の打球はファウル。赤い点線の外に球が出たら1個進塁。数字はスタート時の走者（打順）。</figcaption>
+  </figure>
+
+  <h3>判定のポイント</h3>
+  <div class="box">
+    <div class="rule"><span class="k">ファウル</span><span class="v">ホームから半径6mの円の中の打球。</span></div>
+    <div class="rule"><span class="k">1個進塁</span><span class="v">ホーム後方・1塁線3塁線の外6mのデッドラインから球が出たら、すべてテイクワンベース。</span></div>
+    <div class="rule"><span class="k">離塁</span><span class="v">バットに球が当たってから。リード・盗塁は<span class="no">禁止</span>。</span></div>
+    <div class="rule"><span class="k">禁止</span><span class="v"><span class="no">バント、リード、盗塁、ヤジ。</span></span></div>
+    <div class="rule"><span class="k">プレー止め</span><span class="v">守備がホームベース上で球を頭上に上げてアピールしたら、球審が「ボールデッド」。塁と塁の間の走者は元の塁へ戻る。</span></div>
+    <div class="rule"><span class="k">3塁走者の例外</span><span class="v">3塁走者がホーム周り6mのゾーンに入っていたら、ふつうの野球ルール。ゾーン内でわざと止まったら走塁放棄（アピールでアウト）。</span></div>
+    <div class="rule"><span class="k">抗議</span><span class="v">監督のみ。</span></div>
+    <div class="rule"><span class="k">交代</span><span class="v">守備は9人。交代・再出場は自由で、球審への申告は不要。打順はイニングごとに入れ替えてよい（番号札で管理）。</span></div>
+    <div class="rule"><span class="k">それ以外</span><span class="v">ふつうの野球規則どおり。</span></div>
+  </div>
+
+  <h3>試合前の審判の準備</h3>
+  <div class="box">
+    <ol class="steps">
+      <li>両チーム2名ずつ集まり、球審・1塁・2塁・3塁を決める。</li>
+      <li>球審はスタッフから<b>番号札（1〜9）・ボール・バット</b>を受け取る。</li>
+      <li>先攻チームの攻撃前に番号札を渡す。攻守交代のたびに札を回収して相手へ。</li>
+    </ol>
+  </div>
+
+  <h3>迷いやすい場面</h3>
+  <details><summary>空振りした・ティーだけ打った</summary><div class="ans">三振はありません。前に打てるまで打ち直しです。</div></details>
+  <details><summary>打球が6mの円の中で止まった</summary><div class="ans">ファウルです。打ち直しになります。</div></details>
+  <details><summary>守備がホームで球を高く上げた</summary><div class="ans">ボールデッドを宣告。塁の間にいる走者は、直前にいた塁に戻します。</div></details>
+  <details><summary>9番打者の打席</summary><div class="ans">2アウトの設定でプレー。フォースアウトなどでアウトが1つ取れた時点でイニング終了です。</div></details>
+  <details><summary>送球がデッドラインの外に出た</summary><div class="ans">テイクワンベース。走者全員1個進めます。</div></details>
+
+  <h3>代表者会議で確認すること</h3>
+  <div class="box">
+    <p style="font-size:14px;color:var(--sub)">規約だけでは読み取れない点です。8:50の会議で聞いて、審判をする人に伝えます。</p>
+    <ul class="check">
+      <li>1〜8番の打席でアウトになった打者・走者はどうする？（ベンチに戻る／アウトは数えない など）</li>
+      <li>ボールデッドのとき、1塁へ走っている打者走者はどこに置く？</li>
+      <li>6mの円を通過して外まで転がった打球はフェア？</li>
+      <li>バットに当たる前に離塁した走者の扱い</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ========== 会場・持ち物 ========== -->
+<section id="tab-info" role="tabpanel" aria-labelledby="b-info" hidden>
+  <h2>会場の配置</h2>
+  <figure>
+    <svg viewBox="0 0 320 240" role="img" aria-label="会場配置図。左上に入口とニューバランスブース、入口の下に受付、その右にC面、下にA面、中央にWUエリア、右上にD面、右下にB面、左下に待機エリア">
+      <rect x="4" y="4" width="312" height="232" rx="14" fill="var(--dirt)" fill-opacity=".45" stroke="var(--line)"/>
+      <rect x="60" y="14" width="96" height="34" rx="6" fill="var(--warn)" fill-opacity=".85"/>
+      <text x="108" y="36" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">NBブース</text>
+      <path d="M4 66 L36 66" stroke="var(--ink)" stroke-width="2"/>
+      <text x="8" y="60" font-size="11" font-weight="700" fill="var(--ink)">入口</text>
+      <rect x="10" y="78" width="44" height="26" rx="5" fill="var(--ink)"/>
+      <text x="32" y="95" text-anchor="middle" font-size="10" font-weight="700" fill="var(--surface)">受付</text>
+      <rect x="64" y="62" width="72" height="64" rx="6" fill="var(--orange)" stroke="var(--orange)" stroke-width="3"/>
+      <text x="100" y="92" text-anchor="middle" font-size="16" font-weight="900" fill="#fff">C面</text>
+      <text x="100" y="110" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">小山の試合</text>
+      <rect x="64" y="140" width="68" height="60" rx="6" fill="var(--field-soft)" stroke="var(--field)"/>
+      <text x="98" y="175" text-anchor="middle" font-size="13" font-weight="700" fill="var(--field)">A面</text>
+      <rect x="146" y="58" width="56" height="150" rx="6" fill="var(--surface)" fill-opacity=".7" stroke="var(--sub)" stroke-dasharray="4 3"/>
+      <text x="174" y="137" text-anchor="middle" font-size="11" font-weight="700" fill="var(--sub)">WU</text>
+      <rect x="214" y="54" width="66" height="62" rx="6" fill="var(--field-soft)" stroke="var(--field)"/>
+      <text x="247" y="90" text-anchor="middle" font-size="13" font-weight="700" fill="var(--field)">D面</text>
+      <rect x="226" y="132" width="66" height="62" rx="6" fill="var(--field-soft)" stroke="var(--field)"/>
+      <text x="259" y="168" text-anchor="middle" font-size="13" font-weight="700" fill="var(--field)">B面</text>
+      <path d="M12 200 L40 200 L60 218 L120 218 L120 230 L52 230 L32 212 L12 212 Z" fill="var(--surface)" stroke="var(--sub)"/>
+      <text x="70" y="227" font-size="10" fill="var(--sub)">待機エリア</text>
+    </svg>
+    <figcaption>おおまかな配置です。入口から入って、受付テントの右隣がC面。</figcaption>
+  </figure>
+
+  <h2>駐車場</h2>
+  <p>グラウンド北西の<b>指定駐車場</b>に停めて歩いて移動します。途中にある<b>舗装された大きな駐車場は駐車禁止</b>です。当日は他の競技も開催されているため、必ず指定場所へ。</p>
+
+  <h2>雨の日</h2>
+  <div class="box">
+    <p style="margin:0">中止のときだけ、<b>当日7:00までに代表者へメール</b>が届きます。連絡がなければ開催です。代表者からLINEで回します。</p>
+  </div>
+
+  <h2>持ち物</h2>
+  <ul class="check">
+    <li>グローブ</li>
+    <li>ヘルメット（あれば）</li>
+    <li>運動できる服装・靴（ユニフォームでなくてもOK）</li>
+    <li>飲み物・昼ごはん</li>
+    <li>ゴミ袋（ゴミはすべて持ち帰り）</li>
+    <li>レジャーシート・日よけ</li>
+  </ul>
+  <p style="font-size:14px;color:var(--sub);margin-top:8px">試合用のボールとバットは主催者が用意します。貴重品は各自で管理してください。</p>
+
+  <h2>ニューバランスブース</h2>
+  <p>足のサイズ測定、スパイクの試し履き、2塁〜3塁のスピード計測があります。学年1位にはスパイクのプレゼントあり。LINE登録でTシャツがもらえます（保護者も対象）。</p>
+</section>
+
+<footer>
+  大会資料をもとにAIで整理・未校正。当日は審判・スタッフの指示を優先してください。
+</footer>
+</main>
+
+<script>
+(function(){
+  // tabs
+  var btns = document.querySelectorAll('.tabs button');
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      btns.forEach(function(x){
+        var on = x === b;
+        x.setAttribute('aria-selected', on ? 'true' : 'false');
+        document.getElementById(x.getAttribute('aria-controls')).hidden = !on;
+      });
+      window.scrollTo({top: document.querySelector('nav').offsetTop - 2});
+    });
+  });
+
+  // current-step highlight (event day only)
+  var EVENT = {y:2026, m:10, d:25};
+  var items = Array.prototype.slice.call(document.querySelectorAll('#timeline li'));
+  function mins(s){ var p = s.split(':'); return (+p[0])*60 + (+p[1]); }
+  function fmt(s){ return s.replace(/^0/, ''); }
+  function setNow(lbl, it){
+    document.getElementById('nowLbl').textContent = lbl;
+    document.getElementById('nowTime').textContent = fmt(it.dataset.t);
+    document.getElementById('nowWhat').textContent = it.dataset.what;
+    document.getElementById('nowWhere').textContent = it.dataset.where;
+  }
+  function update(){
+    var now = new Date();
+    var isDay = now.getFullYear() === EVENT.y && now.getMonth()+1 === EVENT.m && now.getDate() === EVENT.d;
+    var evDate = new Date(EVENT.y, EVENT.m-1, EVENT.d);
+    items.forEach(function(li){ li.classList.remove('done','current'); });
+    if (!isDay) {
+      if (now > evDate) {
+        document.getElementById('nowLbl').textContent = 'おつかれさまでした';
+        document.getElementById('nowTime').textContent = '終了';
+        document.getElementById('nowWhat').textContent = '大会は終了しました';
+        document.getElementById('nowWhere').textContent = '10/25';
+      } else {
+        setNow('当日いちばん最初の予定', items[1]);
+      }
+      return;
+    }
+    var m = now.getHours()*60 + now.getMinutes();
+    var cur = -1;
+    items.forEach(function(li, i){ if (mins(li.dataset.t) <= m) cur = i; });
+    items.forEach(function(li, i){
+      if (i < cur) li.classList.add('done');
+      if (i === cur) li.classList.add('current');
+    });
+    var next = items[cur + 1];
+    if (next) setNow('次の予定', next);
+    else setNow('いまの予定', items[items.length-1]);
+  }
+  update();
+  setInterval(update, 60000);
+})();
+</script>
+</body>
+</html>
