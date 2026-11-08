@@ -4424,6 +4424,10 @@ const Core = (function () {
   function unitAllowed(p, u) { return gradeAllows(p, u.minGrade); }
   // その 子が おぼえる 単位（ホームの「おぼえた もんだい ○ / ○」の 分母）
   function unitsFor(p) { return UNITS.filter(function (u) { return unitAllowed(p, u); }); }
+  // ホームの「おぼえた もんだい ○ / ○」の 分子：分母と おなじ 単位の なかで 数える。
+  // 4年で 高学年だけの 問題を おぼえてから 3年に えらびなおすと、分子だけ ふえて 合わなく なっていた（学年が上がったときの調査.md 2章）。
+  // マスコットの 成長・ランキング（GAS）は いままでどおり masteredCount（おぼえた かず ぜんぶ）
+  function masteredForMeter(p) { return unitsFor(p).filter(function (u) { return isMastered(p.srs[u.key]); }).length; }
   function bestStars(p, stageId) { return (p.stages[stageId] && p.stages[stageId].best) || 0; }
 
   // その ステージの 問題を ぜんぶ 1かいは 正解した（だん1いじょう。2びょう みまんの 正解は のぞく）
@@ -4811,7 +4815,7 @@ const Core = (function () {
     PLAYERS_KEY: PLAYERS_KEY, emptyPlayers: emptyPlayers, sanitizePlayers: sanitizePlayers, playerKey: playerKey, listPlayers: listPlayers,
     switchPlayer: switchPlayer, removePlayer: removePlayer, mergeRemote: mergeRemote,
     needsGradeCheck: needsGradeCheck, setGrade: setGrade,
-    ADULT: ADULT, isAdult: isAdult, gradeLabel: gradeLabel, parseGrade: parseGrade, gradeAllows: gradeAllows,
+    ADULT: ADULT, isAdult: isAdult, gradeLabel: gradeLabel, parseGrade: parseGrade, gradeAllows: gradeAllows, masteredForMeter: masteredForMeter,
     emptyProgress: emptyProgress, sanitize: sanitize, cleanProfile: cleanProfile, syncPart: syncPart, mergeProgress: mergeProgress,
     srsOf: srsOf, isMastered: isMastered, masteredCount: masteredCount, applyAnswer: applyAnswer,
     recentAccuracy: recentAccuracy, planMix: planMix,
@@ -5569,7 +5573,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
       $('rankFill').style.width = '100%';
       $('rankText').textContent = 'カード ' + n + 'まい ・ さいこうの ランク！';
     }
-    const m = Core.masteredCount(P), all = Core.unitsFor(P).length;
+    const m = Core.masteredForMeter(P), all = Core.unitsFor(P).length;
     $('masterFill').style.width = (m / all * 100) + '%';
     $('masterText').textContent = 'おぼえた もんだい ' + m + ' / ' + all;
     renderGrowth();
