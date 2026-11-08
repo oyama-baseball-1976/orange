@@ -143,6 +143,12 @@ ruby rt { font-size: 12px; }
 .hero { display: flex; align-items: center; gap: 12px; }
 .grow-line { margin: 8px 0 0; font-size: 15px; font-weight: 700; color: var(--ink); }
 .grow-line .gl-name { color: var(--orange-dark); }
+/* おとなの ホーム：じぶんの せいかいの かず・おぼえた かず（ランキングには 出ない） */
+.adult-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 8px 0 0; padding: 8px 10px; border-radius: 12px; background: var(--blue-soft); color: var(--ink); font-size: 15px; font-weight: 700; }
+.adult-line[hidden] { display: none; }
+.adult-line b { font-size: 18px; color: var(--blue-dark); }
+.adult-line .al-note { flex: 1 1 100%; font-size: 13px; color: var(--muted); }
+@media (prefers-color-scheme: dark) { .adult-line b { color: var(--blue); } }
 .sec-title.with-mascot { display: flex; align-items: center; gap: 8px; }
 .sec-title .mini-mascot { width: 40px; height: 40px; flex: 0 0 auto; }
 .sec-title .mini-mascot svg { width: 100%; height: 100%; display: block; }
@@ -537,6 +543,7 @@ ruby rt { font-size: 12px; }
         <div class="meter-text" id="masterText"></div>
       </div>
       <p class="grow-line" id="growLine"></p>
+      <p class="adult-line" id="adultLine" hidden></p>
       <button class="btn primary today-btn" id="btnToday">▶ きょうの 10もん</button>
       <div class="profile-row">
         <span class="who" id="profileLine"></span>
@@ -666,6 +673,7 @@ ruby rt { font-size: 12px; }
         <li>⭕ せいかいの かず：これまでに せいかいした かず</li>
         <li>🧠 おぼえた かず：おなじ もんだいに、まちがえずに 3かい せいかいすると「おぼえた」に なるよ（2びょう より はやい せいかいは かぞえない）。まちがえると、また はじめから。「きょうの 10もん」では、おなじ もんだいは ひを あけて でて くるよ。</li>
       </ul>
+      <p class="small muted" id="rkAdult" hidden>おとなの きろくは ランキングには でないよ。じぶんの「せいかいの かず」「おぼえた かず」は ホームで みてね。</p>
       <div id="rankList"></div>
     </div>
   </section>
@@ -678,6 +686,7 @@ ruby rt { font-size: 12px; }
       <p>ダイヤモンドの 4つの ステージ（ファースト → セカンド → サード → ホーム）を じゅんばんに クリアして、「ホームイン」を めざします。せいかいした もんだいは「ルールカード」に なって、ずかんに たまります。</p>
       <p>「きょうの 10もん」は、まちがえた もんだいを すぐ また だし、せいかいが つづく もんだいほど あいだを あけて だします（かんかく はんぷく）。2びょう みまんの はやすぎる せいかいは「おぼえた」に かぞえません。10もんの うち 7〜8もん せいかい できる ように、ふくしゅう・あたらしい もんだい・おぼえた もんだいの チェックの わりあいを かえます。</p>
       <p>ニックネームと がくねんを いれると、きろくが チームの スプレッドシートに ほぞんされ、ほかの スマホでも おなじ ニックネームで つづきから あそべます。ほんみょうは いれないで ください。つうしん できない ときは、この たんまつの きろくで あそべます。</p>
+      <p>おうちの かたも、がくねんの かわりに「おとな」を えらんで あそべます。おとなには すべての もんだいが でます。おとなの きろくは、こどもの ランキングと しどうしゃ むけの しゅうけいには はいりません（じぶんの かずは ホームで みられます）。</p>
       <p>もんだいは <ruby>公認野球規則<rt>こうにんやきゅうきそく</rt></ruby> を もとに つくっています。たいかいや ちいきの ルール（がくどう やきゅうの とくべつな きまり など）で、あつかいが ちがう ことが あります。</p>
       <p>「🔈 よんで もらう」は、たんまつに にほんごの よみあげ おんせいが ある ときだけ でます。</p>
     </div>
@@ -4150,15 +4159,29 @@ const Core = (function () {
     return p;
   }
 
-  // ニックネームと 学年の チェック。ニックネームは 1〜12文字、学年は 1〜6
+  /* ---------- おとな（保護者など） ----------
+     名前の 画面で 学年（1〜6年）と ならべて「おとな」を えらべる。profile.grade に ADULT（'adult'）を いれる。
+     ・おとなには 学年で 出しわけて いる 問題（高学年だけ など）も ふくめて、すべての 問題を 出す
+     ・4月の 学年の 確認は しない
+     ・GAS には player:'adult' を つけて おくり、grade は 空に する。GAS は 指導者の 集計と ランキングから のぞく
+     ・マスコット・間隔反復・カード帳は 子どもと おなじ */
+  const ADULT = 'adult';
+  function isAdultGrade(g) { return g === ADULT; }
+  function isAdult(p) { return !!(p && p.profile && isAdultGrade(p.profile.grade)); }
+  // 画面に 出す 学年の ことば
+  function gradeLabel(g) { return isAdultGrade(g) ? 'おとな' : g + 'ねんせい'; }
+  // 画面の 値（'1'〜'6'・'adult'）を 学年に もどす。おかしい 値は NaN
+  function parseGrade(v) { return isAdultGrade(v) ? ADULT : parseInt(v, 10); }
+
+  // ニックネームと 学年の チェック。ニックネームは 1〜12文字、学年は 1〜6 か おとな
   function cleanProfile(nickname, grade) {
     const name = String(nickname == null ? '' : nickname).replace(/\s+/g, ' ').trim();
-    const g = parseInt(grade, 10);
+    const g = parseGrade(grade);
     const errors = {};
     if (!name) errors.nickname = 'ニックネームを いれてね';
     else if (name.length > 12) errors.nickname = '12もじ までに してね';
     else if (/[<>"'&]/.test(name)) errors.nickname = 'つかえない もじが あるよ';
-    if (!(g >= 1 && g <= 6)) errors.grade = 'がくねんを えらんでね';
+    if (!(isAdultGrade(g) || (g >= 1 && g <= 6))) errors.grade = 'がくねんを えらんでね';
     return { ok: !Object.keys(errors).length, nickname: name, grade: g, errors: errors };
   }
 
@@ -4294,9 +4317,9 @@ const Core = (function () {
     const last = p.days.length ? p.days[p.days.length - 1] : '';
     return last ? fiscalYear(last) : null;
   }
-  // 新しい 年度に なってから はじめて 遊ぶ ときだけ true（名前なし・まだ 遊んで いない 名前は たしかめない）
+  // 新しい 年度に なってから はじめて 遊ぶ ときだけ true（名前なし・まだ 遊んで いない 名前・おとなは たしかめない）
   function needsGradeCheck(p, today) {
-    if (!p || !p.profile) return false;
+    if (!p || !p.profile || isAdult(p)) return false;
     const base = gradeBaseYear(p);
     return base !== null && base < fiscalYear(today);
   }
@@ -4392,10 +4415,13 @@ const Core = (function () {
   function mindQuestions() { return QUESTIONS.filter(function (q) { return q.extra === 'mind'; }); }
   function templatesOf(stageId) { return TEMPLATES.filter(function (t) { return t.stage === stageId; }); }
   function unitsOf(stageId, p) { return UNITS.filter(function (u) { return u.stage === stageId && (!p || unitAllowed(p, u)); }); }
-  // あそんで いる 子の 学年。名前なし（学年が わからない）は 0 ＝ 低学年として あつかう（利用者の きめごと）
-  function playerGrade(p) { return p && p.profile && p.profile.grade ? p.profile.grade : 0; }
-  // その 子に 出して よい 単位か（高学年だけの 問題は、4年いじょうと 入力した 子だけ）
-  function unitAllowed(p, u) { return !u.minGrade || playerGrade(p) >= u.minGrade; }
+  // あそんで いる 子の 学年（1〜6）。名前なし（学年が わからない）は 0 ＝ 低学年として あつかう（利用者の きめごと）。
+  // おとなは 学年が ないので 0。おとなに 出す 問題は gradeAllows で きめる（すべて 出す）
+  function playerGrade(p) { return p && p.profile && isInt(p.profile.grade) ? p.profile.grade : 0; }
+  // 学年で 出しわける 問題を 出して よいか（minGrade 年いじょう）。おとなには すべて 出す
+  function gradeAllows(p, minGrade) { return !minGrade || isAdult(p) || playerGrade(p) >= minGrade; }
+  // その 子に 出して よい 単位か（高学年だけの 問題は、4年いじょうと 入力した 子と おとなだけ）
+  function unitAllowed(p, u) { return gradeAllows(p, u.minGrade); }
   // その 子が おぼえる 単位（ホームの「おぼえた もんだい ○ / ○」の 分母）
   function unitsFor(p) { return UNITS.filter(function (u) { return unitAllowed(p, u); }); }
   function bestStars(p, stageId) { return (p.stages[stageId] && p.stages[stageId].best) || 0; }
@@ -4684,7 +4710,7 @@ const Core = (function () {
   function cardIds() { return QUESTIONS.map(function (q) { return q.id; }).concat(TEMPLATES.map(function (t) { return t.id; })); }
   // その 子が あつめられる カード（高学年だけの テンプレートは 4年いじょうの 子だけ）
   function cardIdsFor(p) {
-    return QUESTIONS.map(function (q) { return q.id; }).concat(TEMPLATES.filter(function (t) { return !t.minGrade || playerGrade(p) >= t.minGrade; }).map(function (t) { return t.id; }));
+    return QUESTIONS.map(function (q) { return q.id; }).concat(TEMPLATES.filter(function (t) { return gradeAllows(p, t.minGrade); }).map(function (t) { return t.id; }));
   }
   function cardCount(p) { return Object.keys(p.cards).length; }
 
@@ -4750,9 +4776,12 @@ const Core = (function () {
       ids.map(function (i) { return MASCOT_DATA.parts[i]; }).join('') + '</svg>';
   }
 
+  // おくる 形。子どもは いままでと まったく おなじ。おとなは grade を 空に し、player:'adult' を つける（session と 答えの 行の 両方）
   function sessionPayload(p, info) {
-    const common = { session_id: info.sessionId, nickname: p.profile.nickname, grade: p.profile.grade,
+    const adult = isAdult(p);
+    const common = { session_id: info.sessionId, nickname: p.profile.nickname, grade: adult ? '' : p.profile.grade,
       year: fiscalYear(info.today), level: 'beta' };
+    if (adult) common.player = ADULT;
     return {
       type: 'session', app: 'beta',
       session: Object.assign({}, common, {
@@ -4782,6 +4811,7 @@ const Core = (function () {
     PLAYERS_KEY: PLAYERS_KEY, emptyPlayers: emptyPlayers, sanitizePlayers: sanitizePlayers, playerKey: playerKey, listPlayers: listPlayers,
     switchPlayer: switchPlayer, removePlayer: removePlayer, mergeRemote: mergeRemote,
     needsGradeCheck: needsGradeCheck, setGrade: setGrade,
+    ADULT: ADULT, isAdult: isAdult, gradeLabel: gradeLabel, parseGrade: parseGrade, gradeAllows: gradeAllows,
     emptyProgress: emptyProgress, sanitize: sanitize, cleanProfile: cleanProfile, syncPart: syncPart, mergeProgress: mergeProgress,
     srsOf: srsOf, isMastered: isMastered, masteredCount: masteredCount, applyAnswer: applyAnswer,
     recentAccuracy: recentAccuracy, planMix: planMix,
@@ -5454,10 +5484,28 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   // 返事の 記録は その 名前の 子の 記録にだけ あわせる
   let flushing = null;
   function outboxOwner(nick) { return Core.playerKey(P) === nick ? P : PS.saved[nick]; }
+  // おとなの 記録は、GAS が おとなに 対応して いる（GET action=features の 返事に 'adult' が ある）と わかってから おくる。
+  // 対応する 前の GAS に おくると、player が 書かれず、指導者の 集計と ランキングに おとなが 入って しまう ため。
+  // わかるまでは outbox に のこして まつ（GAS を あたらしく した あとに 開けば おくられる）。子どもの 記録は いままでどおり
+  let adultOk = false;
+  function isAdultBody(body) { return !!(body && body.session && body.session.player === Core.ADULT); }
+  function adultPending() {
+    const all = [P].concat(Object.keys(PS.saved).map(function (k) { return PS.saved[k]; }));
+    return all.some(function (p) { return p && p.outbox.some(isAdultBody); });
+  }
+  function checkAdultOk() {
+    if (adultOk || !adultPending()) return Promise.resolve(adultOk);
+    return Net.get({ action: 'features' }).then(function (j) {
+      adultOk = !!(j && j.ok && Array.isArray(j.features) && j.features.indexOf('adult') >= 0);
+      return adultOk;
+    }).catch(function () { return false; });
+  }
+  // つぎに おくる もの。おとなの 記録は adultOk の ときだけ（その 名前の 箱は、おとなの 記録の ところで とめて 順番を まもる）
   function nextSend() {
-    if (P.profile && P.outbox.length) return { owner: Core.playerKey(P), body: P.outbox[0] };
+    const ok = function (p) { return p.outbox.length && (adultOk || !isAdultBody(p.outbox[0])); };
+    if (P.profile && ok(P)) return { owner: Core.playerKey(P), body: P.outbox[0] };
     const ks = Object.keys(PS.saved);
-    for (let i = 0; i < ks.length; i++) if (ks[i] && PS.saved[ks[i]].outbox.length) return { owner: ks[i], body: PS.saved[ks[i]].outbox[0] };
+    for (let i = 0; i < ks.length; i++) if (ks[i] && ok(PS.saved[ks[i]])) return { owner: ks[i], body: PS.saved[ks[i]].outbox[0] };
     return null;
   }
   function dropSent(owner, body) {
@@ -5478,7 +5526,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
         return step();
       });
     };
-    flushing = step().then(function () { syncState = 'ok'; return true; })
+    // おとなの 記録が まって いる ときだけ、さきに GAS が おとなに 対応して いるかを たしかめる（子どもだけなら 問いあわせない）。
+    // おくれずに のこった（おとなの 記録を まって いる）ときは false
+    flushing = checkAdultOk().then(step).then(function () { syncState = 'ok'; return !(P.profile && P.outbox.length); })
       .catch(function () { syncState = 'offline'; return false; })
       .then(function (r) { flushing = null; return r; });
     return flushing;
@@ -5619,12 +5669,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     $('btnNigate').textContent = '💪 にがて チャレンジ（' + ng + 'もん）';
     $('syncLine').textContent = syncText();
     $('profileLine').innerHTML = P.profile
-      ? '<span class="who-name">' + esc(P.profile.nickname) + '</span><span class="who-grade">' + P.profile.grade + 'ねんせい</span>'
+      ? '<span class="who-name">' + esc(P.profile.nickname) + '</span><span class="who-grade">' + Core.gradeLabel(P.profile.grade) + '</span>'
       : '<span class="who-name">なまえは まだ ないよ</span>';
+    renderAdultLine();
     renderStamps();
     show('scr-home');
     playMapRun();
     if (grown.grew) showGrowth(grown);
+  }
+
+  // おとなの ホーム：じぶんの「せいかいの かず」「おぼえた かず」（ランキングには 出ないので、ここで 見られる ように する）。
+  // かずは ランキングと おなじ もの（せいかいの かず＝stats.correct、おぼえた かず＝おぼえた もんだい ぜんぶ）
+  function renderAdultLine() {
+    const box = $('adultLine');
+    box.hidden = !Core.isAdult(P);
+    if (box.hidden) { box.innerHTML = ''; return; }
+    box.innerHTML = '<span class="al-item">⭕ せいかいの かず <b id="adultCorrect">' + P.stats.correct + '</b></span>' +
+      '<span class="al-item">🧠 おぼえた かず <b id="adultMastered">' + Core.masteredCount(P) + '</b></span>' +
+      '<span class="al-note">おとなの きろくは ランキングには でないよ</span>';
   }
 
   /* ---------- なまえの とうろく（ニックネームと 学年だけ） ---------- */
@@ -5634,12 +5696,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     $('pfTitle').textContent = list.length ? 'だれが あそぶ？' : 'なまえを おしえてね';
     $('pfList').innerHTML = list.map(function (x) {
       return '<div class="pf-row"><button class="pf-pick' + (x.current ? ' on' : '') + '" data-nick="' + esc(x.nickname) + '" data-grade="' + x.grade + '"' +
-        (x.current ? ' aria-current="true"' : '') + '><span class="pf-name">' + esc(x.nickname) + '</span><small>' + x.grade + 'ねんせい' +
+        (x.current ? ' aria-current="true"' : '') + '><span class="pf-name">' + esc(x.nickname) + '</span><small>' + Core.gradeLabel(x.grade) +
         (x.current ? '・<span class="nw">いま あそんでいる</span>' : '') + '</small></button>' +
         '<button class="pf-del" data-nick="' + esc(x.nickname) + '" aria-label="' + esc(x.nickname) + ' を けす">けす</button></div>';
     }).join('');
     Array.prototype.forEach.call($('pfList').querySelectorAll('.pf-pick'), function (b) {
-      b.onclick = function () { Sound.tap(); switchTo({ nickname: b.getAttribute('data-nick'), grade: +b.getAttribute('data-grade') }); };
+      b.onclick = function () { Sound.tap(); switchTo({ nickname: b.getAttribute('data-nick'), grade: Core.parseGrade(b.getAttribute('data-grade')) }); };
     });
     Array.prototype.forEach.call($('pfList').querySelectorAll('.pf-del'), function (b) {
       b.onclick = function () { askRemove(b.getAttribute('data-nick')); };
@@ -5648,6 +5710,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     const sel = $('pfGrade');
     sel.innerHTML = '<option value="">えらんでね</option>';
     for (let g = 1; g <= 6; g++) sel.innerHTML += '<option value="' + g + '">' + g + 'ねんせい</option>';
+    sel.innerHTML += '<option value="' + Core.ADULT + '">' + Core.gradeLabel(Core.ADULT) + '</option>';
     sel.value = !list.length && P.profile ? String(P.profile.grade) : '';
     $('pfErrNick').hidden = true; $('pfErrGrade').hidden = true;
     $('pfSkip').textContent = first ? 'なまえなしで あそぶ（この たんまつだけ）' : 'やめる';
@@ -5709,6 +5772,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
   function renderRanking() {
     rankBy = 'correct';   // ひらいた ときは いつも「せいかいの かず」から
     $('rankTitle').innerHTML = miniMascot() + '<span>🏆 ランキング</span>';
+    $('rkAdult').hidden = !Core.isAdult(P);   // おとなは ランキングに 出ない（GAS が のぞく）。じぶんの かずは ホームで 見る
     show('scr-rank');
     drawRanking('よみこみちゅう…');
     Net.get({ action: 'ranking', level: 'beta' }).then(function (j) {
@@ -5728,10 +5792,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     const box = $('rankList');
     if (!rankRows || !rankRows.length) { box.innerHTML = '<p class="muted">' + esc(msg || '') + '</p>'; return; }
     const key = rankBy === 'mastered' ? 'mastered_count' : 'total_correct';
-    const rows = rankRows.slice().sort(function (a, b) {
+    // 子どもの ランキング：おとなの 行は GAS が のぞいて 返す。ねんのため 画面でも のぞく
+    const rows = rankRows.filter(function (r) { return r.player !== Core.ADULT; }).sort(function (a, b) {
       return ((b[key] || 0) - (a[key] || 0)) || ((a.play_count || 0) - (b.play_count || 0));
     }).slice(0, 30);
-    const me = P.profile ? P.profile.nickname : null;
+    const me = P.profile && !Core.isAdult(P) ? P.profile.nickname : null;
     let html = '<table class="ptable rank"><tr><th>じゅんい</th><th>なまえ</th><th>' + (rankBy === 'mastered' ? 'おぼえた' : 'せいかい') + '</th></tr>';
     rows.forEach(function (r, i) {
       html += '<tr class="' + (r.nickname === me ? 'me' : '') + '"><td class="num">' + (i + 1) + '</td><td>' + esc(r.nickname) + '</td>' +
@@ -6382,7 +6447,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Core;
     let html = '';
     Core.STAGES.forEach(function (st) {
       const ids = Core.questionsOf(st.id).map(function (q) { return q.id; })
-        .concat(Core.templatesOf(st.id).filter(function (t) { return !t.minGrade || Core.playerGrade(P) >= t.minGrade; }).map(function (t) { return t.id; }));
+        .concat(Core.templatesOf(st.id).filter(function (t) { return Core.gradeAllows(P, t.minGrade); }).map(function (t) { return t.id; }));
       html += zukanGroup(st.icon + ' ' + st.base + '：' + st.title, ids);
     });
     // チームの やくそくの カードは ステージとは べつの わくに だす（やきゅうの ルールでは ない）
